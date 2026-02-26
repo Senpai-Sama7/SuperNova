@@ -225,7 +225,13 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
-    "--cov=supernova",
+    "--cov=api",
+    "--cov=core",
+    "--cov=infrastructure",
+    "--cov=mcp",
+    "--cov=skills",
+    "--cov=workers",
+    "--cov=config",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
     "--cov-report=xml:coverage.xml",
@@ -242,7 +248,15 @@ filterwarnings = [
 
 # Coverage - Code coverage measurement
 [tool.coverage.run]
-source = ["supernova"]
+source = [
+    "api",
+    "core",
+    "infrastructure",
+    "mcp",
+    "skills",
+    "workers",
+    "config",
+]
 branch = true
 omit = [
     "*/tests/*",

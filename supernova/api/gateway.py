@@ -20,6 +20,7 @@ from supernova.api.routes.mcp_routes import (
     set_mcp_client,
     set_skill_loader,
 )
+from supernova.api.routes.onboarding import router as onboarding_router
 from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
 from supernova.config import get_settings
 from supernova.core.memory import EpisodicMemoryStore, SemanticMemoryStore, get_working_memory_store
@@ -32,6 +33,9 @@ from supernova.infrastructure.storage import (
     get_postgres_pool,
     get_redis_client,
 )
+from supernova.infrastructure.observability.health import HealthAlertManager, deep_health_check
+from supernova.infrastructure.observability.logging import correlation_id, generate_correlation_id
+from supernova.infrastructure.observability.metrics import RequestTimer, metrics
 from supernova.infrastructure.tools.builtin import (
     create_code_exec_tool,
     create_file_read_tool,
@@ -275,6 +279,21 @@ app.add_middleware(
 app.include_router(mcp_router)
 app.include_router(dashboard_router)
 app.include_router(agent_router)
+app.include_router(onboarding_router)
+
+_health_alerts = HealthAlertManager()
+
+
+@app.middleware("http")
+async def observability_middleware(request: Any, call_next: Any) -> Any:
+    """Inject correlation ID and track request metrics."""
+    cid = request.headers.get("x-correlation-id") or generate_correlation_id()
+    correlation_id.set(cid)
+    with RequestTimer(request.method, request.url.path):
+        response = await call_next(request)
+    response.headers["x-correlation-id"] = cid
+    metrics.inc("http_responses_total", labels=f'status="{response.status_code}"')
+    return response
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -282,6 +301,41 @@ app.include_router(agent_router)
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "version": "2.0.0"}
+
+
+@app.get("/health/deep")
+async def health_deep() -> dict[str, Any]:
+    """Deep health check — probes all backend services."""
+    from supernova.infrastructure.observability.health import ServiceCheck as _SC
+    result = await deep_health_check(
+        pool=_state.get("pool"),
+        redis=_state.get("redis"),
+        neo4j_driver=_state.get("episodic_store"),
+    )
+    svc_checks = [_SC(s["name"], s["status"], s["latency_ms"], s["detail"]) for s in result.get("services", [])]
+    alerts = await _health_alerts.evaluate(svc_checks)
+    if alerts:
+        result["alerts"] = alerts
+    return result
+
+
+@app.get("/metrics")
+async def prometheus_metrics() -> Any:
+    """Prometheus-compatible metrics endpoint."""
+    from starlette.responses import Response
+    return Response(content=metrics.render_prometheus(), media_type="text/plain; charset=utf-8")
+
+
+@app.websocket("/health/ws")
+async def health_ws(ws: WebSocket) -> None:
+    """WebSocket for real-time health alerts."""
+    await ws.accept()
+    _health_alerts.register(ws)
+    try:
+        while True:
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        _health_alerts.unregister(ws)
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────

@@ -139,6 +139,12 @@ supernova/                      # Main Python package
 │   │   ├── serializer.py       # HMAC-signed pickle with restricted unpickler
 │   │   ├── secrets.py          # AES-256-GCM vault + platform keychain
 │   │   └── audit.py            # @audit_log decorator + query_audit_logs
+│   ├── observability/          # Observability infrastructure
+│   │   ├── __init__.py
+│   │   ├── logging.py          # structlog JSON config + correlation ID + rotation
+│   │   ├── health.py           # Deep health checks + HealthAlertManager
+│   │   ├── metrics.py          # Prometheus-format metrics collector
+│   │   └── cli.py              # Diagnostic CLI (doctor/logs/status/report)
 │   ├── storage/                # Database connections
 │   │   ├── __init__.py
 │   │   ├── postgres.py         # PostgreSQL connection pool
@@ -188,7 +194,8 @@ supernova/                      # Main Python package
 │   ├── test_workers.py
 │   ├── test_cost_controller.py    # Cost tracking, budget routing, Ollama client tests
 │   ├── test_backup.py             # Backup manager, worker, export/import, CLI tests
-│   └── test_security.py           # Serializer, secrets vault, audit logging, sandbox tests
+│   ├── test_security.py           # Serializer, secrets vault, audit logging, sandbox tests
+│   └── test_observability.py       # Structured logging, health checks, metrics, CLI tests
 │
 ├── workers/                    # Celery background workers
 │   ├── __init__.py
@@ -232,7 +239,7 @@ dashboard/
 │   │   └── useNovaRealtime.ts         # HTTP polling + WebSocket with exponential backoff
 │   ├── components/
 │   │   ├── ui/                        # StatusDot, Badge, Glow, MiniBar, RiskPill
-│   │   ├── cards/                     # AgentCard, ApprovalCard, MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget, ExportButton
+│   │   ├── cards/                     # AgentCard, ApprovalCard, MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget, ExportButton, HealthPanel
 │   │   └── charts/                    # CognitiveCycleRing, ConfidenceMeter, Sparkline, MemoryGraph, OrchestrationGraph
 │   ├── utils/
 │   └── assets/
