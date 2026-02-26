@@ -176,10 +176,10 @@ class TestBackupWorker:
         mock_settings.neo4j.uri = "bolt://x"
         mock_settings.redis_url = "redis://x"
 
-        mock_mgr = AsyncMock()
-        mock_mgr.create_backup.return_value = tmp_path / "test.tar.gz"
-        mock_mgr.verify_backup.return_value = True
-        mock_mgr.rotate_backups.return_value = 0
+        mock_mgr = MagicMock()
+        mock_mgr.create_backup = AsyncMock(return_value=tmp_path / "test.tar.gz")
+        mock_mgr.verify_backup = AsyncMock(return_value=True)
+        mock_mgr.rotate_backups = MagicMock(return_value=0)
 
         with patch("supernova.config.get_settings", return_value=mock_settings), \
              patch("supernova.core.backup.manager.BackupManager.from_settings", return_value=mock_mgr):
@@ -280,10 +280,10 @@ class TestCLI:
         from supernova.core.backup.cli import main
         import sys
 
-        mock_mgr = AsyncMock()
-        mock_mgr.create_backup.return_value = tmp_path / "test.tar.gz"
-        mock_mgr.verify_backup.return_value = True
-        mock_mgr.rotate_backups.return_value = 0
+        mock_mgr = MagicMock()
+        mock_mgr.create_backup = AsyncMock(return_value=tmp_path / "test.tar.gz")
+        mock_mgr.verify_backup = AsyncMock(return_value=True)
+        mock_mgr.rotate_backups = MagicMock(return_value=0)
         with patch("supernova.core.backup.cli._get_manager", return_value=mock_mgr), \
              patch.object(sys, "argv", ["cli", "backup", "--name", "test"]):
             main()

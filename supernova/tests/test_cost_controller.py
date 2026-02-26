@@ -293,11 +293,12 @@ class TestOllamaClient:
         }
 
         with patch("httpx.AsyncClient") as MockClient:
-            mock_client = AsyncMock()
+            mock_client = MagicMock()
             mock_client.post = AsyncMock(return_value=mock_resp)
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            MockClient.return_value = mock_client
+            cm = MagicMock()
+            cm.__aenter__ = AsyncMock(return_value=mock_client)
+            cm.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = cm
 
             result = await client.chat([{"role": "user", "content": "Hi"}])
             assert result["content"] == "Hello!"
@@ -312,11 +313,12 @@ class TestOllamaClient:
         mock_resp.json.return_value = {"embeddings": [[0.1, 0.2, 0.3]]}
 
         with patch("httpx.AsyncClient") as MockClient:
-            mock_client = AsyncMock()
+            mock_client = MagicMock()
             mock_client.post = AsyncMock(return_value=mock_resp)
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            MockClient.return_value = mock_client
+            cm = MagicMock()
+            cm.__aenter__ = AsyncMock(return_value=mock_client)
+            cm.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = cm
 
             result = await client.embed("test text")
             assert len(result) == 1
@@ -327,11 +329,12 @@ class TestOllamaClient:
         """is_available returns False when server unreachable."""
         import httpx as _httpx
         with patch("httpx.AsyncClient") as MockClient:
-            mock_client = AsyncMock()
+            mock_client = MagicMock()
             mock_client.get = AsyncMock(side_effect=_httpx.ConnectError("refused"))
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            MockClient.return_value = mock_client
+            cm = MagicMock()
+            cm.__aenter__ = AsyncMock(return_value=mock_client)
+            cm.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = cm
 
             result = await client.is_available()
             assert result is False
@@ -347,11 +350,12 @@ class TestOllamaClient:
         }
 
         with patch("httpx.AsyncClient") as MockClient:
-            mock_client = AsyncMock()
+            mock_client = MagicMock()
             mock_client.get = AsyncMock(return_value=mock_resp)
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            MockClient.return_value = mock_client
+            cm = MagicMock()
+            cm.__aenter__ = AsyncMock(return_value=mock_client)
+            cm.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = cm
 
             result = await client.list_models()
             assert "llama3.2:3b" in result
@@ -361,11 +365,12 @@ class TestOllamaClient:
     async def test_list_models_returns_empty_on_error(self, client):
         """list_models returns empty list on connection error."""
         with patch("httpx.AsyncClient") as MockClient:
-            mock_client = AsyncMock()
+            mock_client = MagicMock()
             mock_client.get = AsyncMock(side_effect=Exception("fail"))
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            MockClient.return_value = mock_client
+            cm = MagicMock()
+            cm.__aenter__ = AsyncMock(return_value=mock_client)
+            cm.__aexit__ = AsyncMock(return_value=False)
+            MockClient.return_value = cm
 
             result = await client.list_models()
             assert result == []

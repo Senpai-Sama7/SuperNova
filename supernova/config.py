@@ -139,6 +139,7 @@ class CostManagementSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="COST_")
 
     daily_spending_limit: float = Field(default=10.0, ge=0.0)
+    monthly_spending_limit: float = Field(default=300.0, ge=0.0)
     confirmation_threshold: float = Field(default=0.50, ge=0.0)
     tracking_enabled: bool = True
     alert_threshold_percent: float = Field(default=80.0, ge=0.0, le=100.0)
@@ -166,6 +167,7 @@ class BackupSettings(BaseSettings):
     path: Path = Field(default=Path("./backups"))
     s3_bucket: str | None = None
     s3_prefix: str = "supernova/"
+    s3_region: str = "us-east-1"
 
 
 class AuditSettings(BaseSettings):

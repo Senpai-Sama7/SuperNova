@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from supernova.infrastructure.storage.redis import AsyncRedisClient, get_redis_client
@@ -38,7 +38,7 @@ class WorkingMemory:
     tool_results_buffer: list[dict[str, Any]] = field(default_factory=list)
     attention_stack: list[str] = field(default_factory=list)
     scratchpad: str = ""
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -56,7 +56,7 @@ class WorkingMemory:
     def from_dict(cls, data: dict[str, Any]) -> WorkingMemory:
         """Create from dictionary."""
         # Parse timestamp if present
-        last_updated = datetime.utcnow()
+        last_updated = datetime.now(UTC)
         if "last_updated" in data:
             try:
                 last_updated = datetime.fromisoformat(data["last_updated"])
@@ -135,7 +135,7 @@ class WorkingMemoryStore:
         """
         try:
             redis = await self._get_redis()
-            memory.last_updated = datetime.utcnow()
+            memory.last_updated = datetime.now(UTC)
             await redis.working_memory_set(
                 memory.session_id,
                 memory.to_dict(),

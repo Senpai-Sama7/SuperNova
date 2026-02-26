@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
@@ -21,10 +22,20 @@ from supernova.infrastructure.storage import (
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    """Manage application startup and shutdown resources."""
+    yield
+    await close_postgres_pool()
+    await close_redis_client()
+
+
 app = FastAPI(
     title="SuperNova API",
     version="2.0.0",
     description="Live operational APIs for SuperNova agent platform.",
+    lifespan=_lifespan,
 )
 
 cors_origins = set(settings.security.cors_origins_list)
@@ -91,10 +102,3 @@ async def healthz() -> dict[str, Any]:
 
     status["ok"] = all(status["services"].values())
     return status
-
-
-@app.on_event("shutdown")
-async def _shutdown() -> None:
-    """Close shared storage clients on process shutdown."""
-    await close_postgres_pool()
-    await close_redis_client()

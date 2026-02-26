@@ -38,6 +38,7 @@ class BackupManager:
         encryption_key: str | None = None,
         s3_bucket: str | None = None,
         s3_prefix: str = "supernova/",
+        s3_region: str = "us-east-1",
         database_url: str = "",
         neo4j_uri: str = "",
         redis_url: str = "",
@@ -47,6 +48,7 @@ class BackupManager:
         self._encryption_key = encryption_key
         self._s3_bucket = s3_bucket
         self._s3_prefix = s3_prefix
+        self._s3_region = s3_region
         self._database_url = database_url
         self._neo4j_uri = neo4j_uri
         self._redis_url = redis_url
@@ -59,6 +61,7 @@ class BackupManager:
             encryption_key=os.getenv("BACKUP_ENCRYPTION_KEY"),
             s3_bucket=settings.backup.s3_bucket,
             s3_prefix=settings.backup.s3_prefix,
+            s3_region=settings.backup.s3_region,
             database_url=str(settings.database_url),
             neo4j_uri=str(settings.neo4j.uri),
             redis_url=str(settings.redis_url),
@@ -297,7 +300,7 @@ class BackupManager:
         """Upload backup to S3-compatible storage."""
         import boto3
 
-        s3 = boto3.client("s3")
+        s3 = boto3.client("s3", region_name=self._s3_region)
         key = f"{self._s3_prefix}{local_path.name}"
         s3.upload_file(str(local_path), self._s3_bucket, key)
         uri = f"s3://{self._s3_bucket}/{key}"
@@ -312,7 +315,7 @@ class BackupManager:
         parts = s3_uri.replace("s3://", "").split("/", 1)
         bucket, key = parts[0], parts[1]
         local_path = self._backup_path / Path(key).name
-        s3 = boto3.client("s3")
+        s3 = boto3.client("s3", region_name=self._s3_region)
         s3.download_file(bucket, key, str(local_path))
         logger.info("Downloaded from %s to %s", s3_uri, local_path)
         return local_path

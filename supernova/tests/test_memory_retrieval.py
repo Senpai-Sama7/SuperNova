@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -60,7 +60,7 @@ class TestUpsertSearchRoundTrip:
         pool.fetch.return_value = [
             {"id": mem_id, "content": "Python is great", "category": "tech",
              "confidence": 0.5, "importance": 0.5, "tags": [], "source": None,
-             "created_at": datetime.utcnow(), "updated_at": datetime.utcnow(),
+             "created_at": datetime.now(UTC), "updated_at": datetime.now(UTC),
              "rrf_score": 0.032}
         ]
         results = await sem_store.search("Python", user_id="u1")
@@ -108,7 +108,7 @@ class TestHybridSearch:
         pool.fetch.return_value = [
             {"id": mem_id, "content": "exact keyword match", "category": "tech",
              "confidence": 0.9, "importance": 0.8, "tags": [], "source": None,
-             "created_at": datetime.utcnow(), "updated_at": datetime.utcnow(),
+             "created_at": datetime.now(UTC), "updated_at": datetime.now(UTC),
              "rrf_score": hybrid_score}
         ]
         results = await sem_store.search("exact keyword match", user_id="u1")

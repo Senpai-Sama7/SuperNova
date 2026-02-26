@@ -66,13 +66,14 @@ async def test_healthz_degrades_when_services_fail() -> None:
 
 
 @pytest.mark.asyncio
-async def test_shutdown_closes_shared_clients() -> None:
-    """Shutdown handler closes postgres and redis global clients."""
+async def test_lifespan_shutdown_closes_shared_clients() -> None:
+    """Lifespan shutdown closes postgres and redis global clients."""
     with (
         patch("supernova.api.main.close_postgres_pool", AsyncMock()) as mock_close_pg,
         patch("supernova.api.main.close_redis_client", AsyncMock()) as mock_close_redis,
     ):
-        await main_mod._shutdown()
+        async with main_mod._lifespan(main_mod.app):
+            pass
 
     mock_close_pg.assert_awaited_once()
     mock_close_redis.assert_awaited_once()

@@ -90,7 +90,7 @@ class CostController:
         return cls(
             redis=redis,
             daily_limit=s.daily_spending_limit,
-            monthly_limit=None,  # monthly not in current config; use daily × 30
+            monthly_limit=s.monthly_spending_limit or None,
             confirmation_threshold=s.confirmation_threshold,
             alert_threshold_pct=s.alert_threshold_percent,
             enabled=s.tracking_enabled,
