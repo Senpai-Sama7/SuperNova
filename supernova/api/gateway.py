@@ -149,6 +149,15 @@ async def get_fleet_summary() -> dict[str, Any]:
     return router.get_fleet_summary()
 
 
+@app.get("/admin/costs")
+async def get_cost_summary() -> dict[str, Any]:
+    """Return current spend, limits, and projections."""
+    cc = _state.get("cost_controller")
+    if not cc:
+        return {"tracking_enabled": False, "note": "Cost controller not initialized"}
+    return await cc.get_spend_summary()
+
+
 # ── HITL interrupt router ─────────────────────────────────────────────────────
 
 def mount_interrupt_router(coordinator: Any) -> None:

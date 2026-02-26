@@ -422,15 +422,26 @@ class DynamicModelRouter:
     # Minimum time between live data updates
     UPDATE_INTERVAL_SECONDS = 6 * 3600   # 6 hours
 
+    # Fallback chain: premium → mid-tier → local (ordered by cost descending)
+    FALLBACK_CHAIN: list[str] = [
+        "openai/gpt-4o",
+        "anthropic/claude-sonnet-4-5",
+        "google/gemini-2.0-flash",
+        "groq/llama-3.3-70b-versatile",
+        "ollama/qwen2.5:32b",
+    ]
+
     def __init__(
         self,
         litellm_router: Any,             # litellm.Router instance
         langfuse_client: Any | None = None,
         latency_slo_percentile: str = "p90",  # "p50" or "p90"
+        cost_controller: Any | None = None,
     ) -> None:
         self.litellm      = litellm_router
         self.langfuse     = langfuse_client
         self.slo_perc     = latency_slo_percentile
+        self.cost_controller = cost_controller
 
         # Initialize fleet from hardcoded priors
         self._fleet: dict[str, ModelCapabilityVector] = {
@@ -490,6 +501,29 @@ class DynamicModelRouter:
             req = TaskRequirementVector(**{**req.__dict__, "max_latency_p90_ms": max_latency})
 
         selected_model_id = self._optimize_model_selection(req)
+
+        # Budget-aware fallback: if cost controller says budget exceeded,
+        # walk the fallback chain toward cheaper models
+        if self.cost_controller is not None:
+            est_in, est_out = self._token_tracker.estimate(task_type)
+            est_cost = self.cost_controller.estimate_cost(selected_model_id, est_in, est_out)
+
+            if not await self.cost_controller.check_budget(est_cost):
+                fallback_id = self._find_budget_fallback(est_in, est_out)
+                if fallback_id:
+                    logger.warning(
+                        "Budget limit: '%s' → fallback '%s'", selected_model_id, fallback_id
+                    )
+                    selected_model_id = fallback_id
+                else:
+                    logger.error("Budget exceeded and no fallback available")
+
+            # Pre-call confirmation for expensive operations
+            if self.cost_controller.needs_confirmation(est_cost):
+                logger.info(
+                    "Cost confirmation needed: $%.4f for %s", est_cost, selected_model_id
+                )
+
         logger.debug(
             "Task '%s' → model '%s' (fleet_size=%d)",
             task_type, selected_model_id, len(self._fleet)
@@ -512,6 +546,14 @@ class DynamicModelRouter:
                 response.usage.prompt_tokens or 0,
                 response.usage.completion_tokens or 0,
             )
+            # Record actual cost
+            if self.cost_controller is not None:
+                actual_cost = self.cost_controller.estimate_cost(
+                    selected_model_id,
+                    response.usage.prompt_tokens or 0,
+                    response.usage.completion_tokens or 0,
+                )
+                await self.cost_controller.record_cost(actual_cost, selected_model_id)
 
         return response
 
@@ -606,6 +648,21 @@ class DynamicModelRouter:
             context_faithfulness   = 0.4,
             max_cost_usd           = 0.10,
         )
+
+    def _find_budget_fallback(
+        self, est_input_tokens: int, est_output_tokens: int
+    ) -> str | None:
+        """Walk fallback chain from cheapest to find a model within budget."""
+        if self.cost_controller is None:
+            return None
+        # Iterate cheapest-first (reverse of FALLBACK_CHAIN)
+        for model_id in reversed(self.FALLBACK_CHAIN):
+            if model_id not in self._fleet:
+                continue
+            est = self.cost_controller.estimate_cost(model_id, est_input_tokens, est_output_tokens)
+            if est == 0.0:  # local model — always within budget
+                return model_id
+        return self._local_model_id  # ultimate fallback
 
     # ── Background update loop ─────────────────────────────────────────────────
 

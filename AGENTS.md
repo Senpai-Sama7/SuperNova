@@ -126,7 +126,9 @@ supernova/                      # Main Python package
 ├── infrastructure/             # Infrastructure adapters
 │   ├── __init__.py
 │   ├── llm/
-│   │   └── __init__.py
+│   │   ├── __init__.py
+│   │   ├── cost_controller.py      # Redis-backed cost tracking + budget enforcement
+│   │   └── ollama_client.py        # Async Ollama client for local LLM fallback
 │   ├── storage/                # Database connections
 │   │   ├── __init__.py
 │   │   ├── postgres.py         # PostgreSQL connection pool
@@ -173,7 +175,8 @@ supernova/                      # Main Python package
 │   ├── test_skills.py
 │   ├── test_storage.py           # Redis client + Postgres pool CRUD methods
 │   ├── test_websockets.py
-│   └── test_workers.py
+│   ├── test_workers.py
+│   └── test_cost_controller.py    # Cost tracking, budget routing, Ollama client tests
 │
 ├── workers/                    # Celery background workers
 │   ├── __init__.py
@@ -205,13 +208,21 @@ dashboard/
 ├── eslint.config.js
 ├── index.html
 ├── src/
-│   ├── App.jsx
+│   ├── App.tsx
 │   ├── App.css
-│   ├── main.jsx
+│   ├── main.tsx
 │   ├── index.css
-│   ├── NovaDashboard.jsx
-│   ├── assets/
-│   └── utils/
+│   ├── NovaDashboard.tsx
+│   ├── types/index.ts                 # Centralized TypeScript types
+│   ├── theme/index.ts                 # Design tokens + API_BASE
+│   ├── hooks/
+│   │   └── useNovaRealtime.ts         # HTTP polling + WebSocket with exponential backoff
+│   ├── components/
+│   │   ├── ui/                        # StatusDot, Badge, Glow, MiniBar, RiskPill
+│   │   ├── cards/                     # AgentCard, ApprovalCard, MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog
+│   │   └── charts/                    # CognitiveCycleRing, ConfidenceMeter, Sparkline, MemoryGraph, OrchestrationGraph
+│   ├── utils/
+│   └── assets/
 ├── tests/
 │   └── e2e/
 ├── public/

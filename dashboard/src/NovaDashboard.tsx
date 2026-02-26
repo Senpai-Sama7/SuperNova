@@ -18,7 +18,7 @@ import {
   Glow, StatusDot, MiniBar, AgentCard, ApprovalCard,
   CognitiveCycleRing, ConfidenceMeter, Sparkline,
   MemoryGraph, OrchestrationGraph,
-  MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog,
+  MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget,
 } from './components';
 
 // ============================================================================
@@ -374,6 +374,7 @@ export default function NovaDashboard(): React.ReactElement {
           ))}
         </div>
       </div>
+      <CostWidget />
     </div>
   );
 

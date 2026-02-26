@@ -32,3 +32,36 @@ mypy supernova
 ## License
 
 MIT
+
+## Local Model Fallback (Ollama)
+
+SuperNova can fall back to local LLMs via [Ollama](https://ollama.com) when API budgets are exceeded or for privacy-sensitive tasks.
+
+### Setup
+
+```bash
+# Install Ollama (macOS)
+brew install ollama
+
+# Install Ollama (Linux)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull the default model
+ollama pull llama3.2:3b
+
+# Start the server
+ollama serve
+```
+
+### Configuration
+
+Set these in `.env`:
+
+```bash
+OLLAMA_ENABLED=true
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_DEFAULT_MODEL=llama3.2:3b
+LOCAL_MODEL_PRIORITY=false   # set true to prefer local over cloud
+```
+
+When `LOCAL_MODEL_PRIORITY=false` (default), local models are used only as a budget fallback. When `true`, the router prefers local models for all tasks.
