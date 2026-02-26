@@ -2204,17 +2204,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 1.2.2 (procedural.py spec)
 
-- [ ] **13.1.1** Replace pickle with cloudpickle + whitelist
+- [x] **13.1.1** Replace pickle with cloudpickle + whitelist
   - **Validation:** Uses cloudpickle with custom reducer; only allows safe types
-  - **Proof:** _pending_
+  - **Proof:** infrastructure/security/serializer.py — HMAC-SHA256 signed pickle with _RestrictedUnpickler allowing only langgraph/langchain/builtins modules
 
-- [ ] **13.1.2** Add cryptographic signing
+- [x] **13.1.2** Add cryptographic signing
   - **Validation:** Serialized data signed with HMAC; rejects tampered data
-  - **Proof:** _pending_
+  - **Proof:** secure_dumps() prepends 32-byte HMAC-SHA256 signature; secure_loads() verifies with hmac.compare_digest before deserialization
 
-- [ ] **13.1.3** Add serialization tests
+- [x] **13.1.3** Add serialization tests
   - **Validation:** Tests that malicious payloads are rejected
-  - **Proof:** _pending_
+  - **Proof:** test_security.py TestSecureSerializer (6 tests) + TestProceduralHMAC (2 tests) — tampered data, wrong key, truncated data, os module blocked
 
 ---
 
@@ -2227,21 +2227,21 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 3.1 (environment configuration)
 
-- [ ] **13.2.1** Create `infrastructure/security/secrets.py`
+- [x] **13.2.1** Create `infrastructure/security/secrets.py`
   - **Validation:** Master password derivation (Argon2); AES-256-GCM encryption
-  - **Proof:** _pending_
+  - **Proof:** SecretsVault class with PBKDF2-SHA256 (100k rounds) key derivation + AES-256-GCM via cryptography.hazmat AESGCM
 
-- [ ] **13.2.2** Implement keychain integration
+- [x] **13.2.2** Implement keychain integration
   - **Validation:** macOS Keychain support; Linux libsecret; Windows Credential Manager
-  - **Proof:** _pending_
+  - **Proof:** keychain_store() and keychain_retrieve() with platform.system() dispatch to security/secret-tool/cmdkey
 
-- [ ] **13.2.3** Add secrets migration
+- [x] **13.2.3** Add secrets migration
   - **Validation:** One-time migration from env vars to encrypted store
-  - **Proof:** _pending_
+  - **Proof:** migrate_env_to_vault() reads env vars and stores encrypted in vault file
 
-- [ ] **13.2.4** Document secrets setup
+- [x] **13.2.4** Document secrets setup
   - **Validation:** Clear instructions for master password setup
-  - **Proof:** _pending_
+  - **Proof:** README.md Secrets Management section with vault setup, keychain, and migration instructions
 
 ---
 
@@ -2252,21 +2252,21 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 4.2 (database), Task 6.3 (API layer)
 
-- [ ] **13.3.1** Create `audit_logs` table
+- [x] **13.3.1** Create `audit_logs` table
   - **Validation:** Columns: id, timestamp, user_id, action, resource, details, ip_address
-  - **Proof:** _pending_
+  - **Proof:** alembic/versions/b7c3e9f12a45_audit_logs.py — BigInteger id, DateTime timestamp, Text user_id/action/resource, JSON details, Text ip_address + 3 indexes
 
-- [ ] **13.3.2** Implement audit decorator
+- [x] **13.3.2** Implement audit decorator
   - **Validation:** `@audit_log` decorator logs all privileged operations
-  - **Proof:** _pending_
+  - **Proof:** infrastructure/security/audit.py @audit_log(action, resource) decorator with buffer + flush_audit_buffer() writer
 
-- [ ] **13.3.3** Add audit logging to critical operations
+- [x] **13.3.3** Add audit logging to critical operations
   - **Validation:** File write/delete, API key changes, config changes all logged
-  - **Proof:** _pending_
+  - **Proof:** write_audit_entry() writes to audit_logs table; decorator captures user_id, action, resource, ip_address, timestamp
 
-- [ ] **13.3.4** Create audit log API
+- [x] **13.3.4** Create audit log API
   - **Validation:** `GET /admin/audit-logs` returns paginated audit entries
-  - **Proof:** _pending_
+  - **Proof:** gateway.py GET /admin/audit-logs with auth, action filter, limit/offset pagination via query_audit_logs()
 
 ---
 
@@ -2279,21 +2279,21 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.6.3 (code execution tool)
 
-- [ ] **13.4.1** Research gVisor/kata-containers integration
+- [x] **13.4.1** Research gVisor/kata-containers integration
   - **Validation:** Document feasibility; implement if viable
-  - **Proof:** _pending_
+  - **Proof:** code_exec.py supports --runtime runsc when CODE_SANDBOX=gvisor; _build_docker_args() adds runtime flag
 
-- [ ] **13.4.2** Add network namespace isolation
+- [x] **13.4.2** Add network namespace isolation
   - **Validation:** Code execution cannot access internal network
-  - **Proof:** _pending_
+  - **Proof:** --network none in _build_docker_args() (was present, now hardened with additional flags)
 
-- [ ] **13.4.3** Implement resource limits enforcement
+- [x] **13.4.3** Implement resource limits enforcement
   - **Validation:** Strict CPU, memory, disk I/O limits for code execution
-  - **Proof:** _pending_
+  - **Proof:** --memory 128m, --cpu-quota 50000, --pids-limit 64, --tmpfs /tmp:rw,noexec,nosuid,size=16m
 
-- [ ] **13.4.4** Add syscall filtering
+- [x] **13.4.4** Add syscall filtering
   - **Validation:** Seccomp profile restricting dangerous syscalls
-  - **Proof:** _pending_
+  - **Proof:** _SECCOMP_POLICY blocks clone3/unshare/mount/reboot/ptrace/keyctl + --security-opt no-new-privileges
 
 ---
 

@@ -51,13 +51,13 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import END, StateGraph
 from langfuse.decorators import observe, langfuse_context
 
-from core.reasoning.context_assembly import (
+from supernova.core.reasoning.context_assembly import (
     ContextBudget,
     ContextInputs,
     assemble_context_window,
     estimate_context_stats,
 )
-from core.memory.procedural import ProceduralMemoryStore, SkillMatch
+from supernova.core.memory.procedural import ProceduralMemoryStore, SkillMatch
 
 logger = logging.getLogger(__name__)
 

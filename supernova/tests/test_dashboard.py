@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from api.routes.dashboard import (
+from supernova.api.routes.dashboard import (
     _age_label,
     _clamp,
     _compute_conformal_metrics,
@@ -221,7 +221,7 @@ def _make_app():
     """Build a minimal FastAPI app with the dashboard router mounted."""
     from fastapi import FastAPI
 
-    from api.routes.dashboard import router
+    from supernova.api.routes.dashboard import router
     app = FastAPI()
     app.include_router(router)
     return app
@@ -234,9 +234,9 @@ async def test_dashboard_snapshot():
     mock_redis.working_memory_list = AsyncMock(return_value=[])
 
     with (
-        patch("api.routes.dashboard.get_postgres_pool", return_value=mock_pool),
-        patch("api.routes.dashboard.get_redis_client", return_value=mock_redis),
-        patch("api.routes.dashboard._neo4j_node_count", return_value=42),
+        patch("supernova.api.routes.dashboard.get_postgres_pool", return_value=mock_pool),
+        patch("supernova.api.routes.dashboard.get_redis_client", return_value=mock_redis),
+        patch("supernova.api.routes.dashboard._neo4j_node_count", return_value=42),
     ):
         app = _make_app()
         transport = ASGITransport(app=app)
@@ -256,7 +256,7 @@ async def test_resolve_approval_not_found():
     mock_pool = AsyncMock()
     mock_pool.fetchrow.return_value = None
 
-    with patch("api.routes.dashboard.get_postgres_pool", return_value=mock_pool):
+    with patch("supernova.api.routes.dashboard.get_postgres_pool", return_value=mock_pool):
         app = _make_app()
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

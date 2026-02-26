@@ -10,7 +10,7 @@
  */
 
 import React, { useRef, useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 /** Lighting state configuration */
@@ -37,34 +37,6 @@ interface AdaptiveLightingProps {
   agentStatus?: 'active' | 'reasoning' | 'waiting' | 'idle' | 'error';
 }
 
-/** Color palettes for different states */
-const COLOR_PALETTES = {
-  highConfidence: {
-    ambient: '#4c1d95',   // Deep purple
-    main: '#00ffd5',      // Cyan
-    accent: '#f472b6',    // Pink
-    fog: '#0a0a0f'
-  },
-  mediumConfidence: {
-    ambient: '#5b21b6',   // Purple
-    main: '#60a5fa',      // Blue
-    accent: '#fbbf24',    // Amber
-    fog: '#0f0a1a'
-  },
-  lowConfidence: {
-    ambient: '#7c3aed',   // Bright purple
-    main: '#f59e0b',      // Orange (uncertainty)
-    accent: '#ef4444',    // Red (warning)
-    fog: '#1a0a0f'
-  },
-  error: {
-    ambient: '#450a0a',   // Dark red
-    main: '#dc2626',      // Red
-    accent: '#f87171',    // Light red
-    fog: '#1f0a0a'
-  }
-} as const;
-
 /** Phase-specific lighting adjustments */
 const PHASE_MODIFIERS: Record<string, { intensity: number; hue: number }> = {
   PERCEIVE: { intensity: 1.0, hue: 0 },      // Neutral
@@ -76,15 +48,6 @@ const PHASE_MODIFIERS: Record<string, { intensity: number; hue: number }> = {
 };
 
 /**
- * Interpolate between colors
- */
-function lerpColor(color1: string, color2: string, t: number): string {
-  const c1 = new THREE.Color(color1);
-  const c2 = new THREE.Color(color2);
-  return c1.lerp(c2, t).getStyle();
-}
-
-/**
  * Calculate lighting state based on confidence and entropy
  */
 function calculateLightingState(
@@ -93,14 +56,27 @@ function calculateLightingState(
   phase: AdaptiveLightingProps['cognitivePhase'],
   status: AdaptiveLightingProps['agentStatus']
 ): LightingState {
-  // Determine base palette
-  let palette = COLOR_PALETTES.mediumConfidence;
+  // Determine colors based on confidence and status
+  let ambientColor = '#5b21b6';   // Purple
+  let mainColor = '#60a5fa';      // Blue
+  let accentColor = '#fbbf24';    // Amber
+  let fogColor = '#0f0a1a';       // Dark purple
+  
   if (status === 'error') {
-    palette = COLOR_PALETTES.error;
+    ambientColor = '#450a0a';     // Dark red
+    mainColor = '#dc2626';        // Red
+    accentColor = '#f87171';      // Light red
+    fogColor = '#1f0a0a';         // Dark red fog
   } else if (confidence > 0.7) {
-    palette = COLOR_PALETTES.highConfidence;
+    ambientColor = '#4c1d95';     // Deep purple
+    mainColor = '#00ffd5';        // Cyan
+    accentColor = '#f472b6';      // Pink
+    fogColor = '#0a0a0f';         // Dark
   } else if (confidence < 0.4) {
-    palette = COLOR_PALETTES.lowConfidence;
+    ambientColor = '#7c3aed';     // Bright purple
+    mainColor = '#f59e0b';        // Orange (uncertainty)
+    accentColor = '#ef4444';      // Red (warning)
+    fogColor = '#1a0a0f';         // Dark red
   }
 
   // Base intensities
@@ -121,19 +97,19 @@ function calculateLightingState(
   const fogDensity = 0.02 + (entropy * 0.03);
   
   // Fog color shifts with confidence
-  const fogColor = confidence < 0.3 
-    ? lerpColor(palette.fog, '#2a0a0a', 0.5)  // Red tint when uncertain
-    : palette.fog;
+  const finalFogColor = confidence < 0.3 
+    ? '#2a0a0a'  // Red tint when uncertain
+    : fogColor;
 
   return {
-    ambientColor: palette.ambient,
+    ambientColor,
     ambientIntensity,
-    mainColor: palette.main,
+    mainColor,
     mainIntensity,
-    accentColor: palette.accent,
+    accentColor,
     accentIntensity,
     fogDensity,
-    fogColor
+    fogColor: finalFogColor
   };
 }
 
@@ -147,6 +123,7 @@ export const AdaptiveLighting: React.FC<AdaptiveLightingProps> = ({
   const mainRef = useRef<THREE.PointLight>(null);
   const accentRef = useRef<THREE.PointLight>(null);
   const rimRef = useRef<THREE.DirectionalLight>(null);
+  const { scene } = useThree();
   
   // Calculate target lighting state
   const targetState = useMemo(() => 
@@ -163,10 +140,12 @@ export const AdaptiveLighting: React.FC<AdaptiveLightingProps> = ({
     flickerOffset: Math.random() * 100
   });
 
-  // Update fog on mount and when state changes
+  // Update fog on mount
   useEffect(() => {
-    // This runs in the React lifecycle, safe for scene access
-  }, [targetState.fogColor, targetState.fogDensity]);
+    if (scene.fog instanceof THREE.FogExp2) {
+      scene.fog.color.set(targetState.fogColor);
+    }
+  }, [scene.fog, targetState.fogColor]);
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
@@ -226,8 +205,7 @@ export const AdaptiveLighting: React.FC<AdaptiveLightingProps> = ({
     }
     
     // Update fog
-    const scene = state.scene;
-    if (scene.fog && scene.fog instanceof THREE.FogExp2) {
+    if (scene.fog instanceof THREE.FogExp2) {
       scene.fog.density = currentState.current.fogDensity;
       scene.fog.color.set(targetState.fogColor);
     }

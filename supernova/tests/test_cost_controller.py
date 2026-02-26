@@ -176,11 +176,7 @@ class TestBudgetAwareRouting:
 
     @pytest.fixture
     def router(self, mock_llm, cost_controller):
-        import sys, os
-        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        if root not in sys.path:
-            sys.path.insert(0, root)
-        from dynamic_router import DynamicModelRouter
+        from supernova.core.reasoning.dynamic_router import DynamicModelRouter
         return DynamicModelRouter(
             litellm_router=mock_llm,
             cost_controller=cost_controller,

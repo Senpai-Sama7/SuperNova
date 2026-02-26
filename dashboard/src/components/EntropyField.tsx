@@ -9,7 +9,7 @@
  * @author Phase 5 - Adaptive Atmosphere
  */
 
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -155,9 +155,15 @@ export const EntropyField: React.FC<EntropyFieldProps> = ({
     if (!pointsRef.current || !visible) return;
     
     const time = state.clock.elapsedTime;
-    const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
-    const colors = pointsRef.current.geometry.attributes.color.array as Float32Array;
-    const sizes = pointsRef.current.geometry.attributes.size.array as Float32Array;
+    const positionAttr = pointsRef.current.geometry.attributes.position;
+    const colorAttr = pointsRef.current.geometry.attributes.color;
+    const sizeAttr = pointsRef.current.geometry.attributes.size;
+    
+    if (!positionAttr || !colorAttr || !sizeAttr) return;
+    
+    const positions = positionAttr.array as Float32Array;
+    const colors = colorAttr.array as Float32Array;
+    const sizes = sizeAttr.array as Float32Array;
     
     // Smooth entropy transition
     const currentEntropy = entropyRef.current;
@@ -217,9 +223,9 @@ export const EntropyField: React.FC<EntropyFieldProps> = ({
     });
     
     // Mark attributes as needing update
-    pointsRef.current.geometry.attributes.position.needsUpdate = true;
-    pointsRef.current.geometry.attributes.color.needsUpdate = true;
-    pointsRef.current.geometry.attributes.size.needsUpdate = true;
+    positionAttr.needsUpdate = true;
+    colorAttr.needsUpdate = true;
+    sizeAttr.needsUpdate = true;
     
     // Update material opacity based on entropy
     const material = pointsRef.current.material as THREE.PointsMaterial;
@@ -251,6 +257,9 @@ export const EntropyWave: React.FC<{
   ringCount?: number;
 }> = ({ entropy = 0.2, ringCount = 5 }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const [ringScales, setRingScales] = useState<number[]>(() => 
+    Array.from({ length: ringCount }, (_, i) => i + 1)
+  );
   
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -267,11 +276,9 @@ export const EntropyWave: React.FC<{
       const pulse = Math.sin(time * speed + i * 0.5) * 0.3;
       const radius = baseRadius + pulse + chaos * Math.sin(time * 2 + i);
       
-      // Update ring geometry
-      const geometry = mesh.geometry as THREE.RingGeometry;
-      // Note: RingGeometry parameters can't be changed after creation,
-      // so we use scale instead
-      mesh.scale.setScalar(radius / baseRadius);
+      // Update ring scale
+      const scale = radius / baseRadius;
+      mesh.scale.setScalar(scale);
       
       // Rotation speed increases with entropy
       mesh.rotation.z = time * (0.1 + entropy * 0.3) * (i % 2 === 0 ? 1 : -1);
@@ -282,13 +289,15 @@ export const EntropyWave: React.FC<{
     });
   });
   
+  const waveColor = getEntropyColor(entropy);
+  
   return (
     <group ref={groupRef} rotation={[Math.PI / 2, 0, 0]}>
       {Array.from({ length: ringCount }).map((_, i) => (
         <mesh key={i} position={[0, 0, i * 0.1 - ringCount * 0.05]}>
           <ringGeometry args={[(i + 1) * 3 - 0.1, (i + 1) * 3 + 0.1, 64]} />
           <meshBasicMaterial
-            color={getEntropyColor(entropy)}
+            color={waveColor}
             transparent
             opacity={0.3 - i * 0.05}
             side={THREE.DoubleSide}

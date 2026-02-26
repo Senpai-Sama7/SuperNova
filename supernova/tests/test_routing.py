@@ -2,17 +2,11 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-_root = str(Path(__file__).resolve().parents[2])
-if _root not in sys.path:
-    sys.path.insert(0, _root)
-
-from dynamic_router import (
+from supernova.core.reasoning.dynamic_router import (
     CAPABILITY_PRIORS,
     TASK_REQUIREMENTS,
     DynamicModelRouter,

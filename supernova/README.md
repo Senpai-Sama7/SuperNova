@@ -127,3 +127,50 @@ BACKUP_ENCRYPTION_KEY=your-fernet-key-here
 ### Rotation Policy
 
 Automated rotation keeps 7 daily + 4 weekly + 12 monthly backups (23 total max). Older backups are deleted automatically after each daily run.
+
+## Secrets Management
+
+SuperNova includes an encrypted secrets vault for API keys and sensitive configuration.
+
+### Setup
+
+```bash
+# Initialize vault with master password
+python3 -c "
+from infrastructure.security.secrets import SecretsVault
+vault = SecretsVault()
+vault.unlock('your-master-password')
+vault.store('OPENAI_API_KEY', 'sk-...')
+print('Vault initialized')
+"
+```
+
+### Platform Keychain
+
+The master password can be stored in your OS keychain:
+- **macOS**: Keychain Access (`security` CLI)
+- **Linux**: GNOME Keyring / KDE Wallet (`secret-tool`)
+- **Windows**: Credential Manager (`cmdkey`)
+
+### Migration from Environment Variables
+
+```bash
+python3 -c "
+from infrastructure.security.secrets import SecretsVault, migrate_env_to_vault
+vault = SecretsVault()
+vault.unlock('your-master-password')
+results = migrate_env_to_vault(vault, ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY'])
+print(results)
+"
+```
+
+## Security Hardening
+
+### Secure Serialization
+Procedural memory uses HMAC-SHA256 signed pickle with a restricted unpickler that only allows `langgraph.*`, `langchain_core.*`, and Python builtins. Set `PICKLE_HMAC_KEY` to a strong random value in production.
+
+### Audit Logging
+All privileged operations are logged to the `audit_logs` table. Query via `GET /admin/audit-logs`.
+
+### Sandbox Hardening
+Code execution uses Docker with: `--network none`, `--read-only`, `--pids-limit 64`, `--tmpfs /tmp`, `--security-opt no-new-privileges`, and a seccomp profile blocking dangerous syscalls. Set `CODE_SANDBOX=gvisor` for gVisor runtime isolation.

@@ -2,15 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-# context_assembly.py lives at project root
-_root = str(Path(__file__).resolve().parents[2])
-if _root not in sys.path:
-    sys.path.insert(0, _root)
-
-from context_assembly import (
+from supernova.core.reasoning.context_assembly import (
     ContextBudget,
     ContextInputs,
     assemble_context_window,

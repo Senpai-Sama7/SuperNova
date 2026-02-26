@@ -1,17 +1,15 @@
-"""Reasoning modules for SuperNova."""
+"""Package wrapper for root-level context assembly module."""
 
-from supernova.core.reasoning.context_assembly import (
+from context_assembly import (  # noqa: F401
     ContextBudget,
     ContextInputs,
     assemble_context_window,
     estimate_context_stats,
 )
-from supernova.core.reasoning.dynamic_router import DynamicModelRouter
 
 __all__ = [
     "ContextBudget",
     "ContextInputs",
     "assemble_context_window",
     "estimate_context_stats",
-    "DynamicModelRouter",
 ]

@@ -64,13 +64,7 @@ def tool_registry():
 @pytest.fixture
 def interrupt_coordinator():
     """Fresh InterruptCoordinator with mock broadcaster."""
-    import sys
-    # interrupts.py is at project root, add to path if needed
-    root = str(__import__("pathlib").Path(__file__).resolve().parents[2])
-    if root not in sys.path:
-        sys.path.insert(0, root)
-
-    from interrupts import InterruptCoordinator
+    from supernova.core.agent.interrupts import InterruptCoordinator
 
     broadcaster = AsyncMock()
     broadcaster.send = AsyncMock()

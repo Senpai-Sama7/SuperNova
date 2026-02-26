@@ -97,7 +97,8 @@ supernova/                      # Main Python package
 ├── alembic/                    # Database migrations
 │   ├── env.py
 │   └── versions/
-│       └── 23aa65fd8071_initial_schema.py
+│       ├── 23aa65fd8071_initial_schema.py
+│       └── b7c3e9f12a45_audit_logs.py
 │
 ├── api/                        # FastAPI application layer
 │   ├── __init__.py
@@ -133,6 +134,11 @@ supernova/                      # Main Python package
 │   │   ├── __init__.py
 │   │   ├── cost_controller.py      # Redis-backed cost tracking + budget enforcement
 │   │   └── ollama_client.py        # Async Ollama client for local LLM fallback
+│   ├── security/               # Security infrastructure
+│   │   ├── __init__.py
+│   │   ├── serializer.py       # HMAC-signed pickle with restricted unpickler
+│   │   ├── secrets.py          # AES-256-GCM vault + platform keychain
+│   │   └── audit.py            # @audit_log decorator + query_audit_logs
 │   ├── storage/                # Database connections
 │   │   ├── __init__.py
 │   │   ├── postgres.py         # PostgreSQL connection pool
@@ -141,7 +147,7 @@ supernova/                      # Main Python package
 │       ├── __init__.py
 │       ├── builtin/            # Built-in tools
 │       │   ├── __init__.py
-│       │   ├── code_exec.py    # Code execution sandbox (Docker + subprocess fallback)
+│       │   ├── code_exec.py    # Hardened sandbox (Docker/gVisor + seccomp + resource limits)
 │       │   ├── file_ops.py     # File operations (path jail to ./workspace/)
 │       │   └── web_search.py   # Web search (Tavily/SerpAPI)
 │       └── registry.py         # Tool registry (capability-gated)
@@ -181,7 +187,8 @@ supernova/                      # Main Python package
 │   ├── test_websockets.py
 │   ├── test_workers.py
 │   ├── test_cost_controller.py    # Cost tracking, budget routing, Ollama client tests
-│   └── test_backup.py             # Backup manager, worker, export/import, CLI tests
+│   ├── test_backup.py             # Backup manager, worker, export/import, CLI tests
+│   └── test_security.py           # Serializer, secrets vault, audit logging, sandbox tests
 │
 ├── workers/                    # Celery background workers
 │   ├── __init__.py

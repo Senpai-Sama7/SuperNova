@@ -7,6 +7,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any
 
+import litellm
 from fastapi import Depends, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,8 +15,33 @@ from pydantic import BaseModel
 from supernova.api.auth import create_access_token, get_current_user, verify_token
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
-from supernova.api.routes.mcp_routes import router as mcp_router
+from supernova.api.routes.mcp_routes import (
+    router as mcp_router,
+    set_mcp_client,
+    set_skill_loader,
+)
 from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
+from supernova.config import get_settings
+from supernova.core.memory import EpisodicMemoryStore, SemanticMemoryStore, get_working_memory_store
+from supernova.core.memory.procedural import ProceduralMemoryStore
+from supernova.core.reasoning.dynamic_router import DynamicModelRouter
+from supernova.infrastructure.llm.cost_controller import CostController
+from supernova.infrastructure.storage import (
+    close_postgres_pool,
+    close_redis_client,
+    get_postgres_pool,
+    get_redis_client,
+)
+from supernova.infrastructure.tools.builtin import (
+    create_code_exec_tool,
+    create_file_read_tool,
+    create_file_write_tool,
+    create_web_search_tool,
+)
+from supernova.infrastructure.tools.registry import Capability, ToolRegistry
+from supernova.mcp.client.mcp_client import MCPClient
+from supernova.mcp.tools.mcp_tool_bridge import bridge_mcp_tools
+from supernova.skills.loader import SkillLoader
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +49,203 @@ logger = logging.getLogger(__name__)
 _state: dict[str, Any] = {}
 
 
+class _LiteLLMClientAdapter:
+    """Minimal adapter that satisfies DynamicModelRouter's LiteLLM interface."""
+
+    async def acompletion(self, **kwargs: Any) -> Any:
+        return await litellm.acompletion(**kwargs)
+
+
+async def _initialize_runtime_state() -> None:
+    """Best-effort runtime component initialization for graph execution."""
+    settings = get_settings()
+    _state["settings"] = settings
+
+    # Core storage clients
+    pool = None
+    redis_client = None
+    try:
+        pool = await get_postgres_pool()
+        _state["pool"] = pool
+    except Exception as exc:
+        logger.warning("Postgres pool unavailable during startup: %s", exc)
+
+    try:
+        redis_client = await get_redis_client()
+        _state["redis"] = redis_client
+    except Exception as exc:
+        logger.warning("Redis client unavailable during startup: %s", exc)
+
+    # Memory stores
+    if pool:
+        try:
+            semantic_store = SemanticMemoryStore(pool=pool, redis=redis_client)
+            _state["semantic_store"] = semantic_store
+        except Exception as exc:
+            logger.warning("Semantic store initialization failed: %s", exc)
+
+        try:
+            async def _embedder(text: str) -> list[float]:
+                semantic = _state.get("semantic_store")
+                if semantic is None:
+                    return []
+                return await semantic.embed(text)
+
+            procedural_store = ProceduralMemoryStore(
+                pool=pool.get_pool(),
+                embedder=_embedder,
+                hmac_key=settings.security.pickle_hmac_key,
+            )
+            await procedural_store.initialize_schema()
+            _state["procedural_store"] = procedural_store
+        except Exception as exc:
+            logger.warning("Procedural store initialization failed: %s", exc)
+
+    try:
+        _state["working_memory_store"] = await get_working_memory_store()
+    except Exception as exc:
+        logger.warning("Working memory store initialization failed: %s", exc)
+
+    try:
+        episodic_store = EpisodicMemoryStore(
+            neo4j_uri=settings.neo4j.uri,
+            neo4j_password=settings.neo4j.password,
+            neo4j_user=settings.neo4j.user,
+        )
+        _state["episodic_store"] = episodic_store
+    except Exception as exc:
+        logger.warning("Episodic store initialization failed: %s", exc)
+
+    # Tool registry and built-ins
+    all_caps = (
+        Capability.READ_FILES
+        | Capability.WRITE_FILES
+        | Capability.EXECUTE_CODE
+        | Capability.WEB_SEARCH
+        | Capability.WEB_BROWSE
+        | Capability.SEND_EMAIL
+        | Capability.SHELL_ACCESS
+        | Capability.EXTERNAL_API
+    )
+    registry = ToolRegistry(granted_capabilities=all_caps, pool=pool)
+    for factory in (
+        create_file_read_tool,
+        create_file_write_tool,
+        create_code_exec_tool,
+        create_web_search_tool,
+    ):
+        try:
+            registry.register(factory())
+        except Exception as exc:
+            logger.warning("Built-in tool registration failed for %s: %s", factory.__name__, exc)
+    _state["tool_registry"] = registry
+
+    # MCP client + bridged tools
+    mcp_client = MCPClient()
+    try:
+        configs = mcp_client.load_config(settings.mcp.config_path)
+        for cfg in configs:
+            await mcp_client.start_server(cfg)
+        bridged = bridge_mcp_tools(mcp_client, await mcp_client.list_tools())
+        for tool in bridged:
+            registry.register(tool)
+        _state["mcp_client"] = mcp_client
+        set_mcp_client(mcp_client)
+    except Exception as exc:
+        logger.warning("MCP initialization failed: %s", exc)
+        await mcp_client.stop()
+
+    # Skills loader
+    try:
+        skill_loader = SkillLoader(settings.paths.skills_dir)
+        skill_loader.discover()
+        _state["skill_loader"] = skill_loader
+        set_skill_loader(skill_loader)
+    except Exception as exc:
+        logger.warning("Skill loader initialization failed: %s", exc)
+
+    # Router + cost controller
+    try:
+        cost_controller = None
+        if redis_client is not None:
+            cost_controller = CostController.from_settings(redis_client.get_client())
+            _state["cost_controller"] = cost_controller
+
+        model_router = DynamicModelRouter(
+            litellm_router=_LiteLLMClientAdapter(),
+            cost_controller=cost_controller,
+        )
+        await model_router.start()
+        _state["model_router"] = model_router
+    except Exception as exc:
+        logger.warning("Model router initialization failed: %s", exc)
+
+    # Compile cognitive loop graph only when hard dependencies are available
+    try:
+        from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+        from loop import build_agent_graph
+        from supernova.core.agent.interrupts import InterruptCoordinator
+
+        if pool and _state.get("episodic_store") and _state.get("semantic_store") and _state.get("procedural_store"):
+            dsn = settings.database_url.replace("postgresql+asyncpg", "postgresql")
+            checkpointer_cm = AsyncPostgresSaver.from_conn_string(dsn)
+            checkpointer = await checkpointer_cm.__aenter__()
+            await checkpointer.setup()
+
+            coordinator = InterruptCoordinator(websocket_broadcaster=_state.get("broadcaster"))
+            _state["interrupt_coordinator"] = coordinator
+            mount_interrupt_router(coordinator)
+
+            graph = build_agent_graph(
+                checkpointer=checkpointer,
+                episodic_store=_state["episodic_store"],
+                semantic_store=_state["semantic_store"],
+                procedural_store=_state["procedural_store"],
+                working_memory_store=_state["working_memory_store"],
+                tool_registry=registry,
+                interrupt_coordinator=coordinator,
+                llm_router=_state["model_router"],
+                agent_identity="SuperNova",
+                enable_hitl=settings.features.hitl_interrupts,
+            )
+            _state["agent_graph"] = graph
+            _state["checkpointer_cm"] = checkpointer_cm
+    except Exception as exc:
+        logger.warning("Agent graph initialization skipped: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and tear down shared resources."""
     logger.info("SuperNova gateway starting up")
     _state["broadcaster"] = WebSocketBroadcaster()
-    # These will be initialized when infrastructure is available:
-    # _state["pool"] = await get_postgres_pool()
-    # _state["redis"] = await get_redis_client()
-    # _state["agent_graph"] = compiled_graph
+    await _initialize_runtime_state()
     yield
+
+    # Stop background services before tearing down clients.
+    model_router = _state.get("model_router")
+    if model_router:
+        try:
+            await model_router.stop()
+        except Exception as exc:
+            logger.warning("Failed stopping model router: %s", exc)
+
+    mcp_client = _state.get("mcp_client")
+    if mcp_client:
+        try:
+            await mcp_client.stop()
+        except Exception as exc:
+            logger.warning("Failed stopping MCP client: %s", exc)
+
+    checkpointer_cm = _state.get("checkpointer_cm")
+    if checkpointer_cm is not None:
+        try:
+            await checkpointer_cm.__aexit__(None, None, None)
+        except Exception as exc:
+            logger.warning("Failed closing checkpointer context: %s", exc)
+
+    await close_postgres_pool()
+    await close_redis_client()
     logger.info("SuperNova gateway shutting down")
     _state.clear()
 
@@ -158,6 +371,22 @@ async def get_cost_summary() -> dict[str, Any]:
     return await cc.get_spend_summary()
 
 
+@app.get("/admin/audit-logs")
+async def get_audit_logs(
+    user_id: str = Depends(get_current_user),
+    action: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    """Return paginated audit log entries."""
+    from supernova.infrastructure.security.audit import query_audit_logs
+    pool = _state.get("db_pool")
+    if not pool:
+        return {"entries": [], "note": "Database not initialized"}
+    entries = await query_audit_logs(pool, user_id=user_id, action=action, limit=limit, offset=offset)
+    return {"entries": entries, "total_returned": len(entries)}
+
+
 # ── Memory Export/Import ──────────────────────────────────────────────────────
 
 @app.get("/memory/export")
@@ -226,13 +455,8 @@ async def import_memories(
 
 def mount_interrupt_router(coordinator: Any) -> None:
     """Mount the HITL interrupt router at /hitl."""
-    import importlib.util
-    # Import from root-level interrupts.py spec
-    spec_path = os.path.join(os.path.dirname(__file__), "..", "..", "interrupts.py")
-    if os.path.exists(spec_path):
-        spec = importlib.util.spec_from_file_location("interrupts", spec_path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        router = mod.create_interrupt_router(coordinator)
-        app.include_router(router, prefix="/hitl")
-        logger.info("HITL interrupt router mounted at /hitl")
+    from supernova.core.agent.interrupts import create_interrupt_router
+
+    router = create_interrupt_router(coordinator)
+    app.include_router(router, prefix="/hitl")
+    logger.info("HITL interrupt router mounted at /hitl")

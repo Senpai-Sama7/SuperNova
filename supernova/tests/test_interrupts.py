@@ -3,17 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import sys
-from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-_root = str(Path(__file__).resolve().parents[2])
-if _root not in sys.path:
-    sys.path.insert(0, _root)
-
-from interrupts import InterruptCoordinator, RiskLevel
+from supernova.core.agent.interrupts import InterruptCoordinator, RiskLevel
 
 
 def _make_coordinator(timeout_override=None):

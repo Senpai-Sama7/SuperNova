@@ -4,8 +4,14 @@
  * Three.js-powered immersive memory space with atmospheric lighting,
  * starfield background, and interactive navigation.
  * 
+ * Phase 5 Enhancements:
+ * - Adaptive lighting based on agent confidence state
+ * - Entropy visualization with turbulence particle field
+ * - Real-time memory update animations
+ * - State-responsive glow intensity
+ * 
  * @author 3D Graphics Engineering Team
- * @phase Phase 4 - 3D Memory Space
+ * @phase Phase 5 - Adaptive Atmosphere
  */
 
 import React, { Suspense, useMemo, useState, useEffect } from 'react';
@@ -21,6 +27,10 @@ import * as THREE from 'three';
 import { MemoryNode3D } from './MemoryNode3D';
 import { ConnectionLines3D } from './ConnectionLines3D';
 import { MemoryGraph2D } from './MemoryGraph2D';
+import { AdaptiveLighting } from './AdaptiveLighting';
+import { EntropyField, EntropyWave } from './EntropyField';
+import { MemoryNodeAnimator, MemorySpawnEffect, useMemoryAnimations } from './MemoryNodeAnimator';
+
 const styles = {
   container: 'memory-space-3d-container',
   canvas: 'memory-space-3d-canvas',
@@ -44,6 +54,22 @@ export interface MemoryNode {
   relatedIds?: string[];
 }
 
+/** Phase 5: Agent state for adaptive atmosphere */
+export interface AgentState {
+  /** Confidence level 0-1 (higher = brighter, more stable) */
+  confidence: number;
+  /** Entropy level 0-1 (higher = more chaos) */
+  entropy: number;
+  /** Current cognitive phase */
+  cognitivePhase: 'PERCEIVE' | 'REMEMBER' | 'REASON' | 'ACT' | 'REFLECT' | 'CONSOLIDATE';
+  /** Agent status */
+  agentStatus: 'active' | 'reasoning' | 'waiting' | 'idle' | 'error';
+  /** IDs of memories currently being processed */
+  activeMemoryIds?: string[];
+  /** Overall cognitive state */
+  cognitiveState?: 'focused' | 'scattered' | 'stable';
+}
+
 /** Props for MemorySpace3D component */
 interface MemorySpace3DProps {
   memories: MemoryNode[];
@@ -51,7 +77,23 @@ interface MemorySpace3DProps {
   onNodeHover?: (node: MemoryNode | null) => void;
   selectedNodeId?: string | null;
   className?: string;
+  /** Phase 5: Agent state for adaptive atmosphere */
+  agentState?: AgentState;
+  /** Phase 5: Show entropy field visualization */
+  showEntropyField?: boolean;
+  /** Phase 5: Enable real-time animations */
+  enableAnimations?: boolean;
 }
+
+/** Default agent state */
+const DEFAULT_AGENT_STATE: AgentState = {
+  confidence: 0.7,
+  entropy: 0.2,
+  cognitivePhase: 'PERCEIVE',
+  agentStatus: 'active',
+  activeMemoryIds: [],
+  cognitiveState: 'stable'
+};
 
 /** Loading indicator for 3D scene */
 const Loader: React.FC = () => {
@@ -71,12 +113,16 @@ const Loader: React.FC = () => {
   );
 };
 
-/** Atmospheric scene setup with lighting */
-const AtmosphericScene: React.FC = () => {
+/** Atmospheric scene setup with Phase 5 adaptive lighting */
+const AtmosphericScene: React.FC<{ agentState: AgentState; showEntropyField: boolean }> = ({ 
+  agentState, 
+  showEntropyField 
+}) => {
   const { scene } = useThree();
   
   // Configure fog for depth perception
   useEffect(() => {
+    // Fog color and density are now managed by AdaptiveLighting
     scene.fog = new THREE.FogExp2(0x0a0a0f, 0.03);
     return () => {
       scene.fog = null;
@@ -85,43 +131,35 @@ const AtmosphericScene: React.FC = () => {
 
   return (
     <>
-      {/* Ambient lighting - neural purple tint */}
-      <ambientLight intensity={0.3} color="#7c3aed" />
-      
-      {/* Main point light - supernova cyan */}
-      <pointLight 
-        position={[10, 10, 10]} 
-        intensity={1.5} 
-        color="#00ffd5"
-        distance={50}
-        decay={2}
+      {/* Phase 5: Adaptive lighting based on agent state */}
+      <AdaptiveLighting
+        confidence={agentState.confidence}
+        entropy={agentState.entropy}
+        cognitivePhase={agentState.cognitivePhase}
+        agentStatus={agentState.agentStatus}
       />
       
-      {/* Secondary point light - warm accent */}
-      <pointLight 
-        position={[-10, -10, -5]} 
-        intensity={0.8} 
-        color="#f472b6"
-        distance={40}
-        decay={2}
-      />
+      {/* Phase 5: Entropy field visualization */}
+      {showEntropyField && (
+        <>
+          <EntropyField 
+            entropy={agentState.entropy} 
+            particleCount={Math.floor(300 + agentState.entropy * 400)}
+            bounds={15 + agentState.entropy * 5}
+          />
+          <EntropyWave entropy={agentState.entropy} ringCount={5} />
+        </>
+      )}
       
-      {/* Rim light for edge definition */}
-      <directionalLight
-        position={[0, 10, 0]}
-        intensity={0.5}
-        color="#ffffff"
-      />
-      
-      {/* Starfield background */}
+      {/* Starfield background - reacts to entropy */}
       <Stars
         radius={100}
         depth={50}
-        count={5000}
+        count={Math.floor(5000 - agentState.entropy * 2000)} // Fewer stars when entropy is high
         factor={4}
         saturation={0.5}
         fade
-        speed={0.5}
+        speed={0.5 + agentState.entropy * 1.5} // Stars move faster with high entropy
       />
     </>
   );
@@ -146,7 +184,10 @@ export const MemorySpace3D: React.FC<MemorySpace3DProps> = ({
   onNodeClick,
   onNodeHover,
   selectedNodeId,
-  className = ''
+  className = '',
+  agentState = DEFAULT_AGENT_STATE,
+  showEntropyField = true,
+  enableAnimations = true
 }) => {
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -184,6 +225,19 @@ export const MemorySpace3D: React.FC<MemorySpace3DProps> = ({
     return conn;
   }, [memories]);
 
+  // Phase 5: Memory animation management
+  const {
+    enteringNodes,
+    exitingNodes,
+    spawnEffects,
+    completeEnter,
+    completeExit,
+    completeSpawn
+  } = useMemoryAnimations(memories, {
+    onNodeEnter: (id) => console.log('Memory entered:', id),
+    onNodeExit: (id) => console.log('Memory exited:', id)
+  });
+
   // Fallback to 2D if WebGL not supported
   if (!webglSupported) {
     return (
@@ -215,28 +269,82 @@ export const MemorySpace3D: React.FC<MemorySpace3DProps> = ({
           onCreated={() => setIsLoading(false)}
         >
           <CameraController />
-          <AtmosphericScene />
+          <AtmosphericScene agentState={agentState} showEntropyField={showEntropyField} />
           
-          {/* Memory nodes with floating animation */}
-          {memories.map(memory => (
-            <Float
-              key={memory.id}
-              speed={2}
-              rotationIntensity={0.3}
-              floatIntensity={0.5}
-              floatingRange={[-0.2, 0.2]}
-            >
+          {/* Phase 5: Spawn effects for new memories */}
+          {enableAnimations && spawnEffects.map(id => {
+            const memory = memories.find(m => m.id === id);
+            if (!memory) return null;
+            const color = memory.type === 'episodic' ? '#f472b6' : 
+                         memory.type === 'semantic' ? '#fbbf24' : '#f59e0b';
+            return (
+              <MemorySpawnEffect
+                key={`spawn-${id}`}
+                position={memory.position}
+                color={color}
+                onComplete={() => completeSpawn(id)}
+              />
+            );
+          })}
+          
+          {/* Memory nodes with floating animation and Phase 5 state responsiveness */}
+          {memories.map(memory => {
+            const isEntering = enteringNodes.has(memory.id);
+            const isExiting = exitingNodes.has(memory.id);
+            const isActive = agentState.activeMemoryIds?.includes(memory.id) ?? false;
+            
+            const nodeElement = (
               <MemoryNode3D
                 position={memory.position}
                 type={memory.type}
                 strength={memory.strength}
                 label={memory.label}
                 isSelected={memory.id === selectedNodeId}
+                confidence={agentState.confidence}
+                entropy={agentState.entropy}
+                cognitivePhase={agentState.cognitivePhase}
+                agentStatus={agentState.agentStatus}
+                isActive={isActive}
                 onClick={() => onNodeClick?.(memory)}
                 onHover={(hovered) => onNodeHover?.(hovered ? memory : null)}
               />
-            </Float>
-          ))}
+            );
+            
+            if (!enableAnimations) {
+              return (
+                <Float
+                  key={memory.id}
+                  speed={2}
+                  rotationIntensity={0.3}
+                  floatIntensity={0.5}
+                  floatingRange={[-0.2, 0.2]}
+                >
+                  {nodeElement}
+                </Float>
+              );
+            }
+            
+            return (
+              <MemoryNodeAnimator
+                key={memory.id}
+                node={memory}
+                isEntering={isEntering}
+                isExiting={isExiting}
+                cognitiveState={agentState.cognitiveState}
+                onEntryComplete={() => completeEnter(memory.id)}
+                onExitComplete={() => completeExit(memory.id)}
+              >
+                <Float
+                  speed={2}
+                  rotationIntensity={0.3}
+                  floatIntensity={0.5}
+                  floatingRange={[-0.2, 0.2]}
+                >
+                  {nodeElement}
+                </Float>
+              </MemoryNodeAnimator>
+            );
+          })}
           
           {/* Neural connections */}
           <ConnectionLines3D connections={connections} />

@@ -62,6 +62,15 @@ class ToolRegistry:
         self._pool = pool
         self._tools: dict[str, Tool] = {}
 
+    @staticmethod
+    def _coerce_capabilities(value: Capability | int | None) -> Capability:
+        """Normalize runtime capability input into a Capability flag set."""
+        if value is None:
+            return Capability(0)
+        if isinstance(value, Capability):
+            return value
+        return Capability(value)
+
     def register(self, tool: Tool) -> None:
         """Register a tool, validating its capabilities are permitted.
 
@@ -81,6 +90,7 @@ class ToolRegistry:
         arguments: dict[str, Any],
         *,
         timeout: float = 30.0,
+        granted_capabilities: Capability | int | None = None,
     ) -> Any:
         """Execute a tool with runtime capability check and timeout.
 
@@ -99,7 +109,12 @@ class ToolRegistry:
             raise KeyError(f"Tool '{name}' not registered")
 
         # Runtime re-validation
-        missing = tool.required_capabilities & ~self._granted
+        effective_caps = (
+            self._coerce_capabilities(granted_capabilities)
+            if granted_capabilities is not None
+            else self._granted
+        )
+        missing = tool.required_capabilities & ~effective_caps
         if missing:
             raise PermissionError(
                 f"Tool '{name}' requires capabilities not granted: {missing}"
@@ -135,8 +150,17 @@ class ToolRegistry:
         except Exception as e:
             logger.warning(f"Failed to log tool execution: {e}")
 
-    def get_tool_schemas(self) -> list[dict[str, Any]]:
-        """Return OpenAI-format function schemas for all permitted tools."""
+    def get_tool_schemas(
+        self,
+        *,
+        granted_capabilities: Capability | int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return OpenAI-format function schemas for permitted tools."""
+        effective_caps = (
+            self._coerce_capabilities(granted_capabilities)
+            if granted_capabilities is not None
+            else self._granted
+        )
         return [
             {
                 "type": "function",
@@ -147,6 +171,7 @@ class ToolRegistry:
                 },
             }
             for tool in self._tools.values()
+            if not (tool.required_capabilities & ~effective_caps)
         ]
 
     def get_tool(self, name: str) -> Tool | None:

@@ -11,7 +11,7 @@ from httpx import ASGITransport, AsyncClient
 def _make_app():
     from fastapi import FastAPI
 
-    from api.routes.agent import router
+    from supernova.api.routes.agent import router
     app = FastAPI()
     app.include_router(router)
     return app
@@ -24,8 +24,8 @@ async def test_post_agent_message():
     mock_pool = AsyncMock()
 
     with (
-        patch("api.routes.agent.get_working_memory_store", return_value=mock_store),
-        patch("api.routes.agent.get_postgres_pool", return_value=mock_pool),
+        patch("supernova.api.routes.agent.get_working_memory_store", return_value=mock_store),
+        patch("supernova.api.routes.agent.get_postgres_pool", return_value=mock_pool),
     ):
         app = _make_app()
         transport = ASGITransport(app=app)
@@ -44,7 +44,7 @@ async def test_post_agent_message():
 
 @pytest.mark.asyncio
 async def test_post_agent_message_existing_session():
-    from core.memory.working import WorkingMemory
+    from supernova.core.memory.working import WorkingMemory
 
     existing = WorkingMemory(session_id="s2", scratchpad="prior note")
     mock_store = AsyncMock()
@@ -52,8 +52,8 @@ async def test_post_agent_message_existing_session():
     mock_pool = AsyncMock()
 
     with (
-        patch("api.routes.agent.get_working_memory_store", return_value=mock_store),
-        patch("api.routes.agent.get_postgres_pool", return_value=mock_pool),
+        patch("supernova.api.routes.agent.get_working_memory_store", return_value=mock_store),
+        patch("supernova.api.routes.agent.get_postgres_pool", return_value=mock_pool),
     ):
         app = _make_app()
         transport = ASGITransport(app=app)

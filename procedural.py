@@ -38,12 +38,11 @@ Storage design:
     activated motor circuits).
 
 Security note:
-    pickle deserialization is a known code execution vector. The procedural
-    memory store MUST only deserialize pickles from trusted sources (your own
-    PostgreSQL instance with restricted write access). Never deserialize
-    externally-supplied skill blobs. For multi-tenant deployments, consider
-    replacing pickle with a restricted serialization format (cloudpickle with
-    a custom reducer whitelist, or Dill with restricted globals).
+    Serialization uses HMAC-SHA256 signed pickle via
+    infrastructure.security.serializer. All blobs are signed on write and
+    verified before deserialization, rejecting tampered data. A restricted
+    unpickler further limits deserializable types to langgraph/langchain
+    modules only.
 
 Performance characteristics:
     Skill retrieval:     ~1-5ms (vector ANN + postgres fetch)
@@ -58,11 +57,16 @@ import asyncio
 import hashlib
 import json
 import logging
-import pickle
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
+
+from supernova.infrastructure.security.serializer import (
+    SerializationError,
+    secure_dumps,
+    secure_loads,
+)
 
 import asyncpg
 import numpy as np
@@ -84,8 +88,9 @@ class SkillRecord:
     name:                  str
     description:           str
     trigger_conditions:    list[str]      # Natural language descriptions
-    compiled_graph_bytes:  bytes          # pickle.dumps(compiled_langgraph)
+    compiled_graph_bytes:  bytes          # HMAC-signed serialized graph
     trigger_embedding:     list[float]    # Embedding of trigger_conditions
+    hmac_key:              str   = ""     # HMAC key for verification
     invocation_count:      int   = 0
     avg_performance_score: float = 0.0
     created_at:            str   = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -93,8 +98,8 @@ class SkillRecord:
 
     @property
     def compiled_graph(self) -> Any:
-        """Deserialize the compiled graph. See security note in module docstring."""
-        return pickle.loads(self.compiled_graph_bytes)
+        """Deserialize the compiled graph with HMAC verification."""
+        return secure_loads(self.compiled_graph_bytes, self.hmac_key)
 
 
 @dataclass
@@ -130,10 +135,12 @@ class ProceduralMemoryStore:
         pool: asyncpg.Pool,
         embedder: Callable[[str], Any],   # async callable: str -> list[float]
         confidence_threshold: float = CONFIDENCE_THRESHOLD,
+        hmac_key: str = "dev-hmac-key",
     ) -> None:
         self.pool = pool
         self.embedder = embedder
         self.threshold = confidence_threshold
+        self._hmac_key = hmac_key
         self._cache: dict[str, SkillRecord] = {}   # In-process LRU cache
 
     async def initialize_schema(self) -> None:
@@ -186,8 +193,9 @@ class ProceduralMemoryStore:
         compiled graph reference, or computing per-condition embeddings and
         retrieving the maximum similarity.
         """
-        # Serialize the compiled graph
-        compiled_bytes = pickle.dumps(compiled_graph)
+        # Serialize the compiled graph with HMAC signing
+        hmac_key = self._hmac_key
+        compiled_bytes = secure_dumps(compiled_graph, hmac_key)
 
         # Compute embedding over all trigger conditions concatenated
         trigger_text      = " | ".join(trigger_conditions)
@@ -229,6 +237,7 @@ class ProceduralMemoryStore:
             trigger_conditions=trigger_conditions,
             compiled_graph_bytes=compiled_bytes,
             trigger_embedding=trigger_embedding,
+            hmac_key=self._hmac_key,
             invocation_count=row["invocation_count"],
             avg_performance_score=row["avg_performance_score"],
             created_at=str(row["created_at"]),
@@ -295,6 +304,7 @@ class ProceduralMemoryStore:
             trigger_conditions=json.loads(best["trigger_conditions"]),
             compiled_graph_bytes=bytes(best["compiled_graph_bytes"]),
             trigger_embedding=list(best["trigger_embedding"]) if best["trigger_embedding"] else [],
+            hmac_key=self._hmac_key,
             invocation_count=best["invocation_count"],
             avg_performance_score=best["avg_performance_score"],
             created_at=str(best["created_at"]),
