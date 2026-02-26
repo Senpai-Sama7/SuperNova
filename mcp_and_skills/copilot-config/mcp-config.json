@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "kali-knowledge-base": {
+      "command": "python3",
+      "args": ["/home/donovan/kali-pack/local_kb.py", "server"],
+      "description": "Local knowledge base with project context and documentation",
+      "tools": []
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem", "/home/donovan/kali-pack"],
+      "description": "Secure filesystem access for kali-pack project",
+      "tools": []
+    }
+  }
+}

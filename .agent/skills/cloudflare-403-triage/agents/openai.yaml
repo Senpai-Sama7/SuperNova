@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cloudflare 403 Triage"
+  short_description: "Triage Cloudflare 403 'Just a moment' errors"
+  default_prompt: "Diagnose a 403 Forbidden Cloudflare 'Just a moment...' page in a browser or app. Determine whether the request is to a private web endpoint (e.g., chatgpt.com/backend-api) and fix by using supported official APIs or changing configuration. Do not provide instructions to bypass security challenges. Provide concrete next steps and, when code is involved, make and test the patch."

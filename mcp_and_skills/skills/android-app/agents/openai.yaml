@@ -1,0 +1,4 @@
+interface:
+  display_name: "Android App"
+  short_description: "Build Android apps (Compose, Gradle, testing)"
+  default_prompt: "Build or modify Android apps using modern Android guidance: Android Studio + Gradle, Jetpack Compose UI, architecture (UI/data layers, repositories), testing, performance, and quality checks. When curriculum slide decks are provided, map tasks to the relevant lesson(s) and cite lesson + slide numbers by extracting slide text/notes. Prefer official Android developer docs as the source of truth; avoid deprecated patterns."

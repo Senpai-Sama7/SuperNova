@@ -1,0 +1,55 @@
+{
+  "LOG": false,
+  "LOG_LEVEL": "debug",
+  "CLAUDE_PATH": "",
+  "HOST": "127.0.0.1",
+  "PORT": 3456,
+  "APIKEY": "",
+  "API_TIMEOUT_MS": "600000",
+  "PROXY_URL": "",
+  "transformers": [],
+  "Providers": [
+    {
+      "name": "openrouter",
+      "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key": "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",
+      "models": [
+        "google/gemini-2.5-pro-preview",
+        "google/gemini-3-pro-preview",
+        "openai/gpt-5.1"
+      ],
+      "transformer": {
+        "use": ["openrouter"]
+      }
+    },
+    {
+      "name": "localLLM",
+      "api_base_url": "http://localhost:1234/v1/chat/completions",
+      "api_key": "not-needed",
+      "models": [
+        "hf.co/mradermacher/DeepSeek-R1-Distill-n-7B-Uncensored-i1-GGUF:Q4_K_M",
+        "qwen/qwen3-coder-30b",
+        "openai/gpt-oss-20b"
+      ]
+    }
+  ],
+  "StatusLine": {
+    "enabled": false,
+    "currentStyle": "default",
+    "default": {
+      "modules": []
+    },
+    "powerline": {
+      "modules": []
+    }
+  },
+  "Router": {
+    "default": "localLLM,hf.co/mradermacher/DeepSeek-R1-Distill-n-7B-Uncensored-i1-GGUF:Q4_K_M",
+    "background": "localLLM,openai/gpt-oss-20b",
+    "think": "localLLM,qwen/qwen3-coder-30b",
+    "longContext": "localLLM,qwen/qwen3-coder-30b",
+    "longContextThreshold": 60000,
+    "webSearch": "localLLM,openai/gpt-oss-20b"
+  },
+  "CUSTOM_ROUTER_PATH": ""
+}

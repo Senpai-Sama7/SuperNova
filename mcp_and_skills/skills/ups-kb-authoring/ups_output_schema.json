@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Universal Prediction Systems Output",
+  "type": "object",
+  "required": [
+    "task_type",
+    "predictive_representation",
+    "prediction_summary",
+    "uncertainty",
+    "calibration",
+    "decision",
+    "robustness",
+    "monitoring",
+    "assumptions",
+    "data_needed",
+    "deferral"
+  ],
+  "properties": {
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "regression",
+        "classification",
+        "time_series",
+        "survival",
+        "ranking",
+        "unknown"
+      ]
+    },
+    "predictive_representation": {
+      "type": "string",
+      "enum": [
+        "distribution_parameters",
+        "quantiles",
+        "ensemble_samples",
+        "set_valued"
+      ]
+    },
+    "prediction_summary": {
+      "type": "object",
+      "properties": {
+        "point_estimate": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ],
+          "description": "Median/mean if available; may be null if not meaningful."
+        },
+        "distribution": {
+          "type": "object",
+          "description": "Optional parametric distribution parameters.",
+          "properties": {
+            "family": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "params": {
+              "type": [
+                "object",
+                "null"
+              ]
+            }
+          }
+        },
+        "quantiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "alpha",
+              "value"
+            ],
+            "properties": {
+              "alpha": {
+                "type": "number"
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          }
+        },
+        "prediction_interval": {
+          "type": "object",
+          "properties": {
+            "coverage": {
+              "type": "number"
+            },
+            "lower": {
+              "type": [
+                "number",
+                "string",
+                "null"
+              ]
+            },
+            "upper": {
+              "type": [
+                "number",
+                "string",
+                "null"
+              ]
+            },
+            "method": {
+              "type": "string"
+            }
+          }
+        },
+        "classification_probs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "prob"
+            ],
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "prob": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "uncertainty": {
+      "type": "object",
+      "required": [
+        "epistemic",
+        "aleatoric",
+        "total",
+        "notes"
+      ],
+      "properties": {
+        "epistemic": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "aleatoric": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "total": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "calibration": {
+      "type": "object",
+      "required": [
+        "status",
+        "methods",
+        "coverage_target",
+        "notes"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_evaluated",
+            "calibrated",
+            "likely_overconfident",
+            "likely_underconfident",
+            "unknown"
+          ]
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "coverage_target": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "recommended_action",
+        "expected_utility_notes",
+        "risk_adjusted_notes"
+      ],
+      "properties": {
+        "recommended_action": {
+          "type": "string"
+        },
+        "expected_utility_notes": {
+          "type": "string"
+        },
+        "risk_adjusted_notes": {
+          "type": "string"
+        },
+        "threshold_rule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "robustness": {
+      "type": "object",
+      "required": [
+        "shift_risks",
+        "mitigations"
+      ],
+      "properties": {
+        "shift_risks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mitigations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "required": [
+        "metrics",
+        "retrain_triggers"
+      ],
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "retrain_triggers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "data_needed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "deferral": {
+      "type": "object",
+      "required": [
+        "defer",
+        "reason",
+        "confidence_estimate"
+      ],
+      "properties": {
+        "defer": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "confidence_estimate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "next_step": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

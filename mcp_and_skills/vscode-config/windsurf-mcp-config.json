@@ -1,0 +1,109 @@
+{
+  "mcpServers": {
+    "deepwiki": {
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.deepwiki.com/mcp"
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {}
+    },
+    "fetch": {
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "command": "uvx",
+      "disabled": false,
+      "env": {}
+    },
+    "filesystem": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        ""
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {}
+    },
+    "github-mcp-server": {
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "command": "docker",
+      "disabled": false,
+      "disabledTools": [],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
+      }
+    },
+    "mcp-playwright": {
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {}
+    },
+    "memory": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {
+        "MEMORY_FILE_PATH": ""
+      }
+    },
+    "pinecone-mcp-server": {
+      "args": [
+        "-y",
+        "@pinecone-database/mcp"
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {
+        "PINECONE_API_KEY": "pcsk_2vYPNb_FdKfqKANxZEt6wLHsjhjwq6FTJ6Y4EvDN6edFAyspVF1WxYxsTSxyreqwAUSQYn"
+      }
+    },
+    "postgresql": {
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "mcp/postgres",
+        "postgresql://donovan:houston@localhost:5432/chatbot"
+      ],
+      "command": "docker",
+      "disabled": false,
+      "env": {}
+    },
+    "puppeteer": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {}
+    },
+    "sequential-thinking": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "command": "npx",
+      "disabled": false,
+      "env": {}
+    }
+  }
+}

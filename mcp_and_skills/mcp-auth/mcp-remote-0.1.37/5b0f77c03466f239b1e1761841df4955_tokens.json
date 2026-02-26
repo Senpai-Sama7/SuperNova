@@ -1,0 +1,7 @@
+{
+  "refresh_token": "9GfXW11Gr-lytGpELGNmtBHyaND7KNSDQdYJ03BwwTI.i91T31qO3jqjelVOOzj0jGgSQ1cOMYeHvUayofmPhtc",
+  "access_token": "2YfryItf0--BU46cCp8su-Gp7fHVLAoK4V3sW6V8xEk.VhvGD4K-PUa7NxOireAXUVJnEeJqT9t9hiBS78wZqIs",
+  "token_type": "bearer",
+  "expires_in": 3599,
+  "scope": "read write *"
+}

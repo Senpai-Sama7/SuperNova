@@ -1,0 +1,4 @@
+interface:
+  display_name: "Android ILC Curriculum"
+  short_description: "Work with Android ILC PPTX curriculum"
+  default_prompt: "Use the Android Instructor-Led Curriculum zip of PPTX slides to extract lesson outlines, speaker notes, agendas, quizzes, and lab plans. Prefer running the bundled scripts to index the zip and extract slide text/notes. Keep the skill self-contained: do not copy large PPTX assets into the skill; instead operate on the zip path provided by the user. Output concrete artifacts (agenda, lesson plan, quiz) with references to lesson numbers and slide ranges."

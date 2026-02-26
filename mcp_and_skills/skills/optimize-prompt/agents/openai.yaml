@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optimize Prompt"
+  short_description: "Optimize prompts with eval harness"
+  default_prompt: "Optimize an existing prompt for a concrete objective. Elicit success metrics and a test set, establish a baseline, generate prompt variations, evaluate them, and produce a final prompt + prompt card + reproduction steps. Use the bundled scripts for variation generation, evaluation (via user-provided predict command), metrics, bias audit, and injection robustness checks. Keep the SKILL.md lean; load references only when needed."

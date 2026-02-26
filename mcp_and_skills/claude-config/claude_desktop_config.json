@@ -1,0 +1,63 @@
+{
+  "mcpServers": {
+    "titanium-repo-operator": {
+      "command": "uv",
+      "args": ["run", "server.py"],
+      "cwd": "/home/donovan/Titanium-MCP",
+      "disabled": false,
+      "autoStart": true
+    },
+    "spec-forge": {
+      "command": "node",
+      "args": ["--eval", "console.log('Spec Forge MCP Server - Transform requirements to specifications')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-causal-interventions": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS Causal Interventions - Estimate treatment effects P(y|do(x))')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-decision-intelligence-ui": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS Decision Intelligence UI - Dashboard with uncertainty and calibration')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-evaluation-calibration": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS Evaluation & Calibration - Probabilistic model evaluation')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-kb-authoring": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS KB Authoring - Create retrieval-friendly knowledge bases')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-predict-dashboard": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS Predict Dashboard - Prediction dashboard with calibration metrics')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-probabilistic-answering": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS Probabilistic Answering - Decision-grade probabilistic predictions')"],
+      "disabled": false,
+      "autoStart": true
+    },
+    "ups-system-blueprint-mlops": {
+      "command": "node",
+      "args": ["--eval", "console.log('UPS System Blueprint & MLOps - End-to-end prediction system architecture')"],
+      "disabled": false,
+      "autoStart": true
+    }
+  },
+  "settings": {
+    "theme": "auto",
+    "language": "en"
+  }
+}
