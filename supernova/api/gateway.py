@@ -106,16 +106,6 @@ async def _initialize_runtime_state() -> None:
     except Exception as exc:
         logger.warning("Working memory store initialization failed: %s", exc)
 
-    try:
-        episodic_store = EpisodicMemoryStore(
-            neo4j_uri=settings.neo4j.uri,
-            neo4j_password=settings.neo4j.password,
-            neo4j_user=settings.neo4j.user,
-        )
-        _state["episodic_store"] = episodic_store
-    except Exception as exc:
-        logger.warning("Episodic store initialization failed: %s", exc)
-
     # Tool registry and built-ins
     all_caps = (
         Capability.READ_FILES
@@ -186,7 +176,14 @@ async def _initialize_runtime_state() -> None:
         from loop import build_agent_graph
         from supernova.core.agent.interrupts import InterruptCoordinator
 
-        if pool and _state.get("episodic_store") and _state.get("semantic_store") and _state.get("procedural_store"):
+        if pool and _state.get("semantic_store") and _state.get("procedural_store"):
+            episodic_store = EpisodicMemoryStore(
+                neo4j_uri=settings.neo4j.uri,
+                neo4j_password=settings.neo4j.password,
+                neo4j_user=settings.neo4j.user,
+            )
+            _state["episodic_store"] = episodic_store
+
             dsn = settings.database_url.replace("postgresql+asyncpg", "postgresql")
             checkpointer_cm = AsyncPostgresSaver.from_conn_string(dsn)
             checkpointer = await checkpointer_cm.__aenter__()
@@ -236,6 +233,13 @@ async def lifespan(app: FastAPI):
             await mcp_client.stop()
         except Exception as exc:
             logger.warning("Failed stopping MCP client: %s", exc)
+
+    episodic_store = _state.get("episodic_store")
+    if episodic_store:
+        try:
+            await episodic_store.close()
+        except Exception as exc:
+            logger.warning("Failed closing episodic store: %s", exc)
 
     checkpointer_cm = _state.get("checkpointer_cm")
     if checkpointer_cm is not None:
@@ -359,7 +363,7 @@ async def get_fleet_summary() -> dict[str, Any]:
     router = _state.get("model_router")
     if not router:
         return {"models": [], "note": "Router not initialized"}
-    return router.get_fleet_summary()
+    return {"models": router.get_fleet_summary()}
 
 
 @app.get("/admin/costs")

@@ -9,7 +9,7 @@
  * @author Phase 5 - Adaptive Atmosphere
  */
 
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -257,9 +257,7 @@ export const EntropyWave: React.FC<{
   ringCount?: number;
 }> = ({ entropy = 0.2, ringCount = 5 }) => {
   const groupRef = useRef<THREE.Group>(null);
-  const [ringScales, setRingScales] = useState<number[]>(() => 
-    Array.from({ length: ringCount }, (_, i) => i + 1)
-  );
+  // Ring scales are computed from ring index, no need to track
   
   useFrame((state) => {
     if (!groupRef.current) return;

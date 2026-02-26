@@ -98,7 +98,7 @@ export const MemorySpace3DDemo: React.FC = () => {
         phaseIndex = (phaseIndex + 1) % phases.length;
         setAgentState(prev => ({
           ...prev,
-          cognitivePhase: phases[phaseIndex]
+          cognitivePhase: phases[phaseIndex] ?? 'PERCEIVE'
         }));
       }, 3000);
     } else {
@@ -123,7 +123,7 @@ export const MemorySpace3DDemo: React.FC = () => {
   // Phase 5: Add a new memory with animation
   const addMemory = useCallback(() => {
     const types: Array<'episodic' | 'semantic' | 'procedural'> = ['episodic', 'semantic', 'procedural'];
-    const type = types[Math.floor(Math.random() * 3)];
+    const type = types[Math.floor(Math.random() * 3)] ?? 'episodic';
     const angle = Math.random() * Math.PI * 2;
     const height = (Math.random() - 0.5) * 8;
     const radius = 3 + Math.random() * 4;
@@ -163,6 +163,7 @@ export const MemorySpace3DDemo: React.FC = () => {
   const removeMemory = useCallback(() => {
     if (memories.length === 0) return;
     const toRemove = memories[Math.floor(Math.random() * memories.length)];
+    if (!toRemove) return;
     setMemories(prev => prev.filter(m => m.id !== toRemove.id));
   }, [memories]);
   
@@ -257,7 +258,10 @@ export const MemorySpace3DDemo: React.FC = () => {
             </label>
             <select
               value={agentState.cognitivePhase}
-              onChange={(e) => setAgentState(prev => ({ ...prev, cognitivePhase: e.target.value as AgentState['cognitivePhase'] }))}
+              onChange={(e) => setAgentState(prev => ({ 
+                ...prev, 
+                cognitivePhase: e.target.value as AgentState['cognitivePhase']
+              }))}
               style={{
                 background: 'rgba(0, 0, 0, 0.5)',
                 border: `1px solid ${getPhaseColor(agentState.cognitivePhase)}`,
@@ -729,10 +733,10 @@ export const MemorySpace3DDemo: React.FC = () => {
 };
 
 // Memory type visuals for sidebar
-const MEMORY_VISUALS = {
+const MEMORY_VISUALS: Record<'episodic' | 'semantic' | 'procedural', { color: string }> = {
   episodic: { color: '#f472b6' },
   semantic: { color: '#fbbf24' },
   procedural: { color: '#f59e0b' }
-} as const;
+};
 
 export default MemorySpace3DDemo;

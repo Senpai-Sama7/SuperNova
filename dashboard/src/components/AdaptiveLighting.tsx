@@ -86,8 +86,8 @@ function calculateLightingState(
   
   // Apply phase modifier
   const phaseMod = phase ? PHASE_MODIFIERS[phase] : { intensity: 1, hue: 0 };
-  ambientIntensity *= phaseMod.intensity;
-  mainIntensity *= phaseMod.intensity;
+  ambientIntensity *= phaseMod?.intensity ?? 1;
+  mainIntensity *= phaseMod?.intensity ?? 1;
   
   // Entropy affects stability (higher entropy = more variation)
   const entropyVariation = 1 + (entropy * 0.5);

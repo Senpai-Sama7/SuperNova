@@ -245,13 +245,16 @@ export const MemorySpawnEffect: React.FC<{
   const frameCount = useRef(0);
   
   const particleCount = 20;
-  const velocities = useRef(
-    Array.from({ length: particleCount }, () => ({
+  const velocities = useRef<{x: number; y: number; z: number}[]>([]);
+  
+  // Initialize velocities on first render
+  if (velocities.current.length === 0) {
+    velocities.current = Array.from({ length: particleCount }, () => ({
       x: (Math.random() - 0.5) * 0.3,
       y: (Math.random() - 0.5) * 0.3,
       z: (Math.random() - 0.5) * 0.3
-    }))
-  );
+    }));
+  }
   
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
@@ -278,20 +281,25 @@ export const MemorySpawnEffect: React.FC<{
     let stillMoving = false;
     
     for (let i = 0; i < particleCount; i++) {
+      const velocity = velocities.current[i];
+      if (!velocity) continue;
+      
+      const idx = i * 3;
+      // Safety check for array bounds
+      if (idx + 2 >= positions.length) continue;
+      
       // Update position
-      positions[i * 3] += velocities.current[i].x;
-      positions[i * 3 + 1] += velocities.current[i].y;
-      positions[i * 3 + 2] += velocities.current[i].z;
+      positions[idx] = (positions[idx] ?? 0) + velocity.x;
+      positions[idx + 1] = (positions[idx + 1] ?? 0) + velocity.y;
+      positions[idx + 2] = (positions[idx + 2] ?? 0) + velocity.z;
       
       // Slow down with friction
-      velocities.current[i].x *= 0.92;
-      velocities.current[i].y *= 0.92;
-      velocities.current[i].z *= 0.92;
+      velocity.x *= 0.92;
+      velocity.y *= 0.92;
+      velocity.z *= 0.92;
       
       // Check if still moving
-      const speed = Math.abs(velocities.current[i].x) + 
-                    Math.abs(velocities.current[i].y) + 
-                    Math.abs(velocities.current[i].z);
+      const speed = Math.abs(velocity.x) + Math.abs(velocity.y) + Math.abs(velocity.z);
       if (speed > 0.005) stillMoving = true;
     }
     
