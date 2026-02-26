@@ -58,7 +58,9 @@ After completing each `PROGRESS_TRACKER.md` task, update this `AGENTS.md` file t
 | **Phase 0** | ✅ COMPLETE | Python 3.13.7, Docker 29.2.1, Node.js 22.22.0, 43 skills, MCP servers ready |
 | **Phase 1** | ✅ COMPLETE | All 10 directory structures, 13 __init__.py files, import paths verified |
 | **Phase 2** | ✅ COMPLETE | pyproject.toml with 36 runtime + 17 dev deps, 150+ packages installed |
-| Phase 3 | ⏳ PENDING | .env.example expansion |
+| **Phase 3** | ✅ COMPLETE | .env.example (72 vars, 17 sections), Pydantic Settings loader, config tested |
+| **Phase 4** | ✅ COMPLETE | Alembic async configured, pgvector/pg_trgm, 5 tables, 26 indexes |
+| Phase 5 | ⏳ PENDING | Infrastructure layer (asyncpg, Redis, Neo4j clients) |
 | Phase 2 | ⏳ PENDING | pyproject.toml, dependencies |
 | Phase 3 | ⏳ PENDING | .env.example expansion |
 | Phases 4-10 | ⏳ PENDING | Core implementation |

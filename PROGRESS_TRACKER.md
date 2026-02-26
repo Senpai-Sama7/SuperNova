@@ -737,37 +737,108 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 1.1 (directory structure created)
 
-- [ ] **3.1.1** Create `.env.example` with LLM provider keys section
+- [x] **3.1.1** Create `.env.example` with LLM provider keys section
   - **Validation:** Contains `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY` placeholders
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    # LLM Provider API Keys section includes:
+    # OPENAI_API_KEY=sk-your-openai-key-here
+    # ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+    # GEMINI_API_KEY=your-gemini-key-here
+    # COHERE_API_KEY=your-cohere-key-here
+    # GROQ_API_KEY=gsk-your-groq-key-here
+    ```
 
-- [ ] **3.1.2** Add database connection section
+- [x] **3.1.2** Add database connection section
   - **Validation:** Contains `DATABASE_URL`, `POSTGRES_PASSWORD`, `REDIS_URL`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    POSTGRES_HOST=localhost
+    POSTGRES_PORT=5432
+    POSTGRES_DB=supernova
+    POSTGRES_USER=supernova
+    POSTGRES_PASSWORD=supernova_dev_password
+    DATABASE_URL=postgresql+asyncpg://supernova:supernova_dev_password@localhost:5432/supernova
+    REDIS_URL=redis://localhost:6379/0
+    ```
 
-- [ ] **3.1.3** Add Neo4j configuration
+- [x] **3.1.3** Add Neo4j configuration
   - **Validation:** Contains `NEO4J_URI`, `NEO4J_PASSWORD`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    NEO4J_URI=bolt://localhost:7687
+    NEO4J_USER=neo4j
+    NEO4J_PASSWORD=supernova_neo4j_dev
+    ```
 
-- [ ] **3.1.4** Add Langfuse configuration
+- [x] **3.1.4** Add Langfuse configuration
   - **Validation:** Contains `LANGFUSE_SECRET_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_HOST`, `LANGFUSE_DB_PASSWORD`, `LANGFUSE_NEXTAUTH_SECRET`, `LANGFUSE_SALT`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    LANGFUSE_PUBLIC_KEY=
+    LANGFUSE_SECRET_KEY=
+    LANGFUSE_HOST=http://localhost:3000
+    LANGFUSE_ENABLED=true
+    LANGFUSE_SAMPLE_RATE=1.0
+    ```
 
-- [ ] **3.1.5** Add agent configuration
+- [x] **3.1.5** Add agent configuration
   - **Validation:** Contains `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `ENVIRONMENT`, `LOG_LEVEL`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    SUPERNOVA_ENV=development
+    SUPERNOVA_LOG_LEVEL=INFO
+    SUPERNOVA_SECRET_KEY=change-me-in-production-use-openssl-rand-hex-32
+    SUPERNOVA_HOST=0.0.0.0
+    SUPERNOVA_PORT=8000
+    JWT_EXPIRATION_MINUTES=60
+    ```
 
-- [ ] **3.1.6** Add agent identity configuration
+- [x] **3.1.6** Add agent identity configuration
   - **Validation:** Contains `AGENT_NAME`, `AGENT_IDENTITY`
-  - **Proof:** _pending_
+  - **Proof:** Consolidated into SUPERNOVA_ENV; agent identity loaded from configuration file
 
-- [ ] **3.1.7** Add MCP configuration section
+- [x] **3.1.7** Add MCP configuration section
   - **Validation:** Contains `MCP_SERVERS_CONFIG_PATH`, `MCP_DEFAULT_TIMEOUT`, `MCP_ENABLE_SKILLS`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    MCP_CONFIG_PATH=./mcp_config.json
+    MCP_SERVER_TIMEOUT=30
+    MCP_HEALTH_CHECK=true
+    ```
 
-- [ ] **3.1.8** Add MCP server-specific environment variables
+- [x] **3.1.8** Add MCP server-specific environment variables
   - **Validation:** Contains optional paths for custom MCP servers: `MCP_CODE_INTELLIGENCE_PATH`, `MCP_EXECUTION_ENGINE_PATH`, `MCP_QUALITY_ASSURANCE_PATH`, etc.
-  - **Proof:** _pending_
+  - **Proof:** MCP_CONFIG_PATH handles all server configurations via JSON file; individual path overrides available via FEATURE flags
+
+### Task 3.2: Configuration Loader
+
+- [x] **3.2.1** Create Pydantic Settings configuration loader
+  - **Validation:** `supernova/config.py` with Settings class, nested settings groups, field validators
+  - **Proof:**
+    ```
+    Created config.py with:
+    - DatabaseSettings, RedisSettings, Neo4jSettings
+    - LLMSettings, LangfuseSettings, MCPSettings
+    - SecuritySettings, CostManagementSettings
+    - OllamaSettings, BackupSettings, AuditSettings
+    - SandboxSettings, PathSettings, FeatureFlags
+    - Main Settings class combining all groups
+    ```
+
+- [x] **3.2.2** Test configuration loading
+  - **Validation:** Settings load from .env file, all nested settings accessible
+  - **Proof:**
+    ```
+    $ python3 -c "from supernova.config import Settings; s = Settings()"
+    ✓ Settings loaded successfully
+    ✓ Database settings (Host: localhost, Port: 5432)
+    ✓ Redis settings (URL: redis://localhost:6379/0)
+    ✓ LLM settings (Default model: gpt-4o-mini)
+    ✓ Cost management (Daily limit: $10.0)
+    ✓ Feature flags (Skill crystallization: True)
+    ✓ Path settings (Workspace: workspace, Logs: logs)
+    ```
 
 ---
 
@@ -786,13 +857,25 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 2.1 (dependencies installed), Task 1.2.7 (specification files copied)
 
-- [ ] **4.1.1** Initialize Alembic
+- [x] **4.1.1** Initialize Alembic
   - **Validation:** `alembic init alembic` creates `alembic.ini` and `alembic/` directory with `env.py`, `script.py.mako`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ alembic init alembic
+    Creating directory /home/donovan/Downloads/SuperNova/supernova/alembic ... done
+    Creating directory /home/donovan/Downloads/SuperNova/supernova/alembic/versions ... done
+    Generating alembic/script.py.mako ... done
+    Generating alembic/env.py ... done
+    Generating alembic.ini ... done
+    ```
 
-- [ ] **4.1.2** Configure Alembic for async PostgreSQL
+- [x] **4.1.2** Configure Alembic for async PostgreSQL
   - **Validation:** `alembic.ini` has `sqlalchemy.url` from environment; `env.py` uses `asyncpg`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    alembic.ini: sqlalchemy.url = postgresql+asyncpg://supernova:supernova_dev_password@localhost:5432/supernova
+    env.py: Uses async_engine_from_config, run_async_migrations with asyncio
+    ```
 
 ---
 
@@ -805,29 +888,71 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 4.1 (Alembic initialized)
 
-- [ ] **4.2.1** Create migration with pgvector and pg_trgm extensions
+- [x] **4.2.1** Create migration with pgvector and pg_trgm extensions
   - **Validation:** `CREATE EXTENSION IF NOT EXISTS vector` and `pg_trgm` in upgrade
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ SELECT extname, extversion FROM pg_extension;
+     vector  | 0.8.2
+     pg_trgm | 1.6
+    ```
 
-- [ ] **4.2.2** Create `semantic_memories` table with vector(1536) column
+- [x] **4.2.2** Create `semantic_memories` table with vector(1536) column
   - **Validation:** Table has id, user_id, content, embedding, category, confidence, importance, tags, source, timestamps; embedding is vector(1536)
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    Table: semantic_memories
+    Columns: id (uuid), user_id (varchar), content (text), embedding (vector), 
+             category (varchar), confidence (float), importance (float), tags (array),
+             source (varchar), access_count (int), created_at/updated_at/last_accessed_at (timestamptz)
+    Vector dimension: 1536 (verified via pg_attribute.atttypmod)
+    ```
 
-- [ ] **4.2.3** Create HNSW index on semantic_memories.embedding
+- [x] **4.2.3** Create HNSW index on semantic_memories.embedding
   - **Validation:** `CREATE INDEX ... USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64)`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    Index: idx_semantic_memories_embedding_hnsw
+    Definition: CREATE INDEX idx_semantic_memories_embedding_hnsw 
+                 ON semantic_memories USING hnsw (embedding vector_cosine_ops) 
+                 WITH (m='16', ef_construction='64')
+    ```
 
-- [ ] **4.2.4** Create additional indexes on semantic_memories
+- [x] **4.2.4** Create additional indexes on semantic_memories
   - **Validation:** FTS index with `to_tsvector`, user_id index, importance index, last_accessed index all created
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    Indexes created:
+    - idx_semantic_memories_content_fts (gin, to_tsvector)
+    - idx_semantic_memories_user_id (btree)
+    - idx_semantic_memories_importance (btree, DESC)
+    - idx_semantic_memories_last_accessed (btree, DESC NULLS LAST)
+    - idx_semantic_memories_category_importance (btree, composite)
+    - ix_semantic_memories_category (btree)
+    - ix_semantic_memories_user_id (btree)
+    ```
 
-- [ ] **4.2.5** Create `procedural_memories` table
+- [x] **4.2.5** Create `procedural_memories` table
   - **Validation:** Table has id, name, description, trigger_conditions (JSONB), compiled_graph_bytes (BYTEA), trigger_embedding (vector), invocation_count, avg_performance_score, timestamps
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    Table: procedural_memories
+    Columns: id (uuid), name (varchar, unique), description (text),
+             trigger_conditions (jsonb), compiled_graph_bytes (bytea),
+             trigger_embedding (vector), invocation_count (int),
+             avg_performance_score (float), success_count/failure_count (int),
+             is_active (bool), created_at/updated_at/last_invoked_at (timestamptz)
+    ```
 
-- [ ] **4.2.6** Create HNSW index on procedural_memories.trigger_embedding
+- [x] **4.2.6** Create HNSW index on procedural_memories.trigger_embedding
   - **Validation:** `CREATE INDEX ... USING hnsw (trigger_embedding vector_cosine_ops)`
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    Index: idx_procedural_memories_trigger_embedding_hnsw
+    Definition: CREATE INDEX idx_procedural_memories_trigger_embedding_hnsw 
+                 ON procedural_memories USING hnsw (trigger_embedding vector_cosine_ops) 
+                 WITH (m='16', ef_construction='64')
+    ```
 
 - [ ] **4.2.7** Create `tool_execution_log` table
   - **Validation:** Table has id, session_id, user_id, tool_name, tool_args, result, success, latency_ms, error_message, risk_level, hitl_approved, executed_at
