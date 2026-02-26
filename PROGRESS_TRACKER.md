@@ -2073,19 +2073,19 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 - [x] **12.1.1** Create `core/backup/manager.py` with `BackupManager` class
   - **Validation:** Coordinates PostgreSQL, Neo4j, Redis backups
-  - **Proof: core/backup/manager.py — BackupManager class with create_backup(), restore_backup(), verify_backup(), rotate_backups(), list_backups()
+  - **Proof:** core/backup/manager.py — BackupManager class with create_backup(), restore_backup(), verify_backup(), rotate_backups(), list_backups()
 
 - [x] **12.1.2** Implement PostgreSQL backup
   - **Validation:** Uses `pg_dump` with custom format; includes schema + data
-  - **Proof: _backup_postgres() uses pg_dump --format=custom via asyncio.create_subprocess_exec
+  - **Proof:** _backup_postgres() uses pg_dump --format=custom via asyncio.create_subprocess_exec
 
 - [x] **12.1.3** Implement Neo4j backup
   - **Validation:** Uses `neo4j-admin dump`; includes temporal graph data
-  - **Proof: _backup_neo4j() uses neo4j-admin database dump with graceful fallback
+  - **Proof:** _backup_neo4j() uses neo4j-admin database dump with graceful fallback
 
 - [x] **12.1.4** Implement Redis RDB snapshot
   - **Validation:** Triggers `BGSAVE`; copies dump.rdb
-  - **Proof: _backup_redis() triggers BGSAVE and copies dump.rdb
+  - **Proof:** _backup_redis() triggers BGSAVE and copies dump.rdb
 
 - [x] **12.1.5** Add backup encryption
   - **Validation:** GPG encryption with user-provided passphrase
@@ -2102,15 +2102,15 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 - [x] **12.2.1** Create `workers/backup.py` with Celery tasks
   - **Validation:** `daily_backup()` task scheduled via RedBeat
-  - **Proof: workers/backup.py daily_backup task, RedBeat schedule at 2:30am in celery_app.py
+  - **Proof:** workers/backup.py daily_backup task, RedBeat schedule at 2:30am in celery_app.py
 
 - [x] **12.2.2** Implement backup rotation
   - **Validation:** Keeps 7 daily, 4 weekly, 12 monthly backups; deletes old ones
-  - **Proof: rotate_backups() keeps 7 daily + 4 weekly + 12 monthly = 23 max
+  - **Proof:** rotate_backups() keeps 7 daily + 4 weekly + 12 monthly = 23 max
 
 - [x] **12.2.3** Add backup verification
   - **Validation:** Test-restores backup to verify integrity
-  - **Proof: verify_backup() opens tar, checks for expected members
+  - **Proof:** verify_backup() opens tar, checks for expected members
 
 ---
 
@@ -2123,15 +2123,15 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 - [x] **12.3.1** Add S3-compatible storage support
   - **Validation:** Uploads backups to AWS S3, GCS, or MinIO; configurable endpoint
-  - **Proof: _upload_s3() via boto3, configurable endpoint for S3/GCS/MinIO
+  - **Proof:** _upload_s3() via boto3, configurable endpoint for S3/GCS/MinIO
 
 - [x] **12.3.2** Add backup download/restore from cloud
   - **Validation:** `supernova restore --from=s3://bucket/backup-file`
-  - **Proof: _download_s3() parses s3:// URI, restore_backup() handles s3:// paths
+  - **Proof:** _download_s3() parses s3:// URI, restore_backup() handles s3:// paths
 
 - [x] **12.3.3** Document cloud backup setup
   - **Validation:** Step-by-step guide for S3, GCS, Backblaze B2
-  - **Proof: README.md Cloud Backup section with S3, GCS, MinIO, B2 setup guides
+  - **Proof:** README.md Cloud Backup section with S3, GCS, MinIO, B2 setup guides
 
 ---
 
@@ -2146,23 +2146,23 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 - [x] **12.4.1** Implement memory export API
   - **Validation:** `GET /memory/export` returns JSON with all user memories
-  - **Proof: GET /memory/export in gateway.py returns JSON with user memories
+  - **Proof:** GET /memory/export in gateway.py returns JSON with user memories
 
 - [x] **12.4.2** Add Markdown export format
   - **Validation:** Conversations exported as readable Markdown files
-  - **Proof: format=markdown returns PlainTextResponse with text/markdown media type
+  - **Proof:** format=markdown returns PlainTextResponse with text/markdown media type
 
 - [x] **12.4.3** Implement selective export
   - **Validation:** Filter by date range, category, memory type
-  - **Proof: category, since, memory_type query params for filtering
+  - **Proof:** category, since, memory_type query params for filtering
 
 - [x] **12.4.4** Implement memory import
   - **Validation:** `POST /memory/import` accepts JSON; validates and inserts
-  - **Proof: POST /memory/import accepts JSON, validates content, calls store.upsert()
+  - **Proof:** POST /memory/import accepts JSON, validates content, calls store.upsert()
 
 - [x] **12.4.5** Add export UI to dashboard
   - **Validation:** Button to "Export My Data"; download starts automatically
-  - **Proof: ExportButton.tsx with JSON + Markdown download buttons in NovaDashboard
+  - **Proof:** ExportButton.tsx with JSON + Markdown download buttons in NovaDashboard
 
 ---
 
@@ -2174,15 +2174,15 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 - [x] **12.5.1** Create `supernova backup` CLI
   - **Validation:** `supernova backup create --name="pre-update"`
-  - **Proof: cli.py backup subcommand with --name and --list flags
+  - **Proof:** cli.py backup subcommand with --name and --list flags
 
 - [x] **12.5.2** Create `supernova restore` CLI
   - **Validation:** `supernova restore --from="backup-2026-02-25.enc"`
-  - **Proof: cli.py restore subcommand with --from (file or s3:// URI)
+  - **Proof:** cli.py restore subcommand with --from (file or s3:// URI)
 
 - [x] **12.5.3** Create `supernova export` CLI
   - **Validation:** `supernova export --format=markdown --output=./my-memories.md`
-  - **Proof: cli.py export subcommand with --format and --output flags
+  - **Proof:** cli.py export subcommand with --format and --output flags
 
 ---
 
