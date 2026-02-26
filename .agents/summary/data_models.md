@@ -166,3 +166,94 @@ Managed by Graphiti:
 | `wm:{session_id}` | Working memory (msgpack) | Session-based |
 | `cost:{model}:{date}` | Daily cost tracking | 30 days |
 | `embed_cache:{hash}` | Embedding cache | 7 days |
+
+---
+
+## Database Schema (Alembic Migrations)
+
+Two migrations in `supernova/alembic/versions/`:
+
+### Migration 1: `23aa65fd8071_initial_schema.py`
+
+**Extensions**: `vector` (pgvector), `pg_trgm` (trigram similarity)
+
+#### `semantic_memories`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID | PK, `gen_random_uuid()` |
+| `user_id` | VARCHAR(255) | Indexed, scopes queries per user |
+| `content` | TEXT | Full-text search (GIN `to_tsvector`) |
+| `embedding` | vector(1536) | HNSW index (m=16, ef_construction=64, cosine) |
+| `category` | VARCHAR(100) | Indexed; composite index with importance |
+| `confidence` | FLOAT | Default 0.5 |
+| `importance` | FLOAT | Default 0.5, DESC index for priority retrieval |
+| `tags` | TEXT[] | ARRAY, default `{}` |
+| `source` | VARCHAR(500) | |
+| `access_count` | INTEGER | Default 0 |
+| `created_at` | TIMESTAMPTZ | `now()` |
+| `updated_at` | TIMESTAMPTZ | `now()` |
+| `last_accessed_at` | TIMESTAMPTZ | DESC NULLS LAST index (LRU eviction) |
+
+#### `procedural_memories`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID | PK, `gen_random_uuid()` |
+| `name` | VARCHAR(255) | UNIQUE, indexed |
+| `description` | TEXT | |
+| `trigger_conditions` | JSONB | GIN index for JSONB queries |
+| `compiled_graph_bytes` | BYTEA | Serialized LangGraph subgraph |
+| `trigger_embedding` | vector(1536) | HNSW index (m=16, ef_construction=64, cosine) |
+| `invocation_count` | INTEGER | DESC index |
+| `avg_performance_score` | FLOAT | Default 0.5 |
+| `success_count` | INTEGER | Default 0 |
+| `failure_count` | INTEGER | Default 0 |
+| `is_active` | BOOLEAN | Partial index (`WHERE is_active = true`) |
+| `created_at` | TIMESTAMPTZ | `now()` |
+| `updated_at` | TIMESTAMPTZ | `now()` |
+| `last_invoked_at` | TIMESTAMPTZ | |
+
+#### `checkpoints` (LangGraph state persistence)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `thread_id` | VARCHAR(255) | PK (composite), indexed |
+| `checkpoint_ns` | VARCHAR(255) | PK (composite), default `''` |
+| `checkpoint_id` | VARCHAR(255) | PK (composite) |
+| `parent_checkpoint_id` | VARCHAR(255) | Nullable |
+| `type` | VARCHAR(50) | |
+| `checkpoint` | JSONB | Serialized graph state |
+| `metadata` | JSONB | Default `{}` |
+| `created_at` | TIMESTAMPTZ | DESC index |
+
+#### `audit_log` (initial)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | UUID | PK, `gen_random_uuid()` |
+| `timestamp` | TIMESTAMPTZ | DESC index |
+| `action` | VARCHAR(100) | Indexed |
+| `actor` | VARCHAR(255) | Indexed |
+| `resource_type` | VARCHAR(100) | |
+| `resource_id` | VARCHAR(255) | |
+| `details` | JSONB | Default `{}` |
+| `ip_address` | VARCHAR(45) | |
+| `user_agent` | VARCHAR(500) | |
+| `correlation_id` | VARCHAR(255) | Indexed |
+
+### Migration 2: `b7c3e9f12a45_audit_logs.py`
+
+Adds a separate `audit_logs` table (distinct from `audit_log` above):
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | BIGINT | PK, autoincrement |
+| `timestamp` | TIMESTAMPTZ | Indexed, `now()` |
+| `user_id` | TEXT | Indexed |
+| `action` | TEXT | Indexed |
+| `resource` | TEXT | |
+| `details` | JSON | |
+| `ip_address` | TEXT | |
+
+> **Note**: Two audit tables exist — `audit_log` (UUID-keyed, from initial schema) and `audit_logs` (BIGINT-keyed, from migration 2). The latter is the active table used by `infrastructure/security/audit.py`.

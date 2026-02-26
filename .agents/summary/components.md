@@ -221,3 +221,67 @@ Skills are `.skill` definition files discovered by `SkillLoader` and hot-reloade
 | `MCP_QUICK_REFERENCE.md` | Quick reference for MCP tool usage |
 | `skills/README.md` | Skill authoring guide |
 | `skills/INTEGRATION_STATUS.md` | Skill integration status tracker |
+
+---
+
+## Dashboard E2E Testing
+
+### Configuration (`dashboard/playwright.config.ts`)
+
+| Setting | Value |
+|---------|-------|
+| Test directory | `./tests/e2e` |
+| Base URL | `http://127.0.0.1:5173` |
+| Browsers | Chromium, Firefox, WebKit |
+| Parallelism | Full (local), single-worker (CI) |
+| Retries | 0 (local), 2 (CI) |
+| Reporter | HTML |
+| Trace | On first retry |
+| Dev server | Auto-started via `npm run dev` |
+
+### Test Suite: `dashboard-tabs.spec.ts`
+
+Single smoke test covering all 4 main dashboard tabs:
+
+| Tab | Expected Content | Validates |
+|-----|-----------------|-----------|
+| OVERVIEW | "COGNITIVE LOOP", "PERFORMANCE STREAM" | Main dashboard renders |
+| AGENTS | "ORCHESTRATION TOPOLOGY" | Agent view renders |
+| MEMORY | "TEMPORAL KNOWLEDGE GRAPH" | Memory visualization renders |
+| DECISIONS | "DEFERRAL MODULE" | Decision/approval view renders |
+
+The test also captures all `console.error` and `pageerror` events, failing if any occur during tab traversal. This serves as a zero-error rendering guarantee across all major views.
+
+### Running E2E Tests
+
+```bash
+cd dashboard
+npx playwright install    # First time: install browsers
+npm run test:e2e          # Run all E2E tests
+npx playwright test --ui  # Interactive UI mode
+```
+
+---
+
+## Grafana Dashboard Configuration
+
+**File**: `dashboard/src/grafana_dashboard.json` (2KB)
+**Title**: SuperNova Overview
+**Schema Version**: Grafana-compatible JSON model
+
+> **Note**: Grafana is not included in `docker-compose.yml`. This dashboard JSON is importable into any Grafana instance pointed at the application's Prometheus-format metrics endpoint.
+
+### Panels (6)
+
+| Panel | Type | Metric |
+|-------|------|--------|
+| Request Rate | timeseries | Incoming API request throughput |
+| Request Latency (p50/p95) | timeseries | Latency percentiles |
+| Error Rate | stat | Error percentage |
+| Token Usage | timeseries | LLM token consumption over time |
+| Memory Hit Rates | gauge | Memory system cache hit ratios |
+| Service Health | stat | Backend service availability |
+
+### Metrics Source
+
+Metrics are collected by `supernova/infrastructure/observability/metrics.py` — a zero-dependency Prometheus-compatible collector exposing counters, histograms, and gauges. No external `prometheus_client` library required.
