@@ -2,7 +2,7 @@
  * MemoryGraph Component
  * Network visualization of memory nodes and connections
  */
-import React, { memo, useMemo, useCallback } from 'react';
+import { memo, useMemo, useCallback } from 'react';
 import type { MemoryGraphProps } from '../../types';
 import { Theme } from '../../theme';
 

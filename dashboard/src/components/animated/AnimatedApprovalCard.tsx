@@ -4,7 +4,7 @@
  * 
  * @phase Phase 3 - Component Integration
  */
-import React, { memo, useRef } from 'react';
+import React, { memo } from 'react';
 import type { ApprovalCardProps } from '../../types';
 import { ApprovalCard } from '../cards/ApprovalCard';
 import { useEntranceAnimation, useGlowPulse } from '../../hooks/useAnimation';
@@ -15,7 +15,7 @@ export interface AnimatedApprovalCardProps extends ApprovalCardProps {
   /** Disable animations */
   disableAnimation?: boolean;
   /** Entrance animation type */
-  entranceType?: 'fade' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'pop' | 'scale';
+  entranceType?: 'fade' | 'slideUp' | 'pop' | 'none';
   /** Glow color for urgent state */
   urgentGlowColor?: string;
   /** Time threshold (seconds) for urgent animation */
@@ -30,28 +30,28 @@ export const AnimatedApprovalCard = memo<AnimatedApprovalCardProps>(function Ani
   urgentThreshold = 30,
   ...approvalCardProps
 }) {
-  const cardRef = useRef<HTMLElement>(null);
   const isUrgent = approvalCardProps.approval.remainingTime < urgentThreshold;
 
   // Entrance animation
-  useEntranceAnimation(cardRef, {
-    type: entranceType,
-    duration: disableAnimation ? 0 : undefined,
+  const entranceRef = useEntranceAnimation({
+    type: disableAnimation ? 'none' : entranceType,
     delay,
-    once: true,
+    enabled: !disableAnimation,
   });
 
   // Urgency glow pulse for expiring approvals
-  useGlowPulse(cardRef, {
+  const glowRef = useGlowPulse({
     color: urgentGlowColor,
-    intensity: isUrgent ? 15 : 0,
-    duration: 1.5,
-    disabled: disableAnimation || !isUrgent,
+    enabled: !disableAnimation && isUrgent,
   });
 
   return (
     <div
-      ref={cardRef as React.RefObject<HTMLDivElement>}
+      ref={(el) => {
+        // Merge refs
+        (entranceRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        (glowRef as React.MutableRefObject<HTMLElement | null>).current = el;
+      }}
       style={{ 
         willChange: disableAnimation ? undefined : 'transform, opacity',
         borderRadius: '8px',

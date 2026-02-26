@@ -129,7 +129,7 @@ export const CognitiveCycleRing = memo<CognitiveCycleRingProps & { mcpToolName?:
         )}
 
         {/* Phase labels */}
-        {showLabels && labelPositions.map((pos, index) => (
+        {showLabels && labelPositions.map((pos, index) => pos && PHASES[index] && (
           <text
             key={PHASES[index]}
             x={pos.x}

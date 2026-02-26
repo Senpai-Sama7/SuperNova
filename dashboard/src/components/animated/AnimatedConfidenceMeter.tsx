@@ -4,12 +4,11 @@
  * 
  * @phase Phase 3 - Component Integration
  */
-import React, { memo, useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { ConfidenceMeterProps } from '../../types';
 import { ConfidenceMeter } from '../charts/ConfidenceMeter';
-import { useAnimatedNumber } from '../../hooks/useAnimation';
 import { gsap } from 'gsap';
-import { prefersReducedMotion, clamp } from '../../lib/animations';
+import { prefersReducedMotion } from '../../lib/animations';
 
 export interface AnimatedConfidenceMeterProps extends ConfidenceMeterProps {
   /** Animation duration in seconds */
@@ -20,49 +19,27 @@ export interface AnimatedConfidenceMeterProps extends ConfidenceMeterProps {
   delay?: number;
 }
 
-export const AnimatedConfidenceMeter = memo<AnimatedConfidenceMeterProps>(function AnimatedConfidenceMeter({
+export const AnimatedConfidenceMeter = function AnimatedConfidenceMeter({
   value,
   duration = 0.8,
   disableAnimation = false,
   delay = 0,
   ...confidenceMeterProps
-}) {
+}: AnimatedConfidenceMeterProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
-  const arcRef = useRef<SVGPathElement>(null);
   const [displayValue, setDisplayValue] = useState(0);
   const previousValue = useRef(0);
   
   const isReducedMotion = prefersReducedMotion();
   const shouldAnimate = !disableAnimation && !isReducedMotion;
 
-  // Animate the number value
-  const numberRef = useAnimatedNumber(value, {
-    duration: shouldAnimate ? duration : 0,
-    decimals: 0,
-  });
-
-  // Animate arc stroke-dashoffset
+  // Animate the displayed value
   useEffect(() => {
-    if (!arcRef.current || !shouldAnimate) {
+    if (!shouldAnimate) {
       setDisplayValue(value);
+      previousValue.current = value;
       return;
     }
-
-    const radius = (confidenceMeterProps.size || 120 - 20) / 2;
-    const circumference = Math.PI * radius;
-    const startOffset = circumference * (1 - previousValue.current / 100);
-    const endOffset = circumference * (1 - value / 100);
-
-    gsap.fromTo(
-      arcRef.current,
-      { strokeDashoffset: startOffset },
-      {
-        strokeDashoffset: endOffset,
-        duration,
-        delay,
-        ease: 'power2.out',
-      }
-    );
 
     // Animate the displayed value
     const valueObj = { val: previousValue.current };
@@ -77,10 +54,9 @@ export const AnimatedConfidenceMeter = memo<AnimatedConfidenceMeterProps>(functi
     previousValue.current = value;
 
     return () => {
-      gsap.killTweensOf(arcRef.current);
       gsap.killTweensOf(valueObj);
     };
-  }, [value, duration, delay, shouldAnimate, confidenceMeterProps.size]);
+  }, [value, duration, delay, shouldAnimate]);
 
   // Entrance animation
   useEffect(() => {
@@ -107,6 +83,6 @@ export const AnimatedConfidenceMeter = memo<AnimatedConfidenceMeterProps>(functi
       />
     </div>
   );
-});
+};
 
 export default AnimatedConfidenceMeter;

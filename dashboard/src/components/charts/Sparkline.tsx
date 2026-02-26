@@ -2,7 +2,7 @@
  * Sparkline Component
  * Mini line chart for trend visualization
  */
-import React, { memo, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { SparklineProps } from '../../types';
 import { Theme } from '../../theme';
 
@@ -76,12 +76,13 @@ export const Sparkline = memo<SparklineProps>(function Sparkline({
         aria-hidden="true"
       />
       
-      {showDots && data.map((_, index) => {
+      {showDots && data.map((value, index) => {
+        if (value === undefined) return null;
         const x = (index / (data.length - 1)) * width;
         const max = Math.max(...data, 1);
         const min = Math.min(...data, 0);
         const range = max - min || 1;
-        const y = height - ((data[index] - min) / range) * height;
+        const y = height - ((value - min) / range) * height;
         return (
           <circle
             key={index}

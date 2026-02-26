@@ -63,7 +63,7 @@ class TestCeleryApp:
         app = self._import_app()
         assert app.name == "supernova"
 
-    def test_beat_schedule_has_five_entries(self):
+    def test_beat_schedule_has_six_entries(self):
         app = self._import_app()
         # conf.update was called with beat_schedule
         call_args = app.conf.update.call_args
@@ -75,13 +75,14 @@ class TestCeleryApp:
                     schedule = call[1]["beat_schedule"]
                     break
         assert schedule is not None
-        assert len(schedule) == 5
+        assert len(schedule) == 6
         expected_keys = {
             "consolidation-hourly",
             "heartbeat-15min",
             "forgetting-weekly",
             "skill-crystallization-daily",
             "mcp-health-5min",
+            "backup-daily",
         }
         assert set(schedule.keys()) == expected_keys
 

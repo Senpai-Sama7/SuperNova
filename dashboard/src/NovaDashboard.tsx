@@ -1,8 +1,10 @@
 /**
  * Nova Dashboard - Main Application Component
  * AI Agent monitoring and control interface
+ * 
+ * @phase Phase 3 - Component Integration (Animated)
  */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import type { 
   TabId, 
   Agent, 
@@ -11,14 +13,15 @@ import type {
   MemoryNode,
 } from './types';
 import { Theme, API_BASE } from './theme';
-import { clamp, toFiniteNumber } from './utils/numberGuards';
+import { toFiniteNumber } from './utils/numberGuards';
 import { computeSemanticEntropy } from './utils/entropy';
 import { useNovaRealtime } from './hooks/useNovaRealtime';
+import { TransitionWrapper } from './components/TransitionWrapper';
 import {
-  Glow, StatusDot, MiniBar, AgentCard, ApprovalCard,
-  CognitiveCycleRing, ConfidenceMeter, Sparkline,
+  Glow, StatusDot, CognitiveCycleRing, Sparkline,
   MemoryGraph, OrchestrationGraph,
-  MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget,
+  MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget, ExportButton,
+  AnimatedAgentCard, AnimatedApprovalCard, AnimatedConfidenceMeter, AnimatedMiniBar,
 } from './components';
 
 // ============================================================================
@@ -36,6 +39,42 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 // ============================================================================
 // STYLES
 // ============================================================================
+
+const getHaltButtonStyle = (isHalted: boolean): React.CSSProperties => ({
+  padding: '8px 16px',
+  borderRadius: '6px',
+  border: 'none',
+  backgroundColor: isHalted ? Theme.colors.success : Theme.colors.error,
+  color: '#fff',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+});
+
+const getTabStyle = (isActive: boolean): React.CSSProperties => ({
+  padding: '8px 16px',
+  borderRadius: '6px',
+  border: 'none',
+  backgroundColor: isActive ? `${Theme.colors.accent}20` : 'transparent',
+  color: isActive ? Theme.colors.accent : Theme.colors.textMuted,
+  fontWeight: isActive ? 600 : 400,
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+});
+
+const getMessageStyle = (role: string): React.CSSProperties => ({
+  alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
+  maxWidth: '80%',
+  padding: '10px 14px',
+  borderRadius: role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+  backgroundColor: role === 'user' ? Theme.colors.accent : Theme.colors.surfaceMid,
+  color: role === 'user' ? Theme.colors.bg : Theme.colors.text,
+  fontSize: '13px',
+  lineHeight: 1.5,
+});
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -69,33 +108,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '16px',
   },
-  haltButton: (isHalted: boolean): React.CSSProperties => ({
-    padding: '8px 16px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: isHalted ? Theme.colors.success : Theme.colors.error,
-    color: '#fff',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  }),
   tabs: {
     display: 'flex',
     gap: '8px',
   },
-  tab: (isActive: boolean): React.CSSProperties => ({
-    padding: '8px 16px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: isActive ? `${Theme.colors.accent}20` : 'transparent',
-    color: isActive ? Theme.colors.accent : Theme.colors.textMuted,
-    fontWeight: isActive ? 600 : 400,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  }),
   main: {
     padding: '24px',
     display: 'grid',
@@ -196,17 +212,230 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
   },
-  message: (role: string): React.CSSProperties => ({
-    alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
-    maxWidth: '80%',
-    padding: '10px 14px',
-    borderRadius: role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-    backgroundColor: role === 'user' ? Theme.colors.accent : Theme.colors.surfaceMid,
-    color: role === 'user' ? Theme.colors.bg : Theme.colors.text,
-    fontSize: '13px',
-    lineHeight: 1.5,
-  }),
 };
+
+// ============================================================================
+// TAB CONTENT COMPONENTS
+// ============================================================================
+
+interface TabContentProps {
+  stream: ReturnType<typeof useNovaRealtime>['stream'];
+  agents: Agent[];
+  memoryNodes: MemoryNode[];
+  pendingApprovals: ApprovalRequest[];
+  metrics: ReturnType<typeof useNovaRealtime>['metrics'];
+  cognitiveLoop: ReturnType<typeof useNovaRealtime>['cognitiveLoop'];
+  orchestration: ReturnType<typeof useNovaRealtime>['orchestration'];
+  selectedAgent: Agent | null;
+  setSelectedAgent: (agent: Agent | null) => void;
+  selectedMemoryNode: MemoryNode | null;
+  setSelectedMemoryNode: (node: MemoryNode | null) => void;
+  handleDecide: (id: string, approved: boolean) => Promise<void>;
+  entropy: number;
+  confidence: number;
+  clusters: number;
+}
+
+const OverviewTab: React.FC<TabContentProps> = ({
+  stream,
+  agents,
+  metrics,
+  cognitiveLoop,
+  setSelectedAgent,
+  entropy,
+  clusters,
+}) => (
+  <div style={styles.grid2}>
+    {/* Stream Metrics */}
+    <div style={styles.card}>
+      <h3 style={styles.cardTitle}>Stream Metrics</h3>
+      <div style={styles.metricRow}>
+        <span style={styles.metricLabel}>Throughput</span>
+        <span style={styles.metricValue}>
+          {toFiniteNumber(stream?.throughput).toFixed(1)} <small style={{ fontSize: '12px', color: Theme.colors.textMuted }}>ops/s</small>
+        </span>
+      </div>
+      <div style={styles.metricRow}>
+        <span style={styles.metricLabel}>Latency</span>
+        <span style={styles.metricValue}>
+          {toFiniteNumber(stream?.latency).toFixed(0)} <small style={{ fontSize: '12px', color: Theme.colors.textMuted }}>ms</small>
+        </span>
+      </div>
+      <div style={styles.metricRow}>
+        <span style={styles.metricLabel}>Queue Depth</span>
+        <AnimatedMiniBar value={toFiniteNumber(stream?.queueDepth)} max={100} color={Theme.colors.accent} showValue />
+      </div>
+      <div style={{ marginTop: '16px' }}>
+        <Sparkline 
+          data={metrics?.history?.slice(-20) ?? [50, 55, 60, 58, 62, 65, 70, 68, 72, 75]} 
+          width={280} 
+          height={40} 
+        />
+      </div>
+    </div>
+
+    {/* Cognitive Loop */}
+    <div style={styles.card}>
+      <h3 style={styles.cardTitle}>Cognitive Loop</h3>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+        <CognitiveCycleRing 
+          phase={cognitiveLoop?.currentPhase ?? 'PERCEIVE'} 
+          progress={toFiniteNumber(cognitiveLoop?.phaseProgress)} 
+          size={180}
+        />
+      </div>
+      <div style={{ textAlign: 'center', color: Theme.colors.textMuted, fontSize: '12px' }}>
+        Cycle #{toFiniteNumber(cognitiveLoop?.cycleCount, 0).toFixed(0)} • {toFiniteNumber(cognitiveLoop?.lastCycleDuration, 0).toFixed(0)}ms avg
+      </div>
+    </div>
+
+    {/* Confidence Metrics */}
+    <div style={styles.card}>
+      <h3 style={styles.cardTitle}>Confidence & Calibration</h3>
+      <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+        <AnimatedConfidenceMeter value={toFiniteNumber(metrics?.overall)} size={120} delay={0.2} />
+        <div style={{ flex: 1 }}>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', color: Theme.colors.textMuted, marginBottom: '4px' }}>Semantic Entropy</div>
+            <AnimatedMiniBar value={entropy * 100} color={Theme.colors.warning} showValue duration={0.8} />
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', color: Theme.colors.textMuted, marginBottom: '4px' }}>Clusters</div>
+            <div style={{ fontSize: '18px', fontWeight: 700 }}>{clusters}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: Theme.colors.textMuted, marginBottom: '4px' }}>Samples</div>
+            <div style={{ fontSize: '18px', fontWeight: 700 }}>{toFiniteNumber(metrics?.sampleCount, 0)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Active Agents */}
+    <div style={styles.card}>
+      <h3 style={styles.cardTitle}>Active Agents ({agents.filter(a => a.status === 'active').length}/{agents.length})</h3>
+      <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+        {agents.slice(0, 4).map((agent, index) => (
+          <div key={agent.id} style={{ marginBottom: '8px' }}>
+            <AnimatedAgentCard 
+              agent={agent} 
+              compact 
+              onClick={setSelectedAgent} 
+              delay={0.1 * index}
+              entranceType="slideUp"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+    <CostWidget />
+    <ExportButton />
+  </div>
+);
+
+const AgentsTab: React.FC<TabContentProps> = ({ agents, selectedAgent, setSelectedAgent }) => (
+  <div style={styles.grid3}>
+    {agents.map((agent, index) => (
+      <AnimatedAgentCard 
+        key={agent.id} 
+        agent={agent} 
+        selected={selectedAgent?.id === agent.id}
+        onClick={setSelectedAgent}
+        delay={0.05 * index}
+        entranceType="pop"
+        hoverScale={1.03}
+      />
+    ))}
+  </div>
+);
+
+const MemoryTab: React.FC<TabContentProps> = ({
+  memoryNodes,
+  selectedMemoryNode,
+  setSelectedMemoryNode,
+}) => (
+  <div style={styles.grid2}>
+    <div style={styles.card}>
+      <h3 style={styles.cardTitle}>Memory Graph</h3>
+      <MemoryGraph 
+        data={{ nodes: memoryNodes, edges: [] }} 
+        width={400} 
+        height={300}
+        onNodeClick={setSelectedMemoryNode}
+        selectedNodeId={selectedMemoryNode?.id}
+      />
+    </div>
+    <div style={styles.card}>
+      <h3 style={styles.cardTitle}>Selected Memory</h3>
+      {selectedMemoryNode ? (
+        <div>
+          <div style={{ marginBottom: '12px' }}>
+            <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Type</span>
+            <div style={{ fontSize: '14px', fontWeight: 600, textTransform: 'capitalize' }}>{selectedMemoryNode.type}</div>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Label</span>
+            <div style={{ fontSize: '14px' }}>{selectedMemoryNode.label}</div>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Relevance</span>
+            <AnimatedMiniBar value={(selectedMemoryNode.relevance ?? 0) * 100} color={Theme.colors.accent} showValue />
+          </div>
+          <div>
+            <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Timestamp</span>
+            <div style={{ fontSize: '12px', fontFamily: Theme.fonts.mono }}>{selectedMemoryNode.timestamp}</div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ color: Theme.colors.textMuted, fontSize: '14px' }}>Select a memory node to view details</div>
+      )}
+    </div>
+  </div>
+);
+
+const DecisionsTab: React.FC<TabContentProps> = ({
+  pendingApprovals,
+  handleDecide,
+  orchestration,
+}) => (
+  <div>
+    <div style={{ marginBottom: '20px' }}>
+      <h3 style={{ ...styles.cardTitle, margin: 0 }}>Pending Approvals ({pendingApprovals.length})</h3>
+    </div>
+    <div style={styles.grid2}>
+      {pendingApprovals.map((approval, index) => (
+        <AnimatedApprovalCard 
+          key={approval.id} 
+          approval={approval} 
+          onDecide={handleDecide}
+          delay={0.08 * index}
+          entranceType="pop"
+        />
+      ))}
+      {pendingApprovals.length === 0 && (
+        <div style={{ ...styles.card, textAlign: 'center', color: Theme.colors.textMuted }}>
+          No pending approvals
+        </div>
+      )}
+    </div>
+
+    {orchestration && (
+      <div style={{ ...styles.card, marginTop: '24px' }}>
+        <h3 style={styles.cardTitle}>Orchestration Flow</h3>
+        <OrchestrationGraph data={orchestration} width={600} height={300} />
+      </div>
+    )}
+  </div>
+);
+
+const MCPTab: React.FC = () => (
+  <div style={styles.grid2}>
+    <MCPServersPanel />
+    <SkillPanel />
+    <MCPToolExplorer />
+    <MCPExecutionLog />
+  </div>
+);
 
 // ============================================================================
 // MAIN COMPONENT
@@ -215,12 +444,14 @@ const styles: Record<string, React.CSSProperties> = {
 export default function NovaDashboard(): React.ReactElement {
   const [isHalted, setIsHalted] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     { id: 'welcome', role: 'system', content: 'Nova is online. How can I help?', timestamp: new Date().toISOString() },
   ]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [selectedMemoryNode, setSelectedMemoryNode] = useState<MemoryNode | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   const {
     stream,
@@ -230,7 +461,6 @@ export default function NovaDashboard(): React.ReactElement {
     metrics,
     cognitiveLoop,
     orchestration,
-    conformalBands,
     semanticClusters,
     loading,
     error,
@@ -244,6 +474,13 @@ export default function NovaDashboard(): React.ReactElement {
     () => computeSemanticEntropy(semanticClusters),
     [semanticClusters]
   );
+
+  const handleTabChange = useCallback((newTab: TabId) => {
+    const currentIndex = TABS.findIndex(t => t.id === activeTab);
+    const newIndex = TABS.findIndex(t => t.id === newTab);
+    setTabDirection(newIndex > currentIndex ? 'right' : 'left');
+    setActiveTab(newTab);
+  }, [activeTab]);
 
   const handleDecide = useCallback(async (id: string, approved: boolean): Promise<void> => {
     try {
@@ -296,188 +533,35 @@ export default function NovaDashboard(): React.ReactElement {
       });
   }, [chatInput]);
 
-  const renderOverviewTab = (): React.ReactElement => (
-    <div style={styles.grid2}>
-      {/* Stream Metrics */}
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Stream Metrics</h3>
-        <div style={styles.metricRow}>
-          <span style={styles.metricLabel}>Throughput</span>
-          <span style={styles.metricValue}>
-            {toFiniteNumber(stream?.throughput).toFixed(1)} <small style={{ fontSize: '12px', color: Theme.colors.textMuted }}>ops/s</small>
-          </span>
-        </div>
-        <div style={styles.metricRow}>
-          <span style={styles.metricLabel}>Latency</span>
-          <span style={styles.metricValue}>
-            {toFiniteNumber(stream?.latency).toFixed(0)} <small style={{ fontSize: '12px', color: Theme.colors.textMuted }}>ms</small>
-          </span>
-        </div>
-        <div style={styles.metricRow}>
-          <span style={styles.metricLabel}>Queue Depth</span>
-          <MiniBar value={toFiniteNumber(stream?.queueDepth)} max={100} color={Theme.colors.accent} showValue />
-        </div>
-        <div style={{ marginTop: '16px' }}>
-          <Sparkline 
-            data={metrics?.history?.slice(-20) ?? [50, 55, 60, 58, 62, 65, 70, 68, 72, 75]} 
-            width={280} 
-            height={40} 
-          />
-        </div>
-      </div>
-
-      {/* Cognitive Loop */}
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Cognitive Loop</h3>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-          <CognitiveCycleRing 
-            phase={cognitiveLoop?.currentPhase ?? 'PERCEIVE'} 
-            progress={toFiniteNumber(cognitiveLoop?.phaseProgress)} 
-            size={180}
-          />
-        </div>
-        <div style={{ textAlign: 'center', color: Theme.colors.textMuted, fontSize: '12px' }}>
-          Cycle #{toFiniteNumber(cognitiveLoop?.cycleCount, 0).toFixed(0)} • {toFiniteNumber(cognitiveLoop?.lastCycleDuration, 0).toFixed(0)}ms avg
-        </div>
-      </div>
-
-      {/* Confidence Metrics */}
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Confidence & Calibration</h3>
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <ConfidenceMeter value={toFiniteNumber(metrics?.overall)} size={120} />
-          <div style={{ flex: 1 }}>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', color: Theme.colors.textMuted, marginBottom: '4px' }}>Semantic Entropy</div>
-              <MiniBar value={entropy * 100} color={Theme.colors.warning} showValue />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', color: Theme.colors.textMuted, marginBottom: '4px' }}>Clusters</div>
-              <div style={{ fontSize: '18px', fontWeight: 700 }}>{clusters}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', color: Theme.colors.textMuted, marginBottom: '4px' }}>Samples</div>
-              <div style={{ fontSize: '18px', fontWeight: 700 }}>{toFiniteNumber(metrics?.sampleCount, 0)}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Active Agents */}
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Active Agents ({agents.filter(a => a.status === 'active').length}/{agents.length})</h3>
-        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-          {agents.slice(0, 4).map(agent => (
-            <div key={agent.id} style={{ marginBottom: '8px' }}>
-              <AgentCard agent={agent} compact onClick={setSelectedAgent} />
-            </div>
-          ))}
-        </div>
-      </div>
-      <CostWidget />
-    </div>
-  );
-
-  const renderAgentsTab = (): React.ReactElement => (
-    <div style={styles.grid3}>
-      {agents.map(agent => (
-        <AgentCard 
-          key={agent.id} 
-          agent={agent} 
-          selected={selectedAgent?.id === agent.id}
-          onClick={setSelectedAgent}
-        />
-      ))}
-    </div>
-  );
-
-  const renderMemoryTab = (): React.ReactElement => (
-    <div style={styles.grid2}>
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Memory Graph</h3>
-        <MemoryGraph 
-          data={{ nodes: memoryNodes, edges: [] }} 
-          width={400} 
-          height={300}
-          onNodeClick={setSelectedMemoryNode}
-          selectedNodeId={selectedMemoryNode?.id}
-        />
-      </div>
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Selected Memory</h3>
-        {selectedMemoryNode ? (
-          <div>
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Type</span>
-              <div style={{ fontSize: '14px', fontWeight: 600, textTransform: 'capitalize' }}>{selectedMemoryNode.type}</div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Label</span>
-              <div style={{ fontSize: '14px' }}>{selectedMemoryNode.label}</div>
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Relevance</span>
-              <MiniBar value={(selectedMemoryNode.relevance ?? 0) * 100} color={Theme.colors.accent} showValue />
-            </div>
-            <div>
-              <span style={{ fontSize: '11px', color: Theme.colors.textMuted }}>Timestamp</span>
-              <div style={{ fontSize: '12px', fontFamily: Theme.fonts.mono }}>{selectedMemoryNode.timestamp}</div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ color: Theme.colors.textMuted, fontSize: '14px' }}>Select a memory node to view details</div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderDecisionsTab = (): React.ReactElement => (
-    <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ ...styles.cardTitle, margin: 0 }}>Pending Approvals ({pendingApprovals.length})</h3>
-      </div>
-      <div style={styles.grid2}>
-        {pendingApprovals.map(approval => (
-          <ApprovalCard 
-            key={approval.id} 
-            approval={approval} 
-            onDecide={handleDecide}
-          />
-        ))}
-        {pendingApprovals.length === 0 && (
-          <div style={{ ...styles.card, textAlign: 'center', color: Theme.colors.textMuted }}>
-            No pending approvals
-          </div>
-        )}
-      </div>
-
-      {orchestration && (
-        <div style={{ ...styles.card, marginTop: '24px' }}>
-          <h3 style={styles.cardTitle}>Orchestration Flow</h3>
-          <OrchestrationGraph data={orchestration} width={600} height={300} />
-        </div>
-      )}
-    </div>
-  );
-
-  const renderMCPTab = (): React.ReactElement => (
-    <div style={styles.grid2}>
-      <MCPServersPanel />
-      <SkillPanel />
-      <MCPToolExplorer />
-      <MCPExecutionLog />
-    </div>
-  );
+  const tabContentProps: TabContentProps = {
+    stream,
+    agents,
+    memoryNodes,
+    pendingApprovals,
+    metrics,
+    cognitiveLoop,
+    orchestration,
+    selectedAgent,
+    setSelectedAgent,
+    selectedMemoryNode,
+    setSelectedMemoryNode,
+    handleDecide,
+    entropy,
+    confidence,
+    clusters,
+  };
 
   const renderTabContent = (): React.ReactElement => {
     switch (activeTab) {
-      case 'agents': return renderAgentsTab();
-      case 'memory': return renderMemoryTab();
-      case 'decisions': return renderDecisionsTab();
-      case 'mcp': return renderMCPTab();
-      default: return renderOverviewTab();
+      case 'agents': return <AgentsTab {...tabContentProps} />;
+      case 'memory': return <MemoryTab {...tabContentProps} />;
+      case 'decisions': return <DecisionsTab {...tabContentProps} />;
+      case 'mcp': return <MCPTab />;
+      default: return <OverviewTab {...tabContentProps} />;
     }
   };
+
+  const haltButtonStyle = getHaltButtonStyle(isHalted);
 
   return (
     <div style={styles.container}>
@@ -507,7 +591,7 @@ export default function NovaDashboard(): React.ReactElement {
               </button>
             )}
             <button 
-              style={styles.haltButton(isHalted)}
+              style={haltButtonStyle}
               onClick={() => setIsHalted(!isHalted)}
               aria-pressed={isHalted}
             >
@@ -518,24 +602,32 @@ export default function NovaDashboard(): React.ReactElement {
 
         {/* Tabs */}
         <nav role="tablist" style={styles.tabs} aria-label="Dashboard tabs">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`${tab.id}-panel`}
-              style={styles.tab(activeTab === tab.id)}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span aria-hidden="true">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map(tab => {
+            const tabStyle = getTabStyle(activeTab === tab.id);
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`${tab.id}-panel`}
+                style={tabStyle}
+                onClick={() => handleTabChange(tab.id)}
+              >
+                <span aria-hidden="true">{tab.icon}</span>
+                {tab.label}
+              </button>
+            );
+          })}
         </nav>
       </header>
 
-      {/* Main Content */}
-      <main role="tabpanel" id={`${activeTab}-panel`} style={styles.main}>
+      {/* Main Content with Transition */}
+      <main 
+        ref={mainRef as React.RefObject<HTMLElement>}
+        role="tabpanel" 
+        id={`${activeTab}-panel`} 
+        style={styles.main}
+      >
         {error && (
           <div style={{ 
             backgroundColor: `${Theme.colors.error}20`, 
@@ -562,7 +654,13 @@ export default function NovaDashboard(): React.ReactElement {
             </button>
           </div>
         )}
-        {renderTabContent()}
+        <TransitionWrapper 
+          tabId={activeTab} 
+          direction={tabDirection}
+          duration={0.3}
+        >
+          {renderTabContent()}
+        </TransitionWrapper>
       </main>
 
       {/* Chat Interface */}
@@ -582,7 +680,7 @@ export default function NovaDashboard(): React.ReactElement {
           {chatHistory.map(msg => (
             <div 
               key={msg.id} 
-              style={styles.message(msg.role)}
+              style={getMessageStyle(msg.role)}
               role="article"
               aria-label={`${msg.role} message`}
             >

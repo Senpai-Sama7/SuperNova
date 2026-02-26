@@ -16,6 +16,8 @@ interface TransitionWrapperProps {
   tabId: string;
   direction?: 'left' | 'right' | 'up' | 'down';
   className?: string;
+  /** Animation duration in seconds */
+  duration?: number;
 }
 
 /**
@@ -36,6 +38,8 @@ export const TransitionWrapper: React.FC<TransitionWrapperProps> = ({
   tabId,
   direction = 'right',
   className = '',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  duration: _duration = 0.3,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousTabId = useRef(tabId);

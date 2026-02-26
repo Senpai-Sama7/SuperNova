@@ -4,7 +4,7 @@
  * 
  * @phase Phase 3 - Component Integration
  */
-import React, { memo, useRef } from 'react';
+import React, { memo } from 'react';
 import type { AgentCardProps } from '../../types';
 import { AgentCard } from '../cards/AgentCard';
 import { useEntranceAnimation, useHoverAnimation } from '../../hooks/useAnimation';
@@ -15,7 +15,7 @@ export interface AnimatedAgentCardProps extends AgentCardProps {
   /** Disable animations for this card */
   disableAnimation?: boolean;
   /** Entrance animation type */
-  entranceType?: 'fade' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'pop' | 'scale';
+  entranceType?: 'fade' | 'slideUp' | 'pop' | 'none';
   /** Hover scale amount (1.0 = no scale) */
   hoverScale?: number;
 }
@@ -27,25 +27,27 @@ export const AnimatedAgentCard = memo<AnimatedAgentCardProps>(function AnimatedA
   hoverScale = 1.02,
   ...agentCardProps
 }) {
-  const cardRef = useRef<HTMLElement>(null);
-  
   // Entrance animation on mount
-  useEntranceAnimation(cardRef, {
-    type: entranceType,
-    duration: disableAnimation ? 0 : undefined,
+  const entranceRef = useEntranceAnimation({
+    type: disableAnimation ? 'none' : entranceType,
     delay,
-    once: true,
+    enabled: !disableAnimation,
   });
 
   // Hover animation
-  const { handlers } = useHoverAnimation({
+  const { ref: hoverRef, handlers } = useHoverAnimation({
     scale: disableAnimation ? 1 : hoverScale,
     duration: 0.2,
+    enabled: !disableAnimation,
   });
 
   return (
     <div
-      ref={cardRef as React.RefObject<HTMLDivElement>}
+      ref={(el) => {
+        // Merge refs
+        (entranceRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        (hoverRef as React.MutableRefObject<HTMLElement | null>).current = el;
+      }}
       onMouseEnter={handlers.onMouseEnter}
       onMouseLeave={handlers.onMouseLeave}
       style={{ willChange: disableAnimation ? undefined : 'transform, opacity' }}

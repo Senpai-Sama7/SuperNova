@@ -4,9 +4,8 @@
  * 
  * @phase Phase 3 - Component Integration
  */
-import React, { memo, useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { MiniBarProps } from '../../types';
-import { MiniBar } from '../ui/MiniBar';
 import { gsap } from 'gsap';
 import { prefersReducedMotion } from '../../lib/animations';
 import { clamp } from '../../utils/numberGuards';
@@ -20,14 +19,14 @@ export interface AnimatedMiniBarProps extends MiniBarProps {
   delay?: number;
 }
 
-export const AnimatedMiniBar = memo<AnimatedMiniBarProps>(function AnimatedMiniBar({
+export const AnimatedMiniBar = function AnimatedMiniBar({
   value,
   max = 100,
   duration = 0.5,
   disableAnimation = false,
   delay = 0,
   ...miniBarProps
-}) {
+}: AnimatedMiniBarProps): React.ReactElement {
   const fillRef = useRef<HTMLDivElement>(null);
   const [displayValue, setDisplayValue] = useState(0);
   const previousValue = useRef(0);
@@ -37,10 +36,11 @@ export const AnimatedMiniBar = memo<AnimatedMiniBarProps>(function AnimatedMiniB
   const percentage = clamp((value / max) * 100, 0, 100);
   const previousPercentage = clamp((previousValue.current / max) * 100, 0, 100);
 
-  // Animate width
+  // Animate width and value
   useEffect(() => {
     if (!fillRef.current || !shouldAnimate) {
       setDisplayValue(percentage);
+      previousValue.current = value;
       return;
     }
 
@@ -113,6 +113,6 @@ export const AnimatedMiniBar = memo<AnimatedMiniBarProps>(function AnimatedMiniB
       )}
     </div>
   );
-});
+};
 
 export default AnimatedMiniBar;

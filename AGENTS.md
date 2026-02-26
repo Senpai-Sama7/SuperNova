@@ -115,6 +115,10 @@ supernova/                      # Main Python package
 │   ├── __init__.py
 │   ├── agent/
 │   │   └── __init__.py
+│   ├── backup/                 # Backup & recovery system
+│   │   ├── __init__.py
+│   │   ├── manager.py          # BackupManager: pg_dump, neo4j, Redis, Fernet, S3
+│   │   └── cli.py              # CLI: backup/restore/export commands
 │   ├── memory/                 # Memory system implementations
 │   │   ├── __init__.py
 │   │   ├── episodic.py         # Graphiti/Neo4j episodic memory
@@ -176,7 +180,8 @@ supernova/                      # Main Python package
 │   ├── test_storage.py           # Redis client + Postgres pool CRUD methods
 │   ├── test_websockets.py
 │   ├── test_workers.py
-│   └── test_cost_controller.py    # Cost tracking, budget routing, Ollama client tests
+│   ├── test_cost_controller.py    # Cost tracking, budget routing, Ollama client tests
+│   └── test_backup.py             # Backup manager, worker, export/import, CLI tests
 │
 ├── workers/                    # Celery background workers
 │   ├── __init__.py
@@ -185,6 +190,7 @@ supernova/                      # Main Python package
 │   ├── heartbeat.py            # Redis/Postgres/Neo4j health checks + Langfuse trace
 │   ├── maintenance.py          # Forgetting curves via asyncpg stored procedure
 │   └── mcp_monitor.py          # MCP server health + auto-restart with exponential backoff
+│   └── backup.py               # Daily backup Celery task with rotation + verification
 
 # Root-level specification files (load-bearing)
 ├── loop.py                     # Cognitive loop (LangGraph StateGraph)
@@ -219,7 +225,7 @@ dashboard/
 │   │   └── useNovaRealtime.ts         # HTTP polling + WebSocket with exponential backoff
 │   ├── components/
 │   │   ├── ui/                        # StatusDot, Badge, Glow, MiniBar, RiskPill
-│   │   ├── cards/                     # AgentCard, ApprovalCard, MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog
+│   │   ├── cards/                     # AgentCard, ApprovalCard, MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget, ExportButton
 │   │   └── charts/                    # CognitiveCycleRing, ConfidenceMeter, Sparkline, MemoryGraph, OrchestrationGraph
 │   ├── utils/
 │   └── assets/

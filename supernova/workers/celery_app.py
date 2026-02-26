@@ -44,6 +44,10 @@ app.conf.update(
             "task": "supernova.workers.mcp_monitor.check_mcp_health",
             "schedule": 300.0,  # 5 minutes
         },
+        "backup-daily": {
+            "task": "supernova.workers.backup.daily_backup",
+            "schedule": crontab(hour=2, minute=30),  # daily 2:30am
+        },
     },
 )
 
@@ -52,4 +56,5 @@ app.autodiscover_tasks([
     "supernova.workers.heartbeat",
     "supernova.workers.maintenance",
     "supernova.workers.mcp_monitor",
+    "supernova.workers.backup",
 ])

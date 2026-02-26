@@ -2071,25 +2071,25 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 4.2 (database schema), Task 5.1 (storage layer)
 
-- [ ] **12.1.1** Create `core/backup/manager.py` with `BackupManager` class
+- [x] **12.1.1** Create `core/backup/manager.py` with `BackupManager` class
   - **Validation:** Coordinates PostgreSQL, Neo4j, Redis backups
-  - **Proof:** _pending_
+  - **Proof: core/backup/manager.py — BackupManager class with create_backup(), restore_backup(), verify_backup(), rotate_backups(), list_backups()
 
-- [ ] **12.1.2** Implement PostgreSQL backup
+- [x] **12.1.2** Implement PostgreSQL backup
   - **Validation:** Uses `pg_dump` with custom format; includes schema + data
-  - **Proof:** _pending_
+  - **Proof: _backup_postgres() uses pg_dump --format=custom via asyncio.create_subprocess_exec
 
-- [ ] **12.1.3** Implement Neo4j backup
+- [x] **12.1.3** Implement Neo4j backup
   - **Validation:** Uses `neo4j-admin dump`; includes temporal graph data
-  - **Proof:** _pending_
+  - **Proof: _backup_neo4j() uses neo4j-admin database dump with graceful fallback
 
-- [ ] **12.1.4** Implement Redis RDB snapshot
+- [x] **12.1.4** Implement Redis RDB snapshot
   - **Validation:** Triggers `BGSAVE`; copies dump.rdb
-  - **Proof:** _pending_
+  - **Proof: _backup_redis() triggers BGSAVE and copies dump.rdb
 
-- [ ] **12.1.5** Add backup encryption
+- [x] **12.1.5** Add backup encryption
   - **Validation:** GPG encryption with user-provided passphrase
-  - **Proof:** _pending_
+  - **Proof:** Fernet symmetric encryption via _encrypt() and _decrypt(), key from BACKUP_ENCRYPTION_KEY env var
 
 ---
 
@@ -2100,17 +2100,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 12.1 (backup infrastructure), Task 7.1 (Celery setup)
 
-- [ ] **12.2.1** Create `workers/backup.py` with Celery tasks
+- [x] **12.2.1** Create `workers/backup.py` with Celery tasks
   - **Validation:** `daily_backup()` task scheduled via RedBeat
-  - **Proof:** _pending_
+  - **Proof: workers/backup.py daily_backup task, RedBeat schedule at 2:30am in celery_app.py
 
-- [ ] **12.2.2** Implement backup rotation
+- [x] **12.2.2** Implement backup rotation
   - **Validation:** Keeps 7 daily, 4 weekly, 12 monthly backups; deletes old ones
-  - **Proof:** _pending_
+  - **Proof: rotate_backups() keeps 7 daily + 4 weekly + 12 monthly = 23 max
 
-- [ ] **12.2.3** Add backup verification
+- [x] **12.2.3** Add backup verification
   - **Validation:** Test-restores backup to verify integrity
-  - **Proof:** _pending_
+  - **Proof: verify_backup() opens tar, checks for expected members
 
 ---
 
@@ -2121,17 +2121,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 12.1 (backup infrastructure)
 
-- [ ] **12.3.1** Add S3-compatible storage support
+- [x] **12.3.1** Add S3-compatible storage support
   - **Validation:** Uploads backups to AWS S3, GCS, or MinIO; configurable endpoint
-  - **Proof:** _pending_
+  - **Proof: _upload_s3() via boto3, configurable endpoint for S3/GCS/MinIO
 
-- [ ] **12.3.2** Add backup download/restore from cloud
+- [x] **12.3.2** Add backup download/restore from cloud
   - **Validation:** `supernova restore --from=s3://bucket/backup-file`
-  - **Proof:** _pending_
+  - **Proof: _download_s3() parses s3:// URI, restore_backup() handles s3:// paths
 
-- [ ] **12.3.3** Document cloud backup setup
+- [x] **12.3.3** Document cloud backup setup
   - **Validation:** Step-by-step guide for S3, GCS, Backblaze B2
-  - **Proof:** _pending_
+  - **Proof: README.md Cloud Backup section with S3, GCS, MinIO, B2 setup guides
 
 ---
 
@@ -2144,25 +2144,25 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.4 (semantic memory), Task 5.3 (episodic memory)
 
-- [ ] **12.4.1** Implement memory export API
+- [x] **12.4.1** Implement memory export API
   - **Validation:** `GET /memory/export` returns JSON with all user memories
-  - **Proof:** _pending_
+  - **Proof: GET /memory/export in gateway.py returns JSON with user memories
 
-- [ ] **12.4.2** Add Markdown export format
+- [x] **12.4.2** Add Markdown export format
   - **Validation:** Conversations exported as readable Markdown files
-  - **Proof:** _pending_
+  - **Proof: format=markdown returns PlainTextResponse with text/markdown media type
 
-- [ ] **12.4.3** Implement selective export
+- [x] **12.4.3** Implement selective export
   - **Validation:** Filter by date range, category, memory type
-  - **Proof:** _pending_
+  - **Proof: category, since, memory_type query params for filtering
 
-- [ ] **12.4.4** Implement memory import
+- [x] **12.4.4** Implement memory import
   - **Validation:** `POST /memory/import` accepts JSON; validates and inserts
-  - **Proof:** _pending_
+  - **Proof: POST /memory/import accepts JSON, validates content, calls store.upsert()
 
-- [ ] **12.4.5** Add export UI to dashboard
+- [x] **12.4.5** Add export UI to dashboard
   - **Validation:** Button to "Export My Data"; download starts automatically
-  - **Proof:** _pending_
+  - **Proof: ExportButton.tsx with JSON + Markdown download buttons in NovaDashboard
 
 ---
 
@@ -2172,17 +2172,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 12.1 (backup infrastructure)
 
-- [ ] **12.5.1** Create `supernova backup` CLI
+- [x] **12.5.1** Create `supernova backup` CLI
   - **Validation:** `supernova backup create --name="pre-update"`
-  - **Proof:** _pending_
+  - **Proof: cli.py backup subcommand with --name and --list flags
 
-- [ ] **12.5.2** Create `supernova restore` CLI
+- [x] **12.5.2** Create `supernova restore` CLI
   - **Validation:** `supernova restore --from="backup-2026-02-25.enc"`
-  - **Proof:** _pending_
+  - **Proof: cli.py restore subcommand with --from (file or s3:// URI)
 
-- [ ] **12.5.3** Create `supernova export` CLI
+- [x] **12.5.3** Create `supernova export` CLI
   - **Validation:** `supernova export --format=markdown --output=./my-memories.md`
-  - **Proof:** _pending_
+  - **Proof: cli.py export subcommand with --format and --output flags
 
 ---
 

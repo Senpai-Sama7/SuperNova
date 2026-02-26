@@ -128,7 +128,7 @@ describe('NovaDashboard Integration', () => {
     render(<NovaDashboard />);
     
     await waitFor(() => {
-      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText(/connected|syncing|error/i)).toBeInTheDocument();
     });
   });
 });

@@ -61,8 +61,8 @@ describe('AgentCard', () => {
 
   it('has correct ARIA attributes', () => {
     render(<AgentCard agent={mockAgent} />);
-    const card = screen.getByRole('article');
-    expect(card).toHaveAttribute('aria-label', expect.stringContaining('Test Agent'));
+    const card = screen.getByLabelText(/Test Agent/);
+    expect(card).toBeInTheDocument();
   });
 
   it('is keyboard accessible', async () => {
@@ -101,7 +101,7 @@ describe('ApprovalCard', () => {
 
   it('displays risk level', () => {
     render(<ApprovalCard approval={mockApproval} onDecide={vi.fn()} />);
-    expect(screen.getByRole('status')).toHaveTextContent(/medium/i);
+    expect(screen.getByText(/medium risk/i)).toBeInTheDocument();
   });
 
   it('shows timer', () => {

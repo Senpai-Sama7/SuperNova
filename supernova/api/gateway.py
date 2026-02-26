@@ -158,6 +158,70 @@ async def get_cost_summary() -> dict[str, Any]:
     return await cc.get_spend_summary()
 
 
+# ── Memory Export/Import ──────────────────────────────────────────────────────
+
+@app.get("/memory/export")
+async def export_memories(
+    user_id: str = Depends(get_current_user),
+    format: str = Query("json", pattern="^(json|markdown)$"),
+    memory_type: str | None = Query(None, pattern="^(semantic|episodic|all)$"),
+    category: str | None = None,
+    since: str | None = None,
+) -> Any:
+    """Export user memories as JSON or Markdown."""
+    from fastapi.responses import PlainTextResponse
+
+    store = _state.get("semantic_store")
+    memories = []
+    if store:
+        if category:
+            memories = await store.get_by_category(user_id, category)
+        else:
+            memories = await store.search("", user_id)
+
+    # Filter by date if provided
+    if since:
+        memories = [m for m in memories if m.get("created_at", "") >= since]
+
+    if format == "markdown":
+        lines = ["# SuperNova Memory Export\n"]
+        for m in memories:
+            lines.append(f"## {m.get('title', m.get('id', 'Memory'))}\n")
+            lines.append(f"{m.get('content', '')}\n")
+            if m.get("category"):
+                lines.append(f"*Category: {m['category']}*\n")
+            lines.append("---\n")
+        return PlainTextResponse("\n".join(lines), media_type="text/markdown")
+
+    return {"user_id": user_id, "count": len(memories), "memories": memories}
+
+
+@app.post("/memory/import")
+async def import_memories(
+    user_id: str = Depends(get_current_user),
+    body: dict[str, Any] = ...,
+) -> dict[str, Any]:
+    """Import memories from JSON payload."""
+    store = _state.get("semantic_store")
+    if not store:
+        return {"imported": 0, "error": "Semantic store not initialized"}
+
+    memories = body.get("memories", [])
+    imported = 0
+    for m in memories:
+        content = m.get("content", "")
+        if not content:
+            continue
+        await store.upsert(
+            content=content,
+            user_id=user_id,
+            metadata=m.get("metadata", {}),
+        )
+        imported += 1
+
+    return {"imported": imported, "total_submitted": len(memories)}
+
+
 # ── HITL interrupt router ─────────────────────────────────────────────────────
 
 def mount_interrupt_router(coordinator: Any) -> None:

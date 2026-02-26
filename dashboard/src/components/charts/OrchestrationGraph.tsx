@@ -2,7 +2,7 @@
  * OrchestrationGraph Component
  * Multi-agent workflow visualization
  */
-import React, { memo, useMemo, useCallback } from 'react';
+import { memo, useMemo, useCallback } from 'react';
 import type { OrchestrationGraphProps } from '../../types';
 import { Theme } from '../../theme';
 

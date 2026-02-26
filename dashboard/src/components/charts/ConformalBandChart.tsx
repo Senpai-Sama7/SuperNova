@@ -2,7 +2,7 @@
  * ConformalBandChart Component
  * Uncertainty quantification visualization with prediction bands
  */
-import React, { memo, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { ConformalBandChartProps } from '../../types';
 import { Theme } from '../../theme';
 
@@ -42,11 +42,13 @@ export const ConformalBandChart = memo<ConformalBandChartProps>(function Conform
       return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
     }).join(' ');
 
-    const lowerPath = data.map((d, i) => {
+    const lowerPath = data.map((_, i) => {
+      const dataPoint = data[data.length - 1 - i];
+      if (!dataPoint) return '';
       const x = xScale(data.length - 1 - i);
-      const y = yScale(data[data.length - 1 - i].lower);
+      const y = yScale(dataPoint.lower);
       return `L ${x} ${y}`;
-    }).join(' ');
+    }).filter(Boolean).join(' ');
 
     return `${upperPath} ${lowerPath} Z`;
   }, [data, xScale, yScale]);
