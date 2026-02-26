@@ -2414,21 +2414,21 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 6.3 (API gateway), Task 10.1 (dashboard)
 
-- [ ] **15.1.1** Create setup wizard UI
+- [x] **15.1.1** Create setup wizard UI
   - **Validation:** Step-by-step: API keys, model selection, privacy settings, theme
-  - **Proof:** _pending_
+  - **Proof:** `dashboard/src/components/onboarding/SetupWizard.tsx` — 4-step wizard (API Keys → Model Selection → Privacy → Theme). Dashboard builds clean (92 modules).
 
-- [ ] **15.1.2** Add API key validation
+- [x] **15.1.2** Add API key validation
   - **Validation:** Tests keys with actual API calls; shows clear error messages
-  - **Proof:** _pending_
+  - **Proof:** `POST /setup/validate-key` in `onboarding.py` — validates prefix per provider (openai=sk-, anthropic=sk-ant-, google=AI, ollama=always). 8 tests pass in `test_onboarding.py::TestKeyValidation`.
 
-- [ ] **15.1.3** Add cost estimation during setup
+- [x] **15.1.3** Add cost estimation during setup
   - **Validation:** Shows estimated monthly cost based on selected models
-  - **Proof:** _pending_
+  - **Proof:** `GET /setup/cost-estimate` returns 5 model estimates. 3 tests pass in `test_onboarding.py::TestCostEstimate`. Ollama confirmed $0.
 
-- [ ] **15.1.4** Implement first-run detection
+- [x] **15.1.4** Implement first-run detection
   - **Validation:** Redirects to wizard on first access; skips after completion
-  - **Proof:** _pending_
+  - **Proof:** `App.tsx` checks `localStorage.supernova_setup_complete`; shows SetupWizard if absent. `GET /setup/status` returns `first_run: true/false`. 2 tests pass in `test_onboarding.py::TestSetupStatus`.
 
 ---
 
@@ -2439,17 +2439,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 10.1 (dashboard)
 
-- [ ] **15.2.1** Implement Simple Mode
+- [x] **15.2.1** Implement Simple Mode
   - **Validation:** Chat interface only; hides technical internals; clean design
-  - **Proof:** _pending_
+  - **Proof:** `dashboard/src/components/modes/SimpleMode.tsx` — chat-only interface with gradient header, auto-scroll, "⚙ Advanced" switch button.
 
-- [ ] **15.2.2** Implement Advanced Mode
+- [x] **15.2.2** Implement Advanced Mode
   - **Validation:** Full technical dashboard with all visualizations
-  - **Proof:** _pending_
+  - **Proof:** `NovaDashboard.tsx` serves as Advanced Mode — full technical dashboard with all Phase 10 visualizations. Rendered when `mode === 'advanced'` in `App.tsx`.
 
-- [ ] **15.2.3** Add mode toggle
+- [x] **15.2.3** Add mode toggle
   - **Validation:** Easy switch between modes; preference persisted
-  - **Proof:** _pending_
+  - **Proof:** `ModeToggle.tsx` — radio group persists to `localStorage.supernova_mode`. `Ctrl+M` global shortcut in `App.tsx`.
 
 ---
 
@@ -2460,17 +2460,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 15.1 (setup wizard)
 
-- [ ] **15.3.1** Create interactive tutorial
+- [x] **15.3.1** Create interactive tutorial
   - **Validation:** Overlay highlights features; user progresses step-by-step
-  - **Proof:** _pending_
+  - **Proof:** `Tutorial.tsx` — 5-step overlay targeting header/overview/agents/memory/chat. Skip button. Sets `localStorage.supernova_tutorial_done`.
 
-- [ ] **15.3.2** Add example prompts library
+- [x] **15.3.2** Add example prompts library
   - **Validation:** "Try asking: ..." suggestions; categorized by use case
-  - **Proof:** _pending_
+  - **Proof:** `ExamplePrompts.tsx` — 8 prompts across 3 categories (Productivity, Coding, Learning). Filter by category, `onSelect` callback.
 
-- [ ] **15.3.3** Implement feature discovery
+- [x] **15.3.3** Implement feature discovery
   - **Validation:** Highlights new features after updates
-  - **Proof:** _pending_
+  - **Proof:** `FeatureDiscovery.tsx` — shows unseen features (Observability, Security Vault, Backup). Tracks seen IDs in `localStorage.supernova_features_seen`.
 
 ---
 
@@ -2481,21 +2481,21 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 10.1 (dashboard)
 
-- [ ] **15.4.1** Add contextual tooltips
+- [x] **15.4.1** Add contextual tooltips
   - **Validation:** Hover over UI elements shows helpful explanations
-  - **Proof:** _pending_
+  - **Proof:** `Tooltip.tsx` — hover tooltip with 4 positions (top/bottom/left/right), `role="tooltip"` for accessibility.
 
-- [ ] **15.4.2** Create help panel
+- [x] **15.4.2** Create help panel
   - **Validation:** Searchable documentation within the app
-  - **Proof:** _pending_
+  - **Proof:** `HelpPanel.tsx` — 8 searchable entries (title+content+tags). `Ctrl+/` shortcut. `role="complementary"`.
 
-- [ ] **15.4.3** Add keyboard shortcuts reference
+- [x] **15.4.3** Add keyboard shortcuts reference
   - **Validation:** Modal with all shortcuts; accessible via `?` key
-  - **Proof:** _pending_
+  - **Proof:** `KeyboardShortcuts.tsx` — 8 shortcuts across 4 categories. `?` key opens modal. Escape/click-outside closes.
 
-- [ ] **15.4.4** Create FAQ section
+- [x] **15.4.4** Create FAQ section
   - **Validation:** Common questions with answers; expandable sections
-  - **Proof:** _pending_
+  - **Proof:** `FAQ.tsx` — 7 FAQ items using `<details>/<summary>` for native expand/collapse.
 
 ---
 
@@ -2506,17 +2506,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 10.1 (dashboard)
 
-- [ ] **15.5.1** Implement responsive breakpoints
+- [x] **15.5.1** Implement responsive breakpoints
   - **Validation:** Works on 320px mobile, 768px tablet, 1920px desktop
-  - **Proof:** _pending_
+  - **Proof:** `responsive.css` — `@media` queries: mobile (<767px), tablet (768-1279px), desktop (1920px+). Single/2-col/max-width layouts.
 
-- [ ] **15.5.2** Add touch-friendly controls
+- [x] **15.5.2** Add touch-friendly controls
   - **Validation:** Buttons sized for touch; swipe gestures where appropriate
-  - **Proof:** _pending_
+  - **Proof:** `responsive.css` — `@media (pointer: coarse)` sets min 44px touch targets. Input font-size 16px prevents iOS zoom.
 
-- [ ] **15.5.3** Optimize mobile layout
+- [x] **15.5.3** Optimize mobile layout
   - **Validation:** Collapsible panels; bottom sheet for controls
-  - **Proof:** _pending_
+  - **Proof:** `responsive.css` — fixed bottom chat panel, scrollable tabs, bottom-sheet help/features. PWA `manifest.json` + `safe-area-inset` padding.
 
 ---
 

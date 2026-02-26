@@ -1,0 +1,192 @@
+/* SuperNova Responsive + Onboarding Styles — Phase 15 */
+
+/* ── 15.5.1 Breakpoints: 320px mobile, 768px tablet, 1920px desktop ── */
+
+/* Mobile-first base */
+.nv-app-container { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; }
+
+@media (max-width: 767px) {
+  .nv-app-container { font-size: 14px; }
+  .nv-header { padding: 12px 16px !important; }
+  .nv-header .nv-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 4px !important; }
+  .nv-header .nv-tabs::-webkit-scrollbar { display: none; }
+  .nv-main { padding: 12px !important; gap: 12px !important; }
+  .nv-grid-2, .nv-grid-3 { grid-template-columns: 1fr !important; }
+  .nv-chat-panel { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; border-radius: 16px 16px 0 0; max-height: 60vh; }
+  .nv-simple-mode { padding: 0; }
+  .nv-simple-header { padding: 12px 16px; }
+  .nv-simple-input-bar { padding: 8px 12px; }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .nv-grid-3 { grid-template-columns: 1fr 1fr !important; }
+}
+
+@media (min-width: 1920px) {
+  .nv-app-container { max-width: 1920px; margin: 0 auto; }
+}
+
+/* ── 15.5.2 Touch-friendly controls ── */
+
+@media (pointer: coarse) {
+  button, [role="tab"], [role="radio"], .nv-prompt-item, .nv-shortcut-row {
+    min-height: 44px; min-width: 44px;
+  }
+  .nv-wizard-btn, .nv-wizard-btn-sm, .nv-mode-btn, .nv-prompt-tag {
+    padding: 10px 16px; font-size: 15px;
+  }
+  input, .nv-wizard-input, .nv-simple-input { font-size: 16px; /* prevents iOS zoom */ }
+}
+
+/* ── 15.5.3 Collapsible panels + bottom sheet ── */
+
+@media (max-width: 767px) {
+  .nv-help-panel { position: fixed; bottom: 0; left: 0; right: 0; top: auto; max-height: 70vh; border-radius: 16px 16px 0 0; overflow-y: auto; z-index: 200; }
+  .nv-feature-discovery { position: fixed; bottom: 0; left: 0; right: 0; border-radius: 16px 16px 0 0; z-index: 150; }
+}
+
+/* ── Wizard Styles (15.1) ── */
+
+.nv-wizard-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.nv-wizard-card {
+  background: #0d1117; border: 1px solid rgba(0,255,213,0.15); border-radius: 16px;
+  padding: 24px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  color: #e6edf3;
+}
+.nv-wizard-steps { display: flex; gap: 4px; margin: 16px 0; flex-wrap: wrap; }
+.nv-wizard-step {
+  padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+  background: transparent; color: rgba(255,255,255,0.5); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 4px; transition: all 0.2s;
+}
+.nv-wizard-step.active { border-color: #00ffd5; color: #00ffd5; background: rgba(0,255,213,0.08); }
+.nv-wizard-step.done { color: rgba(0,255,213,0.6); }
+.nv-wizard-body { min-height: 200px; margin: 16px 0; }
+.nv-wizard-body h2 { font-size: 16px; margin: 0 0 8px; }
+.nv-wizard-input {
+  width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05); color: #e6edf3; font-size: 14px; box-sizing: border-box;
+}
+.nv-wizard-input:focus { outline: none; border-color: #00ffd5; }
+.nv-wizard-btn {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+  background: transparent; color: #e6edf3; cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.nv-wizard-btn.primary { background: #00ffd5; color: #0d1117; border-color: #00ffd5; font-weight: 600; }
+.nv-wizard-btn.primary:hover { background: #00e6c0; }
+.nv-wizard-btn-sm { padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #e6edf3; cursor: pointer; font-size: 12px; }
+.nv-wizard-footer { display: flex; gap: 8px; align-items: center; margin-top: 16px; }
+.nv-wizard-radio {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; cursor: pointer; transition: all 0.2s;
+}
+.nv-wizard-radio.selected { border-color: #00ffd5; background: rgba(0,255,213,0.06); }
+.nv-wizard-radio input { accent-color: #00ffd5; }
+.nv-wizard-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.nv-wizard-toggle input { accent-color: #00ffd5; width: 18px; height: 18px; }
+.nv-wizard-theme-btn {
+  padding: 12px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+  background: transparent; color: #e6edf3; cursor: pointer; text-transform: capitalize; transition: all 0.2s;
+}
+.nv-wizard-theme-btn.selected { border-color: #00ffd5; background: rgba(0,255,213,0.08); }
+
+/* ── Tutorial (15.3.1) ── */
+
+.nv-tutorial-overlay { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.5); }
+.nv-tutorial-tooltip {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: #0d1117; border: 1px solid rgba(0,255,213,0.2); border-radius: 12px;
+  padding: 16px 20px; max-width: 340px; color: #e6edf3;
+}
+
+/* ── Example Prompts (15.3.2) ── */
+
+.nv-prompt-tag {
+  padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);
+  background: transparent; color: rgba(255,255,255,0.6); font-size: 12px; cursor: pointer;
+}
+.nv-prompt-tag.active { background: rgba(0,255,213,0.1); border-color: #00ffd5; color: #00ffd5; }
+.nv-prompt-list { display: flex; flex-direction: column; gap: 4px; }
+.nv-prompt-item {
+  display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #e6edf3;
+  cursor: pointer; text-align: left; transition: all 0.2s;
+}
+.nv-prompt-item:hover { border-color: rgba(0,255,213,0.3); background: rgba(0,255,213,0.04); }
+
+/* ── Feature Discovery (15.3.3) ── */
+
+.nv-feature-discovery {
+  background: #0d1117; border: 1px solid rgba(0,255,213,0.15); border-radius: 12px;
+  padding: 16px; color: #e6edf3;
+}
+.nv-feature-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+/* ── Mode Toggle (15.2.3) ── */
+
+.nv-mode-toggle { display: inline-flex; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); overflow: hidden; }
+.nv-mode-btn {
+  padding: 6px 14px; border: none; background: transparent; color: rgba(255,255,255,0.5);
+  cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.nv-mode-btn.active { background: rgba(0,255,213,0.12); color: #00ffd5; }
+
+/* ── Simple Mode (15.2.1) ── */
+
+.nv-simple-mode { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #0d1117; color: #e6edf3; }
+.nv-simple-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.nv-simple-messages { flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 8px; }
+.nv-simple-msg { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.nv-simple-msg.nv-msg-user { align-self: flex-end; background: #00ffd5; color: #0d1117; border-radius: 12px 12px 4px 12px; }
+.nv-simple-msg.nv-msg-assistant { align-self: flex-start; background: #161b22; border-radius: 12px 12px 12px 4px; }
+.nv-simple-msg.nv-msg-system { align-self: center; opacity: 0.5; font-size: 12px; }
+.nv-simple-input-bar { display: flex; gap: 8px; padding: 12px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+.nv-simple-input { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #e6edf3; font-size: 14px; }
+.nv-simple-input:focus { outline: none; border-color: #00ffd5; }
+
+/* ── Help Panel (15.4.2) ── */
+
+.nv-help-panel {
+  background: #0d1117; border: 1px solid rgba(0,255,213,0.15); border-radius: 12px;
+  padding: 16px; color: #e6edf3; max-height: 500px; overflow-y: auto;
+}
+.nv-help-entry { border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+/* ── Keyboard Shortcuts (15.4.3) ── */
+
+.nv-shortcuts-card {
+  background: #0d1117; border: 1px solid rgba(0,255,213,0.15); border-radius: 16px;
+  padding: 24px; max-width: 480px; width: 100%; color: #e6edf3;
+}
+.nv-shortcut-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.nv-kbd {
+  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  font-family: monospace; min-width: 80px; text-align: center;
+}
+
+/* ── FAQ (15.4.4) ── */
+
+.nv-faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+/* ── Tooltip (15.4.1) ── */
+
+.nv-tooltip {
+  position: absolute; z-index: 500; padding: 6px 10px; border-radius: 6px;
+  background: #161b22; border: 1px solid rgba(0,255,213,0.2); color: #e6edf3;
+  font-size: 12px; white-space: nowrap; pointer-events: none;
+}
+.nv-tooltip-top { bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
+.nv-tooltip-bottom { top: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
+.nv-tooltip-left { right: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
+.nv-tooltip-right { left: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
+
+/* ── PWA manifest meta (15.3 mobile) ── */
+@media (display-mode: standalone) {
+  .nv-simple-header { padding-top: env(safe-area-inset-top, 16px); }
+  .nv-simple-input-bar { padding-bottom: env(safe-area-inset-bottom, 12px); }
+}

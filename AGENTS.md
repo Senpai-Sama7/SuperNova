@@ -110,7 +110,8 @@ supernova/                      # Main Python package
 │       ├── __init__.py
 │       ├── agent.py            # Agent execution endpoints
 │       ├── dashboard.py        # Dashboard API endpoints
-│       └── mcp_routes.py       # MCP server and skills API endpoints
+│       ├── mcp_routes.py       # MCP server and skills API endpoints
+│       └── onboarding.py       # Setup wizard, key validation, cost estimate, first-run detection
 │
 ├── core/                       # Core agent logic
 │   ├── __init__.py
@@ -195,7 +196,8 @@ supernova/                      # Main Python package
 │   ├── test_cost_controller.py    # Cost tracking, budget routing, Ollama client tests
 │   ├── test_backup.py             # Backup manager, worker, export/import, CLI tests
 │   ├── test_security.py           # Serializer, secrets vault, audit logging, sandbox tests
-│   └── test_observability.py       # Structured logging, health checks, metrics, CLI tests
+│   ├── test_observability.py       # Structured logging, health checks, metrics, CLI tests
+│   └── test_onboarding.py          # Setup wizard API: status, key validation, cost estimate, completion
 │
 ├── workers/                    # Celery background workers
 │   ├── __init__.py
@@ -240,7 +242,10 @@ dashboard/
 │   ├── components/
 │   │   ├── ui/                        # StatusDot, Badge, Glow, MiniBar, RiskPill
 │   │   ├── cards/                     # AgentCard, ApprovalCard, MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget, ExportButton, HealthPanel
-│   │   └── charts/                    # CognitiveCycleRing, ConfidenceMeter, Sparkline, MemoryGraph, OrchestrationGraph
+│   │   ├── charts/                    # CognitiveCycleRing, ConfidenceMeter, Sparkline, MemoryGraph, OrchestrationGraph
+│   │   ├── onboarding/                # SetupWizard, Tutorial, ExamplePrompts, FeatureDiscovery
+│   │   ├── modes/                     # SimpleMode, ModeToggle (simple/advanced dashboard switching)
+│   │   └── help/                      # Tooltip, HelpPanel, KeyboardShortcuts, FAQ
 │   ├── utils/
 │   └── assets/
 ├── tests/
