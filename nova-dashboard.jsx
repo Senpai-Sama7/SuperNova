@@ -1,4 +1,40 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+
+// ─── Design System (Premium Aesthetic) ───────────────────────────────────────
+
+const Theme = {
+  colors: {
+    bg: "#050608",
+    cardBg: "rgba(15, 18, 25, 0.7)",
+    accent: "#00ffd5", // SuperNova Cyan
+    secondary: "#a78bfa", // Mystic Purple
+    warning: "#fbbf24", // Amber
+    error: "#f87171", // Rose
+    text: "#f8fafc",
+    textMuted: "#94a3b8",
+    glassBorder: "rgba(255, 255, 255, 0.08)",
+    neonGlow: "0 0 15px rgba(0, 255, 213, 0.3)",
+  },
+  fonts: {
+    display: "'Space Grotesk', sans-serif",
+    mono: "'JetBrains Mono', monospace",
+  },
+  glass: {
+    backdropFilter: "blur(12px) saturate(180%)",
+    backgroundColor: "rgba(15, 18, 25, 0.7)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+  },
+};
+
+// Injecting Google Fonts dynamically
+if (typeof document !== "undefined") {
+  const link = document.createElement("link");
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+}
 
 // ─── Engines (from UPS decision-intelligence-ui skill) ───────────────────────
 
@@ -379,7 +415,7 @@ function useNovaSimulation() {
 
 // ─── Micro-components ─────────────────────────────────────────────────────────
 
-const Glow = ({ color = "#00ffd5", size = 60 }) => (
+const Glow = ({ color = Theme.colors.accent, size = 60 }) => (
   <div
     style={{
       position: "absolute",
@@ -388,24 +424,29 @@ const Glow = ({ color = "#00ffd5", size = 60 }) => (
       borderRadius: "50%",
       background: color,
       filter: "blur(40px)",
-      opacity: 0.15,
+      opacity: 0.12,
       pointerEvents: "none",
+      zIndex: 0,
     }}
   />
 );
 
-const Badge = ({ label, color }) => (
+const Badge = ({ label, color = Theme.colors.accent }) => (
   <span
     style={{
-      padding: "2px 8px",
-      borderRadius: 4,
-      fontSize: 10,
+      padding: "3px 10px",
+      borderRadius: "4px",
+      fontSize: "9px",
       fontWeight: 700,
-      background: color + "22",
+      background: `${color}15`,
       color,
-      border: `1px solid ${color}44`,
-      letterSpacing: "0.08em",
+      border: `1px solid ${color}30`,
+      letterSpacing: "0.12em",
       textTransform: "uppercase",
+      fontFamily: Theme.fonts.mono,
+      display: "inline-flex",
+      alignItems: "center",
+      backdropFilter: "blur(4px)",
     }}
   >
     {label}
@@ -414,12 +455,13 @@ const Badge = ({ label, color }) => (
 
 const StatusDot = ({ status }) => {
   const colors = {
-    active: "#00ffd5",
-    reasoning: "#a78bfa",
-    waiting: "#fbbf24",
-    idle: "#6b7280",
-    error: "#f87171",
+    active: Theme.colors.accent,
+    reasoning: Theme.colors.secondary,
+    waiting: Theme.colors.warning,
+    idle: Theme.colors.textMuted,
+    error: Theme.colors.error,
   };
+  const sc = colors[status] || Theme.colors.textMuted;
   return (
     <span
       style={{
@@ -427,31 +469,32 @@ const StatusDot = ({ status }) => {
         width: 8,
         height: 8,
         borderRadius: "50%",
-        background: colors[status] || "#6b7280",
-        boxShadow: `0 0 6px ${colors[status] || "#6b7280"}`,
-        marginRight: 6,
+        background: sc,
+        boxShadow: `0 0 10px ${sc}`,
+        marginRight: 8,
+        flexShrink: 0,
       }}
     />
   );
 };
 
-const MiniBar = ({ value, max, color = "#00ffd5", width = 80 }) => (
+const MiniBar = ({ value, max, color = Theme.colors.accent, width = 80 }) => (
   <div
     style={{
       width,
       height: 4,
-      background: "#ffffff10",
-      borderRadius: 2,
+      background: "rgba(255, 255, 255, 0.05)",
+      borderRadius: 10,
       overflow: "hidden",
     }}
   >
     <div
       style={{
-        width: `${(value / max) * 100}%`,
+        width: `${Math.min(100, (value / max) * 100)}%`,
         height: "100%",
         background: color,
-        transition: "width 0.4s ease",
-        borderRadius: 2,
+        boxShadow: `0 0 8px ${color}66`,
+        transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     />
   </div>
@@ -459,184 +502,16 @@ const MiniBar = ({ value, max, color = "#00ffd5", width = 80 }) => (
 
 const RiskPill = ({ risk }) => {
   const map = {
-    low: ["#34d399", "LOW"],
-    medium: ["#fbbf24", "MED"],
-    high: ["#f87171", "HIGH"],
-    critical: ["#e879f9", "CRIT"],
+    low: [Theme.colors.accent, "LOW"],
+    medium: [Theme.colors.warning, "MED"],
+    high: [Theme.colors.error, "HIGH"],
+    critical: [Theme.colors.secondary, "CRIT"],
   };
-  const [color, label] = map[risk] || ["#6b7280", "?"];
+  const [color, label] = map[risk] || [Theme.colors.textMuted, "?"];
   return <Badge label={label} color={color} />;
 };
 
-// ─── Sparkline ────────────────────────────────────────────────────────────────
-const Sparkline = ({
-  data,
-  width = 200,
-  height = 50,
-  color = "#00ffd5",
-  showBand = false,
-  bandData = null,
-}) => {
-  if (!data.length) return null;
-  const minV = Math.min(...data) - 0.05;
-  const maxV = Math.max(...data) + 0.05;
-  const scaleX = (i) => (i / (data.length - 1)) * width;
-  const scaleY = (v) => height - ((v - minV) / (maxV - minV)) * height;
-  const path = data
-    .map((v, i) => `${i === 0 ? "M" : "L"} ${scaleX(i)} ${scaleY(v)}`)
-    .join(" ");
-  const areaPath = `${path} L ${scaleX(data.length - 1)} ${height} L ${scaleX(0)} ${height} Z`;
-
-  return (
-    <svg
-      width={width}
-      height={height}
-      style={{ overflow: "visible" }}
-      role="img"
-      aria-label="Performance metrics sparkline"
-    >
-      <defs>
-        <linearGradient
-          id={`grad-${color.replace("#", "")}`}
-          x1="0"
-          x2="0"
-          y1="0"
-          y2="1"
-        >
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {showBand && bandData && (
-        <path d={bandData} fill={color} fillOpacity={0.08} stroke="none" />
-      )}
-      <path
-        d={areaPath}
-        fill={`url(#grad-${color.replace("#", "")})`}
-        stroke="none"
-      />
-      <path
-        d={path}
-        fill="none"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-      {data.length > 0 && (
-        <circle
-          cx={scaleX(data.length - 1)}
-          cy={scaleY(data[data.length - 1])}
-          r={3}
-          fill={color}
-        />
-      )}
-    </svg>
-  );
-};
-
-// ─── Memory Graph ─────────────────────────────────────────────────────────────
-const MemoryGraph = ({ nodes }) => {
-  const typeColors = {
-    episodic: "#a78bfa",
-    procedural: "#00ffd5",
-    semantic: "#fbbf24",
-  };
-  const edges = [
-    ["m1", "m3"],
-    ["m3", "m5"],
-    ["m2", "m6"],
-    ["m3", "m7"],
-    ["m4", "m6"],
-    ["m1", "m5"],
-    ["m3", "m2"],
-    ["m5", "m7"],
-  ];
-
-  return (
-    <div style={{ position: "relative", width: "100%", height: 180 }}>
-      <svg
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-        }}
-        role="img"
-        aria-label="Neural memory graph visualization"
-      >
-        {edges.map(([a, b], i) => {
-          const na = nodes.find((n) => n.id === a);
-          const nb = nodes.find((n) => n.id === b);
-          if (!na || !nb) return null;
-          return (
-            <line
-              key={i}
-              x1={`${na.x}%`}
-              y1={`${na.y}%`}
-              x2={`${nb.x}%`}
-              y2={`${nb.y}%`}
-              stroke="#ffffff15"
-              strokeWidth={1}
-              strokeDasharray="3,3"
-            />
-          );
-        })}
-      </svg>
-      {nodes.map((node) => (
-        <div
-          key={node.id}
-          style={{
-            position: "absolute",
-            left: `${node.x}%`,
-            top: `${node.y}%`,
-            transform: "translate(-50%, -50%)",
-            cursor: "pointer",
-          }}
-        >
-          <div
-            style={{
-              width: 10 + node.connections * 3,
-              height: 10 + node.connections * 3,
-              borderRadius: "50%",
-              background: typeColors[node.type] + "33",
-              border: `2px solid ${typeColors[node.type]}`,
-              boxShadow: `0 0 ${node.strength * 12}px ${typeColors[node.type]}66`,
-              transition: "all 0.6s ease",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 4,
-                height: 4,
-                borderRadius: "50%",
-                background: typeColors[node.type],
-              }}
-            />
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              fontSize: 9,
-              color: "#ffffff88",
-              whiteSpace: "nowrap",
-              marginTop: 3,
-              fontFamily: "monospace",
-            }}
-          >
-            {node.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+// ─── Visualizations ───────────────────────────────────────────────────────── (Moved to end of file)
 
 // ─── Cognitive Loop Ring ──────────────────────────────────────────────────────
 const CognitiveCycleRing = ({ phase, step, progress }) => {
@@ -649,12 +524,12 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
     "CONSOLIDATE",
   ];
   const colors = [
-    "#38bdf8",
-    "#a78bfa",
-    "#00ffd5",
-    "#f97316",
-    "#e879f9",
-    "#34d399",
+    Theme.colors.info,
+    Theme.colors.secondary,
+    Theme.colors.accent,
+    Theme.colors.warning,
+    Theme.colors.secondary,
+    Theme.colors.success,
   ];
   const r = 55,
     cx = 70,
@@ -670,12 +545,16 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
         role="img"
         aria-label={`Cognitive cycle phase: ${phase}`}
       >
+        <defs>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
         {phases.map((p, i) => {
-          const angle = (i / phases.length) * 2 * Math.PI - Math.PI / 2;
-          const offset = circumference - i * segmentLen;
           const active = i === step;
           const done = i < step;
-          const dashLen = segmentLen - 3;
+          const dashLen = segmentLen - 4;
 
           return (
             <circle
@@ -685,15 +564,20 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
               r={r}
               fill="none"
               stroke={
-                active ? colors[i] : done ? colors[i] + "88" : "#ffffff15"
+                active
+                  ? colors[i]
+                  : done
+                    ? colors[i] + "44"
+                    : Theme.colors.border
               }
-              strokeWidth={active ? 5 : 3}
+              strokeWidth={active ? 4 : 2}
               strokeDasharray={`${dashLen} ${circumference - dashLen}`}
               strokeDashoffset={-i * segmentLen + circumference / 4}
               strokeLinecap="round"
               style={{
-                transition: "stroke 0.4s ease",
-                filter: active ? `drop-shadow(0 0 6px ${colors[i]})` : "none",
+                transition: "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                filter: active ? "url(#glow)" : "none",
+                opacity: active ? 1 : done ? 0.6 : 0.3,
               }}
             />
           );
@@ -702,11 +586,11 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
         <circle
           cx={cx}
           cy={cy}
-          r={r - 8}
+          r={r - 10}
           fill="none"
-          stroke={colors[step] + "44"}
-          strokeWidth={2}
-          strokeDasharray={`${(segmentLen - 3) * progress} ${circumference}`}
+          stroke={colors[step] + "22"}
+          strokeWidth={1}
+          strokeDasharray={`${(segmentLen - 4) * progress} ${circumference}`}
           strokeDashoffset={-step * segmentLen + circumference / 4}
           strokeLinecap="round"
         />
@@ -718,25 +602,29 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
           left: "50%",
           transform: "translate(-50%,-50%)",
           textAlign: "center",
+          width: "100%",
         }}
       >
         <div
           style={{
-            fontSize: 9,
-            color: "#ffffff66",
-            fontFamily: "monospace",
-            letterSpacing: "0.1em",
+            fontSize: 8,
+            color: Theme.colors.textMuted,
+            fontFamily: Theme.fonts.mono,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            marginBottom: 2,
           }}
         >
           PHASE
         </div>
         <div
           style={{
-            fontSize: 11,
+            fontSize: 10,
             color: colors[step],
-            fontWeight: 700,
-            fontFamily: "monospace",
-            letterSpacing: "0.06em",
+            fontWeight: 800,
+            fontFamily: Theme.fonts.mono,
+            letterSpacing: "0.05em",
+            filter: `drop-shadow(0 0 8px ${colors[step]}44)`,
           }}
         >
           {phase}
@@ -745,23 +633,27 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
       {/* Phase labels around ring */}
       {phases.map((p, i) => {
         const angle = (i / phases.length) * 2 * Math.PI - Math.PI / 2;
-        const lx = cx + (r + 16) * Math.cos(angle);
-        const ly = cy + (r + 16) * Math.sin(angle);
+        const lx = cx + (r + 14) * Math.cos(angle);
+        const ly = cy + (r + 14) * Math.sin(angle);
         return (
-          <text
+          <div
             key={i}
-            x={lx}
-            y={ly}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={i === step ? colors[i] : "#ffffff33"}
-            fontSize={7}
-            fontFamily="monospace"
-            fontWeight={i === step ? 700 : 400}
-            style={{ transition: "fill 0.4s ease" }}
+            style={{
+              position: "absolute",
+              left: lx,
+              top: ly,
+              transform: "translate(-50%, -50%)",
+              fontSize: 7,
+              fontFamily: Theme.fonts.mono,
+              color: i === step ? colors[i] : Theme.colors.textMuted,
+              fontWeight: i === step ? 900 : 400,
+              opacity: i === step ? 1 : 0.4,
+              transition: "all 0.4s ease",
+              pointerEvents: "none",
+            }}
           >
             {p.slice(0, 3)}
-          </text>
+          </div>
         );
       })}
     </div>
@@ -880,10 +772,10 @@ const ConfidenceMeter = ({ confidence, entropy }) => {
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 const AgentCard = ({ agent }) => {
   const statusColor = {
-    active: "#00ffd5",
-    reasoning: "#a78bfa",
-    waiting: "#fbbf24",
-    idle: "#6b7280",
+    active: Theme.colors.accent,
+    reasoning: Theme.colors.secondary,
+    waiting: Theme.colors.warning,
+    idle: Theme.colors.textMuted,
   };
   const roleIcons = {
     Planner: "◈",
@@ -892,18 +784,16 @@ const AgentCard = ({ agent }) => {
     Auditor: "⬡",
     Creative: "✦",
   };
-  const sc = statusColor[agent.status] || "#6b7280";
+  const sc = statusColor[agent.status] || Theme.colors.textMuted;
 
   return (
     <div
       style={{
-        background: "#0f1117",
-        border: `1px solid ${sc}33`,
-        borderRadius: 10,
-        padding: "12px 14px",
+        ...Theme.glass,
+        padding: "16px",
         position: "relative",
         overflow: "hidden",
-        transition: "border-color 0.4s ease",
+        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
       <div
@@ -914,7 +804,7 @@ const AgentCard = ({ agent }) => {
           right: 0,
           height: 2,
           background: `linear-gradient(90deg, transparent, ${sc}, transparent)`,
-          opacity: 0.6,
+          opacity: 0.8,
         }}
       />
       <div
@@ -922,20 +812,27 @@ const AgentCard = ({ agent }) => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: 8,
+          marginBottom: 12,
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 14, color: sc }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 16,
+                color: sc,
+                textShadow: `0 0 10px ${sc}44`,
+              }}
+            >
               {roleIcons[agent.role]}
             </span>
             <span
               style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: "#ffffff",
-                fontFamily: "monospace",
+                fontSize: 14,
+                fontWeight: 600,
+                color: Theme.colors.text,
+                fontFamily: Theme.fonts.display,
+                letterSpacing: "-0.01em",
               }}
             >
               {agent.name}
@@ -945,9 +842,11 @@ const AgentCard = ({ agent }) => {
           <div
             style={{
               fontSize: 10,
-              color: "#ffffff55",
-              fontFamily: "monospace",
-              marginTop: 1,
+              color: Theme.colors.textMuted,
+              fontFamily: Theme.fonts.mono,
+              marginTop: 2,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
             }}
           >
             {agent.role} · {agent.model}
@@ -956,24 +855,26 @@ const AgentCard = ({ agent }) => {
         <div style={{ textAlign: "right" }}>
           <div
             style={{
-              fontSize: 10,
-              color: "#ffffff44",
-              fontFamily: "monospace",
+              fontSize: 9,
+              color: Theme.colors.textMuted,
+              fontFamily: Theme.fonts.mono,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
             }}
           >
-            success
+            SUCCESS
           </div>
           <div
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color:
                 agent.success > 0.95
-                  ? "#34d399"
+                  ? Theme.colors.accent
                   : agent.success > 0.9
-                    ? "#fbbf24"
-                    : "#f87171",
+                    ? Theme.colors.warning
+                    : Theme.colors.error,
               fontWeight: 700,
-              fontFamily: "monospace",
+              fontFamily: Theme.fonts.mono,
             }}
           >
             {(agent.success * 100).toFixed(0)}%
@@ -982,51 +883,46 @@ const AgentCard = ({ agent }) => {
       </div>
       <div
         style={{
-          fontSize: 10,
-          color: "#ffffff66",
-          fontFamily: "monospace",
-          marginBottom: 8,
+          fontSize: 11,
+          color: "rgba(255, 255, 255, 0.7)",
+          fontFamily: Theme.fonts.display,
+          marginBottom: 12,
           fontStyle: "italic",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          borderLeft: `2px solid ${sc}44`,
+          paddingLeft: 8,
         }}
       >
-        ↳ {agent.task}
+        {agent.task}
       </div>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          fontSize: 10,
+          fontFamily: Theme.fonts.mono,
+          color: Theme.colors.textMuted,
+          marginTop: 12,
         }}
       >
-        <div>
-          <div
-            style={{
-              fontSize: 9,
-              color: "#ffffff44",
-              marginBottom: 3,
-              fontFamily: "monospace",
-            }}
-          >
-            load {agent.load}/{agent.max}
-          </div>
-          <MiniBar value={agent.load} max={agent.max} color={sc} width={90} />
+        <div style={{ display: "flex", gap: 10 }}>
+          <span>
+            <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>LOAD:</span>{" "}
+            {agent.load}/{agent.max}
+          </span>
+          <span>
+            <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>TOOLS:</span>{" "}
+            {agent.tools_called}
+          </span>
+          <span>
+            <span style={{ color: "rgba(255, 255, 255, 0.2)" }}>MEM:</span>{" "}
+            {agent.memory_hits}
+          </span>
         </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            fontSize: 10,
-            color: "#ffffff55",
-            fontFamily: "monospace",
-          }}
-        >
-          <span>⟳ {agent.tools_called}</span>
-          <span>⬡ {agent.memory_hits}</span>
-          <span>~{agent.latency.toFixed(1)}s</span>
-        </div>
+        <MiniBar value={agent.load} max={agent.max} color={sc} width={50} />
       </div>
     </div>
   );
@@ -1035,23 +931,22 @@ const AgentCard = ({ agent }) => {
 // ─── Approval Card ────────────────────────────────────────────────────────────
 const ApprovalCard = ({ approval, onDecide }) => {
   const riskColors = {
-    low: "#34d399",
-    medium: "#fbbf24",
-    high: "#f87171",
-    critical: "#e879f9",
+    low: Theme.colors.accent,
+    medium: Theme.colors.warning,
+    high: Theme.colors.error,
+    critical: Theme.colors.secondary,
   };
-  const rc = riskColors[approval.risk];
+  const rc = riskColors[approval.risk] || Theme.colors.accent;
   const progress = (approval.expires / 300) * 100;
 
   return (
     <div
       style={{
-        background: "#0f1117",
-        border: `1px solid ${rc}55`,
-        borderRadius: 10,
-        padding: "12px 14px",
+        ...Theme.glass,
+        padding: "16px",
         position: "relative",
         overflow: "hidden",
+        border: `1px solid ${rc}33`,
       }}
     >
       <div
@@ -1063,6 +958,7 @@ const ApprovalCard = ({ approval, onDecide }) => {
           height: 2,
           background: rc,
           transition: "width 0.8s linear",
+          boxShadow: `0 0 10px ${rc}`,
           opacity: 0.8,
         }}
       />
@@ -1071,101 +967,669 @@ const ApprovalCard = ({ approval, onDecide }) => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: 6,
+          marginBottom: 12,
         }}
       >
         <div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "#ffffff",
-              fontFamily: "monospace",
-            }}
-          >
-            {approval.tool}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: Theme.colors.text,
+                fontFamily: Theme.fonts.display,
+              }}
+            >
+              {approval.type || approval.tool}
+            </span>
+            <RiskPill risk={approval.risk} />
           </div>
           <div
             style={{
               fontSize: 10,
-              color: "#ffffff55",
-              fontFamily: "monospace",
+              color: Theme.colors.textMuted,
+              fontFamily: Theme.fonts.mono,
+              marginTop: 2,
+              textTransform: "uppercase",
             }}
           >
-            {approval.agent}
+            {approval.agent} · ID: {approval.id.split("-")[0]}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <RiskPill risk={approval.risk} />
-          <span
-            style={{
-              fontSize: 10,
-              color: "#ffffff44",
-              fontFamily: "monospace",
-            }}
-          >
-            {approval.expires}s
-          </span>
+        <div
+          style={{
+            fontSize: 12,
+            color: rc,
+            fontWeight: 700,
+            fontFamily: Theme.fonts.mono,
+          }}
+        >
+          {approval.expires}s
         </div>
       </div>
+
       <div
         style={{
-          fontSize: 10,
-          color: "#ffffff66",
-          fontFamily: "monospace",
-          marginBottom: 10,
-          background: "#ffffff08",
-          padding: "4px 8px",
+          fontSize: 12,
+          color: "rgba(255, 255, 255, 0.8)",
+          fontFamily: Theme.fonts.display,
+          marginBottom: 16,
+          lineHeight: "1.5",
+          padding: "8px",
+          background: "rgba(255, 255, 255, 0.03)",
           borderRadius: 4,
+          borderLeft: `2px solid ${rc}`,
         }}
       >
-        {Object.entries(approval.args)
-          .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-          .join(", ")}
+        {approval.description ||
+          Object.entries(approval.args || {})
+            .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+            .join(", ")}
       </div>
+
       <div style={{ display: "flex", gap: 8 }}>
         <button
           onClick={() => onDecide(approval.id, true)}
           style={{
             flex: 1,
-            padding: "6px 0",
-            background: "#34d39922",
-            border: "1px solid #34d39966",
-            borderRadius: 6,
-            color: "#34d399",
+            padding: "8px",
+            borderRadius: 4,
+            border: "none",
+            background: Theme.colors.accent,
+            color: "#000000",
             fontSize: 11,
-            fontFamily: "monospace",
-            cursor: "pointer",
             fontWeight: 700,
-            letterSpacing: "0.06em",
+            fontFamily: Theme.fonts.mono,
+            cursor: "pointer",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            transition: "all 0.2s",
           }}
         >
-          ✓ APPROVE
+          Approve
         </button>
         <button
           onClick={() => onDecide(approval.id, false)}
           style={{
             flex: 1,
-            padding: "6px 0",
-            background: "#f8717122",
-            border: "1px solid #f8717166",
-            borderRadius: 6,
-            color: "#f87171",
+            padding: "8px",
+            borderRadius: 4,
+            border: `1px solid ${Theme.colors.error}44`,
+            background: "transparent",
+            color: Theme.colors.error,
             fontSize: 11,
-            fontFamily: "monospace",
-            cursor: "pointer",
             fontWeight: 700,
-            letterSpacing: "0.06em",
+            fontFamily: Theme.fonts.mono,
+            cursor: "pointer",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            transition: "all 0.2s",
           }}
         >
-          ✕ DENY
+          Deny
         </button>
       </div>
     </div>
   );
 };
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+const Sparkline = ({ data, color = Theme.colors.accent, height = 30 }) => {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data, 0.01);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const points = data
+    .map(
+      (v, i) =>
+        `${(i / (data.length - 1)) * 100},${100 - ((v - min) / range) * 100}`,
+    )
+    .join(" ");
+
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      style={{ width: "100%", height, overflow: "visible" }}
+    >
+      <defs>
+        <linearGradient id={`grad-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`M ${data.map((v, i) => `${(i / (data.length - 1)) * 100} ${100 - ((v - min) / range) * 100}`).join(" L ")} L 100 100 L 0 100 Z`}
+        fill={`url(#grad-${color})`}
+      />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          filter: `drop-shadow(0 0 4px ${color}66)`,
+        }}
+      />
+    </svg>
+  );
+};
+
+const MemoryGraph = ({ nodes }) => {
+  const mappedNodes = nodes.map((n) => ({
+    ...n,
+    vx: n.x * 4,
+    vy: n.y * 1.8,
+  }));
+
+  const edges = [];
+  for (let i = 0; i < mappedNodes.length; i++) {
+    for (let j = i + 1; j < mappedNodes.length; j++) {
+      const dx = mappedNodes[i].vx - mappedNodes[j].vx;
+      const dy = mappedNodes[i].vy - mappedNodes[j].vy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        edges.push({ source: mappedNodes[i], target: mappedNodes[j], dist });
+      }
+    }
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: 180,
+        position: "relative",
+        background: "rgba(0,0,0,0.2)",
+        borderRadius: 8,
+        border: "1px solid rgba(255,255,255,0.05)",
+        overflow: "hidden",
+      }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 400 180"
+        style={{ position: "absolute", zIndex: 1 }}
+      >
+        <defs>
+          <radialGradient id="node-glow-concept">
+            <stop
+              offset="0%"
+              stopColor={Theme.colors.accent}
+              stopOpacity="0.8"
+            />
+            <stop
+              offset="100%"
+              stopColor={Theme.colors.accent}
+              stopOpacity="0"
+            />
+          </radialGradient>
+          <radialGradient id="node-glow-other">
+            <stop
+              offset="0%"
+              stopColor={Theme.colors.secondary}
+              stopOpacity="0.8"
+            />
+            <stop
+              offset="100%"
+              stopColor={Theme.colors.secondary}
+              stopOpacity="0"
+            />
+          </radialGradient>
+        </defs>
+
+        {edges.map((e, i) => (
+          <line
+            key={`edge-${i}`}
+            x1={e.source.vx}
+            y1={e.source.vy}
+            x2={e.target.vx}
+            y2={e.target.vy}
+            stroke="#ffffff22"
+            strokeWidth={Math.max(0.5, 2 - e.dist / 50)}
+            opacity={Math.max(0.1, 1 - e.dist / 100)}
+          />
+        ))}
+
+        {mappedNodes.map((n) => {
+          const isConcept = n.type === "concept";
+          const r = 3 + n.v * 5;
+          return (
+            <g key={n.id}>
+              {n.v > 0.5 && (
+                <circle
+                  cx={n.vx}
+                  cy={n.vy}
+                  r={r * 3}
+                  fill={`url(#node-glow-${isConcept ? "concept" : "other"})`}
+                />
+              )}
+              <circle
+                cx={n.vx}
+                cy={n.vy}
+                r={r}
+                fill={isConcept ? Theme.colors.accent : Theme.colors.secondary}
+                opacity={0.6 + n.v * 0.4}
+              />
+
+              {n.v > 0.6 && (
+                <text
+                  x={n.vx}
+                  y={n.vy + r + 6 + 4}
+                  fill={Theme.colors.textMuted}
+                  fontSize="8"
+                  fontFamily="monospace"
+                  textAnchor="middle"
+                  opacity="0.8"
+                >
+                  {n.label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      {/* Background grid */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `radial-gradient(${Theme.colors.textMuted}11 1px, transparent 1px)`,
+          backgroundSize: "20px 20px",
+          opacity: 0.3,
+          zIndex: 0,
+        }}
+      />
+    </div>
+  );
+};
+
+const OrchestrationGraph = () => {
+  return (
+    <div style={{ padding: "16px 0", overflow: "visible" }}>
+      <svg
+        width="100%"
+        height="220"
+        viewBox="0 0 500 220"
+        style={{ overflow: "visible" }}
+      >
+        <defs>
+          <filter id="glow-prime" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="glow-worker" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <style>
+            {`
+              @keyframes dashFlow {
+                to {
+                  stroke-dashoffset: -20;
+                }
+              }
+            `}
+          </style>
+        </defs>
+
+        {/* Minimal connecting edges */}
+        <path
+          d="M 250 40 L 100 160"
+          stroke="#ffffff15"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M 250 40 L 200 160"
+          stroke="#ffffff15"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M 250 40 L 300 160"
+          stroke="#ffffff15"
+          strokeWidth="2"
+          fill="none"
+        />
+        <path
+          d="M 250 40 L 400 160"
+          stroke="#ffffff15"
+          strokeWidth="2"
+          fill="none"
+        />
+
+        {/* Animated data flow along edges */}
+        <path
+          d="M 250 40 L 100 160"
+          stroke={Theme.colors.primary}
+          strokeWidth="2"
+          fill="none"
+          strokeDasharray="4 8"
+          style={{ animation: "dashFlow 1s linear infinite" }}
+          opacity="0.6"
+        />
+        <path
+          d="M 250 40 L 200 160"
+          stroke={Theme.colors.secondary}
+          strokeWidth="2"
+          fill="none"
+          strokeDasharray="4 8"
+          style={{ animation: "dashFlow 1.2s linear infinite" }}
+          opacity="0.6"
+        />
+        <path
+          d="M 250 40 L 300 160"
+          stroke={Theme.colors.accent}
+          strokeWidth="2"
+          fill="none"
+          strokeDasharray="4 8"
+          style={{ animation: "dashFlow 0.8s linear infinite" }}
+          opacity="0.6"
+        />
+        <path
+          d="M 250 40 L 400 160"
+          stroke={Theme.colors.warning}
+          strokeWidth="2"
+          fill="none"
+          strokeDasharray="4 8"
+          style={{ animation: "dashFlow 1.5s linear infinite" }}
+          opacity="0.6"
+        />
+
+        {/* Nova Prime - Central Hub */}
+        <circle
+          cx="250"
+          cy="40"
+          r="26"
+          fill={Theme.colors.surfaceLow}
+          stroke={Theme.colors.primary}
+          strokeWidth="2"
+          filter="url(#glow-prime)"
+        />
+        <text
+          x="250"
+          y="43"
+          fill="#fff"
+          fontSize="20"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          ◈
+        </text>
+        <text
+          x="250"
+          y="85"
+          fill="#fff"
+          fontSize="12"
+          fontFamily="monospace"
+          textAnchor="middle"
+          fontWeight="bold"
+        >
+          Nova Prime
+        </text>
+        <text
+          x="250"
+          y="100"
+          fill="#ffffff55"
+          fontSize="10"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Planner
+        </text>
+
+        {/* Iris - Researcher */}
+        <circle
+          cx="100"
+          cy="160"
+          r="20"
+          fill={Theme.colors.surfaceLow}
+          stroke={Theme.colors.border}
+          strokeWidth="1"
+          filter="url(#glow-worker)"
+        />
+        <text
+          x="100"
+          y="163"
+          fill="#fff"
+          fontSize="14"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          ◉
+        </text>
+        <text
+          x="100"
+          y="195"
+          fill="#fff"
+          fontSize="11"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Iris
+        </text>
+        <text
+          x="100"
+          y="210"
+          fill="#ffffff55"
+          fontSize="9"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Researcher
+        </text>
+
+        {/* Atlas - Executor */}
+        <circle
+          cx="200"
+          cy="160"
+          r="20"
+          fill={Theme.colors.surfaceLow}
+          stroke={Theme.colors.border}
+          strokeWidth="1"
+          filter="url(#glow-worker)"
+        />
+        <text
+          x="200"
+          y="163"
+          fill="#fff"
+          fontSize="14"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          ◎
+        </text>
+        <text
+          x="200"
+          y="195"
+          fill="#fff"
+          fontSize="11"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Atlas
+        </text>
+        <text
+          x="200"
+          y="210"
+          fill="#ffffff55"
+          fontSize="9"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Executor
+        </text>
+
+        {/* Aegis - Auditor */}
+        <circle
+          cx="300"
+          cy="160"
+          r="20"
+          fill={Theme.colors.surfaceLow}
+          stroke={Theme.colors.border}
+          strokeWidth="1"
+          filter="url(#glow-worker)"
+        />
+        <text
+          x="300"
+          y="163"
+          fill="#fff"
+          fontSize="14"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          ⬡
+        </text>
+        <text
+          x="300"
+          y="195"
+          fill="#fff"
+          fontSize="11"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Aegis
+        </text>
+        <text
+          x="300"
+          y="210"
+          fill="#ffffff55"
+          fontSize="9"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Auditor
+        </text>
+
+        {/* Muse - Creative */}
+        <circle
+          cx="400"
+          cy="160"
+          r="20"
+          fill={Theme.colors.surfaceLow}
+          stroke={Theme.colors.border}
+          strokeWidth="1"
+          filter="url(#glow-worker)"
+        />
+        <text
+          x="400"
+          y="163"
+          fill="#fff"
+          fontSize="14"
+          textAnchor="middle"
+          dominantBaseline="middle"
+        >
+          ✦
+        </text>
+        <text
+          x="400"
+          y="195"
+          fill="#fff"
+          fontSize="11"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Muse
+        </text>
+        <text
+          x="400"
+          y="210"
+          fill="#ffffff55"
+          fontSize="9"
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Creative
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const ConformalBandChart = ({ stream, ci, width = 450, height = 100 }) => {
+  if (!stream || stream.length < 3) return null;
+  const data = stream.slice(-40);
+  const allVals = data.flatMap((d) => [d.actual, d.predicted]);
+  const min = Math.min(...allVals, ci[0]) * 0.95;
+  const max = Math.max(...allVals, ci[1]) * 1.05;
+  const range = max - min || 1;
+  const xScale = (i) => (i / (data.length - 1)) * 100;
+  const yScale = (v) => 100 - ((v - min) / range) * 100;
+
+  const upperY = yScale(ci[1]);
+  const lowerY = yScale(ci[0]);
+
+  const actualPoints = data
+    .map((d, i) => `${xScale(i)},${yScale(d.actual)}`)
+    .join(" ");
+  const predictedPoints = data
+    .map((d, i) => `${xScale(i)},${yScale(d.predicted)}`)
+    .join(" ");
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      style={{ borderRadius: 6, overflow: "visible" }}
+    >
+      <defs>
+        <linearGradient id="ci-band" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#00ffd5" stopOpacity="0.15" />
+          <stop offset="50%" stopColor="#00ffd5" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#00ffd5" stopOpacity="0.15" />
+        </linearGradient>
+      </defs>
+      {/* CI band */}
+      <rect
+        x="0"
+        y={upperY}
+        width="100"
+        height={lowerY - upperY}
+        fill="url(#ci-band)"
+      />
+      <line
+        x1="0"
+        y1={upperY}
+        x2="100"
+        y2={upperY}
+        stroke="#34d39944"
+        strokeWidth="0.5"
+        strokeDasharray="2 2"
+      />
+      <line
+        x1="0"
+        y1={lowerY}
+        x2="100"
+        y2={lowerY}
+        stroke="#f8717144"
+        strokeWidth="0.5"
+        strokeDasharray="2 2"
+      />
+      {/* Predicted line */}
+      <polyline
+        points={predictedPoints}
+        fill="none"
+        stroke="#a78bfa"
+        strokeWidth="1.5"
+        opacity="0.6"
+      />
+      {/* Actual line */}
+      <polyline
+        points={actualPoints}
+        fill="none"
+        stroke="#00ffd5"
+        strokeWidth="2"
+        style={{ filter: "drop-shadow(0 0 3px #00ffd566)" }}
+      />
+    </svg>
+  );
+};
+
 export default function NovaDashboard() {
   const {
     stream,
@@ -1180,6 +1644,9 @@ export default function NovaDashboard() {
     setPendingApprovals,
   } = useNovaSimulation();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isHalted, setIsHalted] = useState(false);
+  const [isNovaTyping, setIsNovaTyping] = useState(false);
+  const [decisionLog, setDecisionLog] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState([
     {
@@ -1203,7 +1670,21 @@ export default function NovaDashboard() {
   const blended = bayesianConf * 0.6 + confidence * 0.4;
 
   const handleDecide = (id, approved) => {
+    const approval = pendingApprovals.find((a) => a.id === id);
     setPendingApprovals((prev) => prev.filter((a) => a.id !== id));
+    setDecisionLog((prev) =>
+      [
+        {
+          id,
+          tool: approval?.tool || "unknown",
+          agent: approval?.agent || "unknown",
+          approved,
+          timestamp: new Date().toLocaleTimeString([], { hour12: false }),
+          confidence: (blended * 100).toFixed(1) + "%",
+        },
+        ...prev,
+      ].slice(0, 10),
+    );
     setChatHistory((prev) => [
       ...prev,
       {
@@ -1218,6 +1699,7 @@ export default function NovaDashboard() {
     const msg = chatInput.trim();
     setChatInput("");
     setChatHistory((prev) => [...prev, { role: "user", content: msg }]);
+    setIsNovaTyping(true);
     setTimeout(() => {
       const responses = [
         "On it. Routing to the appropriate specialist and assembling context from temporal memory.",
@@ -1226,6 +1708,7 @@ export default function NovaDashboard() {
         "Noted. I'll crystallize a skill from this once we have 3 successful completions.",
         "Already thinking about this. The Bayesian confidence for that path is currently 84%. Shall I proceed?",
       ];
+      setIsNovaTyping(false);
       setChatHistory((prev) => [
         ...prev,
         {
@@ -1253,11 +1736,12 @@ export default function NovaDashboard() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#070b10",
-        color: "#e2e8f0",
-        fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+        background: Theme.colors.background,
+        color: Theme.colors.text,
+        fontFamily: Theme.fonts.main,
         position: "relative",
         overflow: "hidden",
+        selection: { background: Theme.colors.accent + "44" },
       }}
     >
       {/* Ambient background */}
@@ -1275,40 +1759,25 @@ export default function NovaDashboard() {
         <div
           style={{
             position: "absolute",
-            top: "10%",
-            left: "5%",
-            width: 300,
-            height: 300,
+            top: "-10%",
+            left: "-10%",
+            width: "60%",
+            height: "60%",
             borderRadius: "50%",
-            background: "#00ffd5",
+            background: `radial-gradient(circle, ${Theme.colors.accent}15 0%, transparent 70%)`,
             filter: "blur(120px)",
-            opacity: 0.04,
           }}
         />
         <div
           style={{
             position: "absolute",
-            top: "50%",
-            right: "5%",
-            width: 250,
-            height: 250,
+            bottom: "-10%",
+            right: "-10%",
+            width: "50%",
+            height: "50%",
             borderRadius: "50%",
-            background: "#a78bfa",
+            background: `radial-gradient(circle, ${Theme.colors.secondary}10 0%, transparent 70%)`,
             filter: "blur(100px)",
-            opacity: 0.05,
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "10%",
-            left: "40%",
-            width: 200,
-            height: 200,
-            borderRadius: "50%",
-            background: "#f97316",
-            filter: "blur(80px)",
-            opacity: 0.04,
           }}
         />
       </div>
@@ -1343,62 +1812,78 @@ export default function NovaDashboard() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "16px 0 12px",
-            borderBottom: "1px solid #ffffff0f",
+            padding: "24px 0 20px",
+            borderBottom: `1px solid ${Theme.colors.border}`,
+            marginBottom: 20,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <div style={{ position: "relative" }}>
               <div
                 style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #00ffd5, #a78bfa)",
+                  width: 48,
+                  height: 48,
+                  borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${Theme.colors.accent}, ${Theme.colors.secondary})`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: 900,
-                  color: "#070b10",
-                  boxShadow: "0 0 20px #00ffd544",
+                  color: Theme.colors.background,
+                  boxShadow: `0 8px 16px ${Theme.colors.accent}44`,
+                  transform: "rotate(-5deg)",
                 }}
               >
-                N
+                Σ
               </div>
               <div
                 style={{
                   position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  width: 10,
-                  height: 10,
+                  bottom: -2,
+                  right: -2,
+                  width: 14,
+                  height: 14,
                   borderRadius: "50%",
-                  background: "#34d399",
-                  border: "2px solid #070b10",
-                  boxShadow: "0 0 6px #34d399",
+                  background: Theme.colors.success,
+                  border: `3px solid ${Theme.colors.background}`,
+                  boxShadow: `0 0 10px ${Theme.colors.success}aa`,
                 }}
               />
             </div>
             <div>
               <div
                 style={{
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 900,
-                  letterSpacing: "0.15em",
-                  color: "#ffffff",
+                  letterSpacing: "-0.02em",
+                  color: Theme.colors.text,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
                 }}
               >
-                NOVA<span style={{ color: "#00ffd5" }}>_</span>2.0
+                SUPERNOVA
+                <span
+                  style={{
+                    color: Theme.colors.accent,
+                    animation: "pulse 2s infinite",
+                  }}
+                >
+                  •
+                </span>
+                OS
               </div>
               <div
                 style={{
                   fontSize: 10,
-                  color: "#ffffff44",
-                  letterSpacing: "0.1em",
+                  color: Theme.colors.textMuted,
+                  letterSpacing: "0.2em",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
                 }}
               >
-                INTELLIGENCE COMMAND CENTER
+                Decision Intelligence Platform
               </div>
             </div>
           </div>
@@ -1406,50 +1891,59 @@ export default function NovaDashboard() {
           <div
             style={{
               display: "flex",
-              gap: 24,
+              gap: 32,
               fontSize: 11,
-              color: "#ffffff55",
+              color: Theme.colors.textMuted,
             }}
           >
             {[
               {
                 label: "CALLS",
                 value: metrics.totalCalls.toLocaleString(),
-                color: "#00ffd5",
+                color: Theme.colors.accent,
               },
               {
                 label: "SUCCESS",
                 value: `${(metrics.successRate * 100).toFixed(1)}%`,
-                color: "#34d399",
+                color: Theme.colors.success,
               },
               {
                 label: "LATENCY",
                 value: `${metrics.avgLatency.toFixed(2)}s`,
-                color: "#fbbf24",
+                color: Theme.colors.warning,
               },
               {
                 label: "COST",
                 value: `$${metrics.cost.toFixed(2)}`,
-                color: "#f87171",
+                color: Theme.colors.error,
               },
               {
                 label: "SKILLS",
                 value: metrics.skillsCompiled,
-                color: "#a78bfa",
+                color: Theme.colors.secondary,
               },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ textAlign: "center" }}>
                 <div
                   style={{
-                    fontSize: 9,
-                    color: "#ffffff33",
-                    letterSpacing: "0.08em",
-                    marginBottom: 1,
+                    fontSize: 8,
+                    color: Theme.colors.textMuted,
+                    letterSpacing: "0.15em",
+                    fontWeight: 600,
+                    marginBottom: 2,
                   }}
                 >
                   {label}
                 </div>
-                <div style={{ fontSize: 13, color, fontWeight: 700 }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    color,
+                    fontWeight: 800,
+                    fontFamily: Theme.fonts.mono,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   {value}
                 </div>
               </div>
@@ -1472,13 +1966,79 @@ export default function NovaDashboard() {
                   cursor: "pointer",
                 }}
                 onClick={() => setActiveTab("overview")}
+                aria-label={`${pendingApprovals.length} pending approvals`}
               >
                 <span style={{ animation: "pulse 1s infinite" }}>⚠</span>
                 {pendingApprovals.length} approval
                 {pendingApprovals.length > 1 ? "s" : ""}
               </div>
             )}
-            <div style={{ fontSize: 10, color: "#ffffff33" }}>
+            {/* System Controls */}
+            <button
+              onClick={() => setIsHalted(!isHalted)}
+              aria-label={
+                isHalted ? "Resume cognitive cycle" : "Halt cognitive cycle"
+              }
+              style={{
+                background: isHalted
+                  ? Theme.colors.error + "22"
+                  : Theme.colors.success + "22",
+                border: `1px solid ${isHalted ? Theme.colors.error + "55" : Theme.colors.success + "55"}`,
+                borderRadius: 8,
+                padding: "6px 14px",
+                fontSize: 10,
+                fontFamily: Theme.fonts.mono,
+                fontWeight: 700,
+                color: isHalted ? Theme.colors.error : Theme.colors.success,
+                cursor: "pointer",
+                letterSpacing: "0.08em",
+                transition: "all 0.3s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: isHalted
+                    ? Theme.colors.error
+                    : Theme.colors.success,
+                  boxShadow: `0 0 8px ${isHalted ? Theme.colors.error : Theme.colors.success}`,
+                  animation: isHalted ? "none" : "pulse 2s infinite",
+                }}
+              />
+              {isHalted ? "HALTED" : "LIVE"}
+            </button>
+            <div
+              style={{
+                fontSize: 10,
+                color:
+                  decisionData.regime === "volatile"
+                    ? Theme.colors.warning
+                    : Theme.colors.textMuted,
+                fontFamily: Theme.fonts.mono,
+                padding: "4px 10px",
+                background:
+                  decisionData.regime === "volatile"
+                    ? Theme.colors.warning + "11"
+                    : "transparent",
+                borderRadius: 6,
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+              }}
+            >
+              {decisionData.regime === "volatile" ? "⚡ VOLATILE" : "◈ STABLE"}
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                color: "#ffffff33",
+                fontFamily: Theme.fonts.mono,
+              }}
+            >
               {new Date().toLocaleTimeString([], { hour12: false })}
             </div>
           </div>
@@ -1488,32 +2048,63 @@ export default function NovaDashboard() {
         <div
           style={{
             display: "flex",
-            gap: 2,
-            marginTop: 12,
-            marginBottom: 16,
-            borderBottom: "1px solid #ffffff0f",
+            gap: 8,
+            marginTop: 4,
+            marginBottom: 24,
+            padding: "4px",
+            background: Theme.colors.surfaceMid,
+            borderRadius: 12,
+            width: "fit-content",
+            border: `1px solid ${Theme.colors.border}`,
           }}
         >
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(e) => {
+                const tabIds = tabs.map((t) => t.id);
+                const idx = tabIds.indexOf(tab.id);
+                if (e.key === "ArrowRight") {
+                  e.preventDefault();
+                  setActiveTab(tabIds[(idx + 1) % tabIds.length]);
+                } else if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  setActiveTab(
+                    tabIds[(idx - 1 + tabIds.length) % tabIds.length],
+                  );
+                }
+              }}
               style={{
-                padding: "8px 18px",
-                background: "none",
-                border: "none",
-                borderBottom:
+                padding: "8px 24px",
+                background:
                   activeTab === tab.id
-                    ? "2px solid #00ffd5"
-                    : "2px solid transparent",
-                color: activeTab === tab.id ? "#00ffd5" : "#ffffff44",
+                    ? Theme.colors.accent + "11"
+                    : "transparent",
+                borderRadius: 8,
+                color:
+                  activeTab === tab.id
+                    ? Theme.colors.accent
+                    : Theme.colors.textMuted,
                 fontSize: 11,
-                fontFamily: "monospace",
-                fontWeight: activeTab === tab.id ? 700 : 400,
+                fontFamily: Theme.fonts.mono,
+                fontWeight: activeTab === tab.id ? 800 : 500,
                 letterSpacing: "0.1em",
                 cursor: "pointer",
-                transition: "all 0.2s",
-                marginBottom: -1,
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                boxShadow:
+                  activeTab === tab.id
+                    ? `0 4px 12px ${Theme.colors.accent}11`
+                    : "none",
+                border:
+                  activeTab === tab.id
+                    ? `1px solid ${Theme.colors.accent}33`
+                    : "1px solid transparent",
+                outline: "none",
               }}
             >
               {tab.label}
@@ -1526,19 +2117,24 @@ export default function NovaDashboard() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 14,
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 20,
             }}
           >
             {/* Cognitive Loop */}
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.info} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -1579,9 +2175,10 @@ export default function NovaDashboard() {
                   <div
                     key={label}
                     style={{
-                      background: "#ffffff06",
-                      borderRadius: 6,
-                      padding: "6px 8px",
+                      background: Theme.colors.surfaceMid,
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                      border: `1px solid ${Theme.colors.border}`,
                     }}
                   >
                     <div style={{ fontSize: 9, color: "#ffffff33" }}>
@@ -1604,12 +2201,17 @@ export default function NovaDashboard() {
             {/* Decision Intelligence */}
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.accent} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -1651,7 +2253,7 @@ export default function NovaDashboard() {
                       style={{
                         flex: 1,
                         height: 5,
-                        background: "#ffffff0f",
+                        background: Theme.colors.surfaceMid,
                         borderRadius: 3,
                         overflow: "hidden",
                       }}
@@ -1682,7 +2284,8 @@ export default function NovaDashboard() {
                   <div
                     style={{
                       flex: 1,
-                      background: "#ffffff06",
+                      background: Theme.colors.surfaceMid,
+                      border: `1px solid ${Theme.colors.border}`,
                       borderRadius: 6,
                       padding: "5px 8px",
                     }}
@@ -1703,7 +2306,8 @@ export default function NovaDashboard() {
                   <div
                     style={{
                       flex: 1,
-                      background: "#ffffff06",
+                      background: Theme.colors.surfaceMid,
+                      border: `1px solid ${Theme.colors.border}`,
                       borderRadius: 6,
                       padding: "5px 8px",
                     }}
@@ -1728,12 +2332,17 @@ export default function NovaDashboard() {
             {/* Live Stream Chart */}
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.secondary} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -1748,9 +2357,8 @@ export default function NovaDashboard() {
                 <>
                   <Sparkline
                     data={stream.map((d) => d.actual)}
-                    width={220}
-                    height={50}
-                    color="#00ffd5"
+                    height={60}
+                    color={Theme.colors.accent}
                   />
                   <div style={{ marginTop: 4 }}>
                     <Sparkline
@@ -1834,10 +2442,14 @@ export default function NovaDashboard() {
             {/* HITL Approvals */}
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
               <div
@@ -1894,10 +2506,14 @@ export default function NovaDashboard() {
             {/* Agent Status Summary */}
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
               <div
@@ -1999,10 +2615,14 @@ export default function NovaDashboard() {
             {/* Nova Chat */}
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
               }}
@@ -2035,6 +2655,7 @@ export default function NovaDashboard() {
                       display: "flex",
                       gap: 8,
                       alignItems: "flex-start",
+                      animation: "fadeIn 0.3s ease",
                     }}
                   >
                     <div
@@ -2073,6 +2694,56 @@ export default function NovaDashboard() {
                     </div>
                   </div>
                 ))}
+                {isNovaTyping && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      animation: "fadeIn 0.2s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        background: "linear-gradient(135deg,#00ffd5,#a78bfa)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 9,
+                        fontWeight: 900,
+                        color: "#070b10",
+                      }}
+                    >
+                      N
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 4,
+                        padding: "8px 12px",
+                        background: "#ffffff0a",
+                        borderRadius: 8,
+                      }}
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: Theme.colors.accent,
+                            animation: `typingDot 1.4s ease-in-out ${i * 0.16}s infinite`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input
@@ -2130,10 +2801,14 @@ export default function NovaDashboard() {
             </div>
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
               <div
@@ -2146,67 +2821,8 @@ export default function NovaDashboard() {
               >
                 ORCHESTRATION TOPOLOGY
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-around",
-                  alignItems: "center",
-                  padding: "16px 0",
-                }}
-              >
-                {[
-                  { name: "Nova Prime", role: "Planner", x: "50%", y: 0 },
-                  { name: "Iris", role: "Researcher", x: "20%", y: 60 },
-                  { name: "Atlas", role: "Executor", x: "40%", y: 60 },
-                  { name: "Aegis", role: "Auditor", x: "60%", y: 60 },
-                  { name: "Muse", role: "Creative", x: "80%", y: 60 },
-                ].map((node, i) => (
-                  <div key={node.name} style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        width: node.role === "Planner" ? 52 : 42,
-                        height: node.role === "Planner" ? 52 : 42,
-                        borderRadius: "50%",
-                        background:
-                          node.role === "Planner"
-                            ? "linear-gradient(135deg,#00ffd5,#a78bfa)"
-                            : "#ffffff0f",
-                        border: `2px solid ${node.role === "Planner" ? "#00ffd5" : "#ffffff22"}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: node.role === "Planner" ? 20 : 16,
-                        margin: "0 auto 8px",
-                        boxShadow:
-                          node.role === "Planner"
-                            ? "0 0 20px #00ffd544"
-                            : "none",
-                      }}
-                    >
-                      {["◈", "◉", "◎", "⬡", "✦"][i]}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "#ffffff",
-                        fontWeight: 600,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {node.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 9,
-                        color: "#ffffff44",
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {node.role}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <OrchestrationGraph />
+
               <div
                 style={{
                   marginTop: 12,
@@ -2233,12 +2849,17 @@ export default function NovaDashboard() {
           >
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.accent} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -2267,12 +2888,17 @@ export default function NovaDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div
                 style={{
-                  background: "#0a0e14",
-                  border: "1px solid #ffffff0f",
-                  borderRadius: 12,
-                  padding: 16,
+                  background: Theme.colors.surfaceLow,
+                  backdropFilter: Theme.glass.blur,
+                  border: `1px solid ${Theme.colors.border}`,
+                  borderRadius: 16,
+                  padding: 20,
+                  boxShadow: Theme.glass.shadow,
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
+                <Glow color={Theme.colors.secondary} size={80} />
                 <div
                   style={{
                     fontSize: 10,
@@ -2344,12 +2970,17 @@ export default function NovaDashboard() {
               </div>
               <div
                 style={{
-                  background: "#0a0e14",
-                  border: "1px solid #ffffff0f",
-                  borderRadius: 12,
-                  padding: 16,
+                  background: Theme.colors.surfaceLow,
+                  backdropFilter: Theme.glass.blur,
+                  border: `1px solid ${Theme.colors.border}`,
+                  borderRadius: 16,
+                  padding: 20,
+                  boxShadow: Theme.glass.shadow,
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
+                <Glow color={Theme.colors.warning} size={80} />
                 <div
                   style={{
                     fontSize: 10,
@@ -2409,12 +3040,17 @@ export default function NovaDashboard() {
           >
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.accent} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -2426,11 +3062,11 @@ export default function NovaDashboard() {
                 CONFORMAL PREDICTION INTERVALS
               </div>
               {stream.length > 10 && (
-                <Sparkline
-                  data={stream.map((d) => d.actual)}
+                <ConformalBandChart
+                  stream={stream}
+                  ci={ci}
                   width={450}
-                  height={80}
-                  color="#00ffd5"
+                  height={100}
                 />
               )}
               <div
@@ -2484,12 +3120,17 @@ export default function NovaDashboard() {
 
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.primary} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -2553,12 +3194,17 @@ export default function NovaDashboard() {
 
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.warning} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -2669,12 +3315,17 @@ export default function NovaDashboard() {
 
             <div
               style={{
-                background: "#0a0e14",
-                border: "1px solid #ffffff0f",
-                borderRadius: 12,
-                padding: 16,
+                background: Theme.colors.surfaceLow,
+                backdropFilter: Theme.glass.blur,
+                border: `1px solid ${Theme.colors.border}`,
+                borderRadius: 16,
+                padding: 20,
+                boxShadow: Theme.glass.shadow,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
+              <Glow color={Theme.colors.secondary} size={80} />
               <div
                 style={{
                   fontSize: 10,
@@ -2821,17 +3472,115 @@ export default function NovaDashboard() {
                 </span>
               </div>
             </div>
+
+            {/* Decision Audit Trail — full-width across both columns */}
+            {decisionLog.length > 0 && (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  background: Theme.colors.surfaceLow,
+                  backdropFilter: Theme.glass.blur,
+                  border: `1px solid ${Theme.colors.border}`,
+                  borderRadius: 16,
+                  padding: 20,
+                  boxShadow: Theme.glass.shadow,
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <Glow color={Theme.colors.info} size={60} />
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#ffffff44",
+                    letterSpacing: "0.1em",
+                    marginBottom: 12,
+                  }}
+                >
+                  DECISION AUDIT TRAIL
+                </div>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                >
+                  {decisionLog.map((entry, idx) => (
+                    <div
+                      key={`${entry.id}-${idx}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "6px 10px",
+                        background: idx === 0 ? "#ffffff08" : "#ffffff03",
+                        borderRadius: 6,
+                        borderLeft: `3px solid ${entry.approved ? Theme.colors.success : Theme.colors.error}`,
+                        animation: idx === 0 ? "fadeIn 0.3s ease" : "none",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color: "#ffffff33",
+                          fontFamily: "monospace",
+                          width: 55,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {entry.timestamp}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: entry.approved
+                            ? Theme.colors.success
+                            : Theme.colors.error,
+                          width: 55,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {entry.approved ? "✓ APPROVED" : "✕ DENIED"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "#ffffffbb",
+                          flex: 1,
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {entry.tool}
+                      </span>
+                      <span style={{ fontSize: 9, color: "#ffffff55" }}>
+                        by {entry.agent}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color: Theme.colors.accent,
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {entry.confidence}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       <style>{`
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes typingDot { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ffffff22; border-radius: 2px; }
         * { box-sizing: border-box; }
         input::placeholder { color: #ffffff33; }
+        button:focus-visible { outline: 2px solid #00ffd5; outline-offset: 2px; }
       `}</style>
     </div>
   );

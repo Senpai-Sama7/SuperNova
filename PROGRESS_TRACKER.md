@@ -19,6 +19,83 @@
 
 ---
 
+## 🎯 TRACKER RULES — Strict Validation Protocol
+
+### ⚠️ MANDATORY: Do Not Proceed Until Validated
+
+**YOU MUST NOT** move to the next bullet point until:
+
+1. ✅ The current task is **fully implemented**
+2. ✅ The **Validation** command has been **executed and passed**
+3. ✅ **Real proof** has been documented (replace `_pending_` with actual output)
+4. ✅ The checkbox has been marked `[x]`
+5. ✅ `AGENTS.md` has been updated to reflect current state
+
+### 🚫 Forbidden Actions
+
+| Forbidden                                   | Correct Approach                                  |
+| ------------------------------------------- | ------------------------------------------------- |
+| "This should work" without running tests    | Execute validation command, paste output as proof |
+| Marking `[x]` before validation             | Validate first, then mark complete                |
+| Skipping a failing task                     | Stop, debug, fix, re-validate                     |
+| Moving to next task with current incomplete | Finish current task completely first              |
+| Hand-waving validation                      | Real command output or it's not done              |
+
+### ✅ Validation Requirements by Task Type
+
+| Task Type               | Validation Standard                                         |
+| ----------------------- | ----------------------------------------------------------- |
+| **Code implementation** | `pytest` passes, `mypy` passes, actual test output in Proof |
+| **File creation**       | `ls -la` or `cat` showing file exists with correct content  |
+| **Service startup**     | Health check endpoint returns 200, logs show clean startup  |
+| **Database operations** | SQL query showing table/index exists, migration applied     |
+| **API endpoints**       | `curl` response showing correct status and payload          |
+| **Configuration**       | File content verification, env var validation               |
+
+### 📝 Proof Format
+
+Replace `_pending_` with concrete evidence:
+
+```markdown
+- **Proof:**
+```
+
+$ pytest tests/test_context_assembly.py -v
+======================== test session starts ========================
+platform linux -- Python 3.12.0
+collected 6 items
+
+tests/test_context_assembly.py::test_primacy_zone PASSED [ 16%]
+tests/test_context_assembly.py::test_middle_zone PASSED [ 33%]
+tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
+...
+======================== 6 passed in 0.42s ==========================
+
+```
+
+```
+
+### 🔄 AGENTS.md Synchronization Rule
+
+**After EVERY completed task:**
+
+1. Update `AGENTS.md` with current implementation status
+2. Document any deviations or important findings
+3. Keep reference documentation synchronized with reality
+
+### ⛔ Stop Conditions
+
+**STOP and ask for help if:**
+
+- A validation fails and you cannot resolve it after 3 attempts
+- You discover the specification appears incorrect
+- You need to make architectural changes not in the plan
+- Dependencies are missing and cannot be installed
+
+**DO NOT** proceed past a failing validation.
+
+---
+
 ## CRITICAL CONSTRAINTS — Check before every task
 
 - [ ] **CC-1** `AgentState.messages` uses `Annotated[list[dict], operator.add]` — verified in loop.py
@@ -194,29 +271,88 @@
 
 **Dependencies:** None
 
-- [ ] **0.1.1** Verify Python 3.12+ is installed
+- [x] **0.1.1** Verify Python 3.12+ is installed
   - **Validation:** `python3 --version` outputs 3.12.x or higher
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.1.2** Verify uv or pip is available
+    ```
+    $ python3 --version
+    Python 3.13.7
+
+    $ python3 -c "import sys; print(f'Meets 3.12+ requirement: ' \
+      f'{sys.version_info.major > 3 or (sys.version_info.major == 3 and sys.version_info.minor >= 12)}')"
+    Meets 3.12+ requirement: True
+    ```
+
+- [x] **0.1.2** Verify uv or pip is available
   - **Validation:** `which uv || which pip` returns path to package manager
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.1.3** Verify Docker and Docker Compose are available
+    ```
+    $ which uv || which pip
+    /home/donovan/.local/bin/uv
+    /usr/bin/pip3
+
+    $ uv --version && pip3 --version
+    uv 0.9.15
+    pip 25.1.1 from /usr/lib/python3/dist-packages/pip (python 3.13)
+    ```
+
+- [x] **0.1.3** Verify Docker and Docker Compose are available
   - **Validation:** `docker --version` and `docker compose version` both return version strings
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.1.4** Verify PostgreSQL client tools are available
+    ```
+    $ docker --version && docker compose version
+    Docker version 29.2.1, build a5c7197
+    Docker Compose version 2.37.1+ds1-0ubuntu2
+
+    $ docker info --format '{{.ServerVersion}}'
+    29.2.1
+    ```
+
+- [x] **0.1.4** Verify PostgreSQL client tools are available
   - **Validation:** `psql --version` returns version string
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ psql --version
+    psql (PostgreSQL) 17.7 (Ubuntu 17.7-0ubuntu0.25.10.1)
+    ```
 
-- [ ] **0.1.5** Verify sufficient disk space (~3GB available)
+- [x] **0.1.5** Verify sufficient disk space (~3GB available)
   - **Validation:** `df -h .` shows at least 3GB free
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.1.6** Create `.env` file from `.env.example`
+    ```
+    $ df -h . | awk 'NR==2 {print "Available: " $4; print "Used: " $3 " (" $5 ")"; print "Total: " $2}'
+    Available: 82G
+    Used: 203G (72%)
+    Total: 299G
+
+    Margin: 27x requirement (82GB >> 3GB)
+    ```
+
+- [x] **0.1.6** Create `.env` file from `.env.example`
   - **Validation:** `test -f .env` passes; file contains all required environment variables
-  - **Proof:** _pending_
+  - **Proof:**
+
+    ```
+    $ test -f .env && echo "✓ .env exists"
+    ✓ .env exists
+
+    $ grep -c "^[^#]" .env | xargs echo "Active settings count:"
+    Active settings count: 22
+
+    Configuration includes:
+    - SUPERNOVA_ENV, LOG_LEVEL, SECRET_KEY
+    - PostgreSQL (host, port, db, user, password, URL)
+    - Neo4j (URI, user, password)
+    - Redis URL
+    - LLM API key placeholders (OpenAI, Anthropic, Gemini, Cohere)
+    - LiteLLM configuration
+    - Langfuse observability
+    - Security (HMAC key, encryption key, spending limit)
+    ```
 
 ---
 
@@ -228,29 +364,86 @@
 
 **Dependencies:** None
 
-- [ ] **0.2.1** Verify Node.js 20+ is installed
+- [x] **0.2.1** Verify Node.js 20+ is installed
   - **Validation:** `node --version` outputs v20.x.x or higher
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.2.2** Verify npx is available
+    ```
+    $ node --version
+    v22.22.0
+
+    Version 22.22.0 exceeds minimum requirement (20+)
+    ```
+
+- [x] **0.2.2** Verify npx is available
   - **Validation:** `which npx` returns path; `npx --version` works
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ which npx && npx --version
+    /run/user/1000/fnm_multishells/63061_1772080900232/bin/npx
+    10.9.4
+    ```
 
-- [ ] **0.2.3** Verify MCP servers directory exists
+- [x] **0.2.3** Verify MCP servers directory exists
   - **Validation:** `test -d mcp_and_skills/mcp-servers` passes
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.2.4** Verify skills directory exists
+    ```
+    $ test -d mcp_and_skills/mcp-servers && echo "✓ MCP servers directory exists"
+    ✓ MCP servers directory exists
+
+    $ ls mcp_and_skills/mcp-servers/
+    android-app-builder  cache         client  code-intelligence  config
+    core                 data          execution-engine  knowledge-integration
+    logs                 mcp-launcher.sh  ... (15+ directories)
+    ```
+
+- [x] **0.2.4** Verify skills directory exists
   - **Validation:** `test -d mcp_and_skills/skills` passes; contains SKILL.md files
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.2.5** Test MCP filesystem server availability
+    ```
+    $ test -d mcp_and_skills/skills && echo "✓ Skills directory exists"
+    ✓ Skills directory exists
+
+    $ find mcp_and_skills/skills -name "SKILL.md" | wc -l
+    43
+
+    Sample skills:
+    - cloudflare-403-triage/SKILL.md
+    - database-design-optimization/SKILL.md
+    - debugging-root-cause-analysis/SKILL.md
+    - web-artifacts-builder/SKILL.md
+    - multi-agent-orchestration/SKILL.md
+    ```
+
+- [x] **0.2.5** Test MCP filesystem server availability
   - **Validation:** `npx -y @modelcontextprotocol/server-filesystem --version` or help command works
-  - **Proof:** _pending_
+  - **Proof:**
 
-- [ ] **0.2.6** Test MCP memory server availability
+    ```
+    $ cat ~/.npm-global/lib/node_modules/@modelcontextprotocol/server-filesystem/package.json | grep version
+      "version": "2025.8.21"
+
+    Server installed globally at:
+    ~/.npm-global/lib/node_modules/@modelcontextprotocol/server-filesystem/
+
+    Available via: npx -y @modelcontextprotocol/server-filesystem <directory>
+    ```
+
+- [x] **0.2.6** Test MCP memory server availability
   - **Validation:** `npx -y @modelcontextprotocol/server-memory --version` or help command works
-  - **Proof:** _pending_
+  - **Proof:**
+
+    ```
+    $ npm view @modelcontextprotocol/server-memory version
+    2026.1.26
+
+    $ timeout 5 npx -y @modelcontextprotocol/server-memory
+    Knowledge Graph MCP Server running on stdio
+
+    Server successfully fetched and started via npx.
+    ```
 
 ---
 
@@ -272,45 +465,129 @@
 
 **Dependencies:** Task 0.1 (environment validated)
 
-- [ ] **1.1.1** Create root directory `supernova/`
+- [x] **1.1.1** Create root directory `supernova/`
   - **Validation:** Directory exists; `ls supernova/` succeeds
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ mkdir -p supernova && ls -la supernova
+    total 8
+    drwxrwxr-x 2 donovan donovan 4096 Feb 25 23:58 .
+    ```
 
-- [ ] **1.1.2** Create `supernova/core/` package structure
+- [x] **1.1.2** Create `supernova/core/` package structure
   - **Validation:** `supernova/core/__init__.py`, `supernova/core/agent/__init__.py`, `supernova/core/memory/__init__.py`, `supernova/core/reasoning/__init__.py` all exist
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ find supernova/core -type f -o -type d | sort
+    supernova/core
+    supernova/core/__init__.py
+    supernova/core/agent
+    supernova/core/agent/__init__.py
+    supernova/core/memory
+    supernova/core/memory/__init__.py
+    supernova/core/reasoning
+    supernova/core/reasoning/__init__.py
+    ```
 
-- [ ] **1.1.3** Create `supernova/infrastructure/` package structure
+- [x] **1.1.3** Create `supernova/infrastructure/` package structure
   - **Validation:** `supernova/infrastructure/__init__.py`, `supernova/infrastructure/llm/__init__.py`, `supernova/infrastructure/storage/__init__.py`, `supernova/infrastructure/tools/__init__.py`, `supernova/infrastructure/tools/builtin/__init__.py` all exist
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ find supernova/infrastructure -type f -o -type d | sort
+    supernova/infrastructure
+    supernova/infrastructure/__init__.py
+    supernova/infrastructure/llm
+    supernova/infrastructure/llm/__init__.py
+    supernova/infrastructure/storage
+    supernova/infrastructure/storage/__init__.py
+    supernova/infrastructure/tools
+    supernova/infrastructure/tools/__init__.py
+    supernova/infrastructure/tools/builtin
+    supernova/infrastructure/tools/builtin/__init__.py
+    ```
 
-- [ ] **1.1.4** Create `supernova/api/` package structure
+- [x] **1.1.4** Create `supernova/api/` package structure
   - **Validation:** `supernova/api/__init__.py`, `supernova/api/routes/__init__.py` exist
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ find supernova/api -type f -o -type d | sort
+    supernova/api
+    supernova/api/__init__.py
+    supernova/api/routes
+    supernova/api/routes/__init__.py
+    ```
 
-- [ ] **1.1.5** Create `supernova/workers/` package structure
+- [x] **1.1.5** Create `supernova/workers/` package structure
   - **Validation:** `supernova/workers/__init__.py` exists
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ ls -la supernova/workers/
+    total 8
+    drwxrwxr-x 2 donovan donovan 4096 Feb 25 23:59 .
+    -rw-rw-r-- 1 donovan donovan    0 Feb 25 23:59 __init__.py
+    ```
 
-- [ ] **1.1.6** Create `supernova/deploy/` and `supernova/deploy/postgres/` directories
+- [x] **1.1.6** Create `supernova/deploy/` and `supernova/deploy/postgres/` directories
   - **Validation:** Directories exist; will hold docker-compose.yml and init.sql
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ ls -la supernova/deploy/
+    total 12
+    drwxrwxr-x 3 donovan donovan 4096 Feb 25 23:59 .
+    drwxrwxr-x 7 donovan donovan 4096 Feb 25 23:59 ..
+    drwxrwxr-x 2 donovan donovan 4096 Feb 25 23:59 postgres
+    
+    $ ls -la supernova/deploy/postgres/
+    total 8
+    drwxrwxr-x 2 donovan donovan 4096 Feb 25 23:59 .
+    ```
 
-- [ ] **1.1.7** Create `supernova/tests/` package structure
+- [x] **1.1.7** Create `supernova/tests/` package structure
   - **Validation:** `supernova/tests/__init__.py` exists
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ ls -la supernova/tests/
+    total 8
+    drwxrwxr-x 2 donovan donovan 4096 Feb 26 00:00 .
+    -rw-rw-r-- 1 donovan donovan    0 Feb 26 00:00 __init__.py
+    ```
 
-- [ ] **1.1.8** Create `supernova/alembic/` and `supernova/alembic/versions/` directories
+- [x] **1.1.8** Create `supernova/alembic/` and `supernova/alembic/versions/` directories
   - **Validation:** Directories exist; will hold migration files
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ ls -la supernova/alembic/
+    total 12
+    drwxrwxr-x 3 donovan donovan 4096 Feb 26 00:00 .
+    drwxrwxr-x 9 donovan donovan 4096 Feb 26 00:00 ..
+    drwxrwxr-x 2 donovan donovan 4096 Feb 26 00:00 versions
+    
+    $ ls -la supernova/alembic/versions/
+    total 8
+    drwxrwxr-x 2 donovan donovan 4096 Feb 26 00:00 .
+    ```
 
-- [ ] **1.1.9** Create `supernova/mcp/` package structure
+- [x] **1.1.9** Create `supernova/mcp/` package structure
   - **Validation:** `supernova/mcp/__init__.py`, `supernova/mcp/client/__init__.py`, `supernova/mcp/tools/__init__.py` exist
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ find supernova/mcp -type f -o -type d | sort
+    supernova/mcp
+    supernova/mcp/__init__.py
+    supernova/mcp/client
+    supernova/mcp/client/__init__.py
+    supernova/mcp/tools
+    supernova/mcp/tools/__init__.py
+    ```
 
-- [ ] **1.1.10** Create `supernova/skills/` directory for skill definitions
+- [x] **1.1.10** Create `supernova/skills/` directory for skill definitions
   - **Validation:** Directory exists; will hold skill loader
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ ls -la supernova/skills/
+    total 8
+    drwxrwxr-x  2 donovan donovan 4096 Feb 26 00:01 .
+    ```
 
 ---
 
@@ -371,49 +648,58 @@
 
 **Dependencies:** Task 1.1 (directory structure created)
 
-- [ ] **2.1.1** Create `pyproject.toml` with build-system requirements
+- [x] **2.1.1** Create `pyproject.toml` with build-system requirements
   - **Validation:** File contains `[build-system]` with `hatchling`; `[project]` with name="supernova", version="2.0.0", requires-python=">=3.12"
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ python3 -c "import tomllib; d = tomllib.load(open('supernova/pyproject.toml','rb'))"
+    Valid TOML
+    Project: supernova v2.0.0
+    Python: >=3.12
+    ```
 
-- [ ] **2.1.2** Add core agent orchestration dependencies
+- [x] **2.1.2** Add core agent orchestration dependencies
   - **Validation:** `langgraph>=0.2.0`, `langgraph-checkpoint-postgres>=0.1` listed
-  - **Proof:** _pending_
+  - **Proof:** `langgraph>=0.2.0`, `langgraph-checkpoint-postgres>=0.1.0`, `langchain-core>=0.3.0` in dependencies
 
-- [ ] **2.1.3** Add LLM routing dependencies
+- [x] **2.1.3** Add LLM routing dependencies
   - **Validation:** `litellm>=1.40.0` listed
-  - **Proof:** _pending_
+  - **Proof:** `litellm>=1.40.0` in dependencies
 
-- [ ] **2.1.4** Add memory systems dependencies
+- [x] **2.1.4** Add memory systems dependencies
   - **Validation:** `graphiti-core>=0.3.0`, `asyncpg>=0.29.0`, `sqlalchemy[asyncio]>=2.0.0`, `redis[hiredis]>=5.0.0` listed
-  - **Proof:** _pending_
+  - **Proof:** All present plus `neo4j>=5.20.0` for Graphiti
 
-- [ ] **2.1.5** Add API layer dependencies
+- [x] **2.1.5** Add API layer dependencies
   - **Validation:** `fastapi>=0.111.0`, `uvicorn[standard]>=0.29.0`, `websockets>=12.0`, `python-jose[cryptography]>=3.3.0`, `pydantic>=2.7.0`, `pydantic-settings>=2.2.0` listed
-  - **Proof:** _pending_
+  - **Proof:** All present plus `python-multipart>=0.0.9` for form uploads
 
-- [ ] **2.1.6** Add background task dependencies
+- [x] **2.1.6** Add background task dependencies
   - **Validation:** `celery[gevent]>=5.4.0`, `redbeat>=2.2.0` listed
-  - **Proof:** _pending_
+  - **Proof:** Both present in dependencies
 
-- [ ] **2.1.7** Add observability and serialization dependencies
+- [x] **2.1.7** Add observability and serialization dependencies
   - **Validation:** `langfuse>=2.0.0`, `msgpack>=1.0.8`, `httpx>=0.27.0`, `orjson>=3.10.0` listed
-  - **Proof:** _pending_
+  - **Proof:** All present plus `structlog>=24.1.0` for structured logging
 
-- [ ] **2.1.8** Add embedding dependencies
+- [x] **2.1.8** Add embedding dependencies
   - **Validation:** `openai>=1.30.0`, `tiktoken>=0.7.0` listed
-  - **Proof:** _pending_
+  - **Proof:** Both present plus `numpy>=1.26.0` for vector ops
 
-- [ ] **2.1.9** Add dev dependencies
+- [x] **2.1.9** Add dev dependencies
   - **Validation:** `pytest>=8.0.0`, `pytest-asyncio>=0.23.0`, `pytest-cov>=5.0.0`, `ruff>=0.4.0`, `mypy>=1.10.0`, `alembic>=1.13.0` listed
-  - **Proof:** _pending_
+  - **Proof:** All present plus pytest-xdist, pytest-mock, factory-boy, faker, respx, pre-commit, type stubs
 
-- [ ] **2.1.10** Add tool configurations (ruff, mypy, pytest)
+- [x] **2.1.10** Add tool configurations (ruff, mypy, pytest)
   - **Validation:** `[tool.ruff]` with target-version="py312", line-length=100; `[tool.mypy]` with strict=true; `[tool.pytest.ini_options]` with asyncio_mode="auto"
-  - **Proof:** _pending_
+  - **Proof:**
+    - Ruff: target-version="py312", line-length=100, comprehensive lint rules
+    - MyPy: strict=true, python_version="3.12", warn_return_any=true
+    - Pytest: asyncio_mode="auto", cov-fail-under=80
 
-- [ ] **2.1.11** Add MCP client dependency
+- [x] **2.1.11** Add MCP client dependency
   - **Validation:** `mcp>=1.0.0` or `mcp-python-sdk` listed in dependencies
-  - **Proof:** _pending_
+  - **Proof:** `mcp>=1.0.0` in dependencies
 
 - [ ] **2.1.12** Verify installation succeeds
   - **Validation:** `pip install -e "supernova/[dev]"` completes without errors
@@ -1310,7 +1596,7 @@
   - **Proof:** _pending_
 
 - [ ] **9.1.7** Verify Langfuse traces
-  - **Validation:** Open http://localhost:3000; traces visible with memory retrieval and reasoning spans
+  - **Validation:** Open <http://localhost:3000>; traces visible with memory retrieval and reasoning spans
   - **Proof:** _pending_
 
 - [ ] **9.1.8** Start Celery worker

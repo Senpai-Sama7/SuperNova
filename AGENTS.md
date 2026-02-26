@@ -6,6 +6,68 @@
 
 ---
 
+## ⚠️ CRITICAL: Canonical Build Guide
+
+### PRIMARY REFERENCE: `PROGRESS_TRACKER.md`
+
+**This file (`AGENTS.md`) is reference documentation. The authoritative build guide is `PROGRESS_TRACKER.md`.**
+
+All implementation work **MUST** follow the 16-phase checklist in `PROGRESS_TRACKER.md`. Every task must be:
+1. **Implemented** — Code written and functional
+2. **Tested** — Validation commands executed
+3. **Verified** — Proof of completion documented
+4. **Checked off** — `[ ]` → `[x]` with evidence
+
+**DO NOT PROCEED** to the next bullet point until the current one is fully validated with real, working, tested code.
+
+---
+
+## TRACKER RULES — Mandatory Compliance
+
+### Rule 1: Sequential Execution
+**NEVER** skip tasks. **NEVER** mark a task complete without proof. **NEVER** move forward until validation passes.
+
+### Rule 2: Real Validation Required
+Every task has a **Validation** line. Execute it. If it fails, stop. Debug. Fix. Re-validate.
+
+### Rule 3: Proof Documentation
+Replace `_pending_` with actual evidence:
+```markdown
+- **Proof:** Command output, test results, or verification log showing the task is complete
+```
+
+### Rule 4: Failed Task Handling
+If a task fails:
+1. Leave `[ ]` unchecked
+2. Add `❌ FAIL:` note with explanation
+3. Add `✅ FIX:` note with resolution
+4. Do NOT proceed to next task until resolved
+
+### Rule 5: No Hand-Waving
+"It should work" is not validation. "Tests pass" requires pytest output. "Service healthy" requires health check response.
+
+### Rule 6: Update AGENTS.md After Each Task
+After completing each `PROGRESS_TRACKER.md` task, update this `AGENTS.md` file to reflect the current state. Keep documentation synchronized with implementation.
+
+---
+
+## Build Status
+
+| Phase | Status | Key Milestones |
+|-------|--------|----------------|
+| **Phase 0** | ✅ COMPLETE | Python 3.13.7, Docker 29.2.1, Node.js 22.22.0, 43 skills, MCP servers ready |
+| **Phase 1** | ✅ COMPLETE | All 10 directory structures, 13 __init__.py files, import paths verified |
+| Phase 2 | ⏳ PENDING | pyproject.toml, dependencies installation |
+| Phase 2 | ⏳ PENDING | pyproject.toml, dependencies |
+| Phase 3 | ⏳ PENDING | .env.example expansion |
+| Phases 4-10 | ⏳ PENDING | Core implementation |
+| Phase -1 | ⏳ DEFERRED | Packaging (requires working core) |
+| Phases 11-15 | ⏳ PENDING | Security, cost, backup, UX, observability |
+
+**Last Updated:** Phase 0 completion — all environment prerequisites validated.
+
+---
+
 ## Project Overview
 
 SuperNova is a durable, observable, and self-improving AI agent system implementing a cognitive architecture inspired by human memory systems. The agent features:
@@ -45,6 +107,7 @@ celery[gevent]>=5.4.0         # Background task execution
 redbeat>=2.2.0                # Redis-backed Celery Beat scheduler
 langfuse>=2.0.0               # Observability and tracing
 msgpack>=1.0.8                # Binary serialization for working memory
+httpx>=0.27.0                 # Async HTTP client for external APIs
 ```
 
 ### Infrastructure Services
@@ -60,57 +123,29 @@ msgpack>=1.0.8                # Binary serialization for working memory
 
 ```
 supernova/
-├── core/                       # Core agent cognition
-│   ├── agent/
-│   │   └── loop.py            # ← SPEC: Cognitive loop (LangGraph StateGraph)
-│   ├── memory/
-│   │   ├── working.py         # Redis-based working memory store
-│   │   ├── episodic.py        # Graphiti wrapper for temporal memory
-│   │   ├── semantic.py        # pgvector semantic memory store
-│   │   └── procedural.py      # ← SPEC: Compiled skill storage & crystallization
-│   └── reasoning/
-│       └── context_assembly.py # ← SPEC: Positional context window assembly
-├── infrastructure/             # External service integrations
-│   ├── llm/
-│   │   └── dynamic_router.py  # ← SPEC: Capability-vector model router
-│   ├── storage/
-│   │   ├── postgres.py        # Asyncpg pool wrapper
-│   │   └── redis.py           # Aioredis client wrapper
-│   └── tools/
-│       ├── registry.py        # Capability-gated tool registry
-│       ├── sandbox.py         # Docker sandboxed code execution
-│       └── builtin/
-│           ├── web_search.py  # Tavily/SerpAPI search
-│           ├── file_ops.py    # Jailed file read/write
-│           └── code_exec.py   # Sandboxed Python execution
-├── api/                        # FastAPI application
-│   ├── gateway.py             # Main FastAPI app entrypoint
-│   ├── websockets.py          # Streaming WebSocket handler
-│   ├── auth.py                # JWT verification
-│   ├── interrupts.py          # ← SPEC: HITL interrupt coordinator
-│   └── routes/
-│       ├── sessions.py        # Session management endpoints
-│       ├── memory.py          # Memory retrieval endpoints
-│       └── admin.py           # Admin/fleet status endpoints
-├── workers/                    # Celery background workers
-│   ├── celery_app.py          # Celery + RedBeat configuration
-│   ├── heartbeat.py           # Periodic agent cognition tasks
-│   ├── consolidation.py       # Episodic→semantic memory consolidation
-│   └── maintenance.py         # Forgetting curves + cleanup
-├── deploy/                     # Deployment configurations
-│   ├── docker-compose.yml     # Full infrastructure stack
-│   ├── DEPLOYMENT.conf        # Systemd services, Dockerfile, Nginx config
-│   └── postgres/
-│       └── init.sql           # Initial schema
-├── tests/                      # Test suite
-│   ├── conftest.py            # Pytest fixtures
-│   ├── test_context_assembly.py
-│   ├── test_memory_retrieval.py
-│   ├── test_routing.py
-│   └── test_interrupts.py
-├── pyproject.toml             # Dependencies and tool configuration
-└── nova-dashboard.jsx         # React monitoring dashboard (specification artifact)
+├── loop.py                     # ← SPEC: Cognitive loop (LangGraph StateGraph)
+├── context_assembly.py         # ← SPEC: Positional context window assembly
+├── procedural.py               # ← SPEC: Compiled skill storage & crystallization
+├── dynamic_router.py           # ← SPEC: Capability-vector model router
+├── interrupts.py               # ← SPEC: HITL interrupt coordinator
+├── DEPLOYMENT.conf             # ← SPEC: Systemd services, Dockerfile, Nginx config
+├── nova-dashboard.jsx          # React monitoring dashboard with Bayesian/Conformal engines
+├── PROGRESS_TRACKER.md         # 16-phase build progress tracker
+├── setup.sh                    # Environment setup script
+├── AGENTS.md                   # This file
+├── mcp_and_skills/             # MCP servers and skill definitions
+│   ├── mcp-servers/            # Pre-built MCP servers (filesystem, fetch, etc.)
+│   ├── custom-mcp-servers/     # Custom MCP servers (omega, titanium, etc.)
+│   ├── skills/                 # Skill definitions
+│   ├── claude-config/          # Claude Desktop MCP configurations
+│   ├── vscode-config/          # VS Code MCP settings
+│   └── ...
+└── .agent/                     # Agent configuration
 ```
+
+### Note on Directory Layout
+
+The Python source files are currently at the **root level** of the project. This is intentional for the specification phase. In a complete implementation, these would be organized under `core/`, `api/`, `infrastructure/` directories as described in the architecture documentation.
 
 ---
 
@@ -118,14 +153,14 @@ supernova/
 
 The following files are **load-bearing specifications**. Copy them exactly as provided—do not refactor, restructure, or "improve" them:
 
-| File                                   | Purpose                                                                      |
-| -------------------------------------- | ---------------------------------------------------------------------------- |
-| `core/reasoning/context_assembly.py`   | Positionally-aware context window assembly with Primacy/Middle/Recency zones |
-| `core/memory/procedural.py`            | Procedural memory with SkillCrystallizationWorker                            |
-| `core/agent/loop.py`                   | The cognitive loop (LangGraph StateGraph with checkpointing)                 |
-| `infrastructure/llm/dynamic_router.py` | Capability-vector model routing with live pricing                            |
-| `api/interrupts.py`                    | HITL interrupt coordinator with risk-stratified timeouts                     |
-| `DEPLOYMENT.conf`                      | Systemd services, multi-stage Dockerfile, Nginx configuration                |
+| File                  | Purpose                                                                      |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `context_assembly.py` | Positionally-aware context window assembly with Primacy/Middle/Recency zones |
+| `procedural.py`       | Procedural memory with SkillCrystallizationWorker                            |
+| `loop.py`             | The cognitive loop (LangGraph StateGraph with checkpointing)                 |
+| `dynamic_router.py`   | Capability-vector model routing with live pricing                            |
+| `interrupts.py`       | HITL interrupt coordinator with risk-stratified timeouts                     |
+| `DEPLOYMENT.conf`     | Systemd services, multi-stage Dockerfile, Nginx configuration                |
 
 ### Critical Constraint from loop.py
 
@@ -145,13 +180,19 @@ If this annotation is missing, tool results will overwrite conversation history 
 ### Environment Setup
 
 ```bash
-# Validate environment (Python 3.12+, Docker, PostgreSQL tools)
+# Run the setup script for automated environment validation
+./setup.sh
+
+# Or manually validate environment (Python 3.12+, Docker, PostgreSQL tools)
 python3 --version
 docker --version
 docker compose version
 psql --version
 
-# Install dependencies
+# Install uv (Astral's Python package manager) for faster dependency sync
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies (when pyproject.toml is present)
 uv sync --all-extras
 # or: pip install -e ".[dev]"
 ```
@@ -165,7 +206,7 @@ docker compose up -d postgres neo4j redis langfuse
 # Wait for healthy status
 docker compose ps
 
-# Run migrations
+# Run migrations (when alembic is configured)
 alembic upgrade head
 ```
 
@@ -259,6 +300,7 @@ File operations are restricted to `./workspace/`—any path containing `..` is r
 - Never log API keys, JWT tokens, or database passwords
 - Log only first 8 characters of any secret for debugging
 - Environment variables loaded from `/etc/supernova/secrets.env` (systemd)
+- Pickle deserialization only from trusted PostgreSQL (see procedural.py security note)
 
 ---
 
@@ -366,7 +408,7 @@ def route_after_reasoning(state: AgentState) -> str:
 
 ## Development Workflow
 
-1. **Read the spec** — Before modifying any file, read the corresponding specification section in `SUPERNOVA_AGENT_PROMPT.md`
+1. **Read the spec** — Before modifying any file, read the corresponding specification section
 2. **Verify mental model** — Before running commands, verify your understanding of what they will do
 3. **Check library APIs** — Use bash/read tools to check installed package documentation rather than hallucinating signatures
 4. **Run tests** — All changes must pass `pytest tests/` with ≥80% coverage
@@ -396,10 +438,23 @@ Liu et al. (2023) demonstrated that transformer attention has U-shaped bias: pri
 
 ---
 
+## MCP and Skills System
+
+The project includes a comprehensive MCP (Model Context Protocol) and skills infrastructure in the `mcp_and_skills/` directory:
+
+- **MCP Servers**: Pre-built and custom MCP servers for tool integration
+- **Skills**: Modular skill definitions for agent capabilities
+- **Configurations**: IDE-specific MCP configurations (Claude Desktop, VS Code, Copilot)
+
+See `mcp_and_skills/MCP_INTEGRATION_SUMMARY.md` for details.
+
+---
+
 ## Resources
 
-- **Build Specification**: `SUPERNOVA_AGENT_PROMPT.md` (762 lines, 10 phases)
+- **Build Specification**: `PROGRESS_TRACKER.md` (16 phases, from packaging to observability)
 - **Deployment Config**: `DEPLOYMENT.conf` (systemd, Docker, Nginx)
 - **Dashboard UI**: `nova-dashboard.jsx` (React component with real-time simulation)
+- **Setup Script**: `setup.sh` (automated environment setup)
 - **LangGraph Docs**: https://langchain-ai.github.io/langgraph/
 - **Graphiti Docs**: https://github.com/getzep/graphiti
