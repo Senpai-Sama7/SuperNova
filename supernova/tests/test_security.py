@@ -226,11 +226,11 @@ class TestAuditMigration:
         mig = Path(__file__).resolve().parent.parent / "alembic" / "versions" / "b7c3e9f12a45_audit_logs.py"
         assert mig.exists()
         content = mig.read_text()
-        assert "audit_logs" in content
+        assert "supernova_audit_logs" in content
         assert "user_id" in content
         assert "action" in content
         assert "ip_address" in content
-        assert "ix_audit_logs_timestamp" in content
+        assert "ix_sn_audit_logs_timestamp" in content
 
 
 # ── 13.4: Enhanced Sandboxing ─────────────────────────────────────────────────

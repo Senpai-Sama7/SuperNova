@@ -48,7 +48,7 @@ async def write_audit_entry(pool: Any, entry: dict[str, Any]) -> None:
     """Write a single audit entry to the database."""
     async with pool.acquire() as conn:
         await conn.execute(
-            """INSERT INTO audit_logs (user_id, action, resource, details, ip_address)
+            """INSERT INTO supernova_audit_logs (user_id, action, resource, details, ip_address)
                VALUES ($1, $2, $3, $4::json, $5)""",
             entry["user_id"],
             entry["action"],
@@ -95,7 +95,7 @@ async def query_audit_logs(
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             f"""SELECT id, timestamp, user_id, action, resource, details, ip_address
-                FROM audit_logs {where}
+                FROM supernova_audit_logs {where}
                 ORDER BY timestamp DESC
                 LIMIT ${idx} OFFSET ${idx + 1}""",
             *params,

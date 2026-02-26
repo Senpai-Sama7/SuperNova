@@ -34,9 +34,12 @@ class TestBackupWorkerBody:
         mock_mgr.verify_backup.return_value = True
         mock_mgr.rotate_backups = MagicMock(return_value=2)
 
+        backup_mod = MagicMock()
+        backup_mod.BackupManager.from_settings = MagicMock(return_value=mock_mgr)
+
         with (
             patch("supernova.config.get_settings", return_value=settings),
-            patch("supernova.core.backup.manager.BackupManager.from_settings", return_value=mock_mgr),
+            patch.dict("sys.modules", {"supernova.core.backup.manager": backup_mod}),
         ):
             result = await _do_backup()
 
@@ -62,9 +65,17 @@ class TestConsolidationWorkerBody:
         ]
         mock_semantic = AsyncMock()
 
-        with (
-            patch("supernova.core.memory.episodic.EpisodicMemoryStore", return_value=mock_episodic),
-            patch("supernova.core.memory.semantic.SemanticMemoryStore", return_value=mock_semantic),
+        ep_mod = MagicMock()
+        ep_mod.EpisodicMemoryStore = MagicMock(return_value=mock_episodic)
+        sem_mod = MagicMock()
+        sem_mod.SemanticMemoryStore = MagicMock(return_value=mock_semantic)
+
+        with patch.dict(
+            "sys.modules",
+            {
+                "supernova.core.memory.episodic": ep_mod,
+                "supernova.core.memory.semantic": sem_mod,
+            },
         ):
             result = await _do_consolidation()
 
@@ -81,9 +92,17 @@ class TestConsolidationWorkerBody:
         mock_semantic = AsyncMock()
         mock_semantic.store.side_effect = RuntimeError("db down")
 
-        with (
-            patch("supernova.core.memory.episodic.EpisodicMemoryStore", return_value=mock_episodic),
-            patch("supernova.core.memory.semantic.SemanticMemoryStore", return_value=mock_semantic),
+        ep_mod = MagicMock()
+        ep_mod.EpisodicMemoryStore = MagicMock(return_value=mock_episodic)
+        sem_mod = MagicMock()
+        sem_mod.SemanticMemoryStore = MagicMock(return_value=mock_semantic)
+
+        with patch.dict(
+            "sys.modules",
+            {
+                "supernova.core.memory.episodic": ep_mod,
+                "supernova.core.memory.semantic": sem_mod,
+            },
         ):
             result = await _do_consolidation()
 
@@ -138,7 +157,10 @@ class TestMaintenanceWorkerBody:
         mock_pg.connect = AsyncMock()
         mock_pg.disconnect = AsyncMock()
 
-        with patch("supernova.infrastructure.storage.postgres.AsyncPostgresPool", return_value=mock_pg):
+        pg_mod = MagicMock()
+        pg_mod.AsyncPostgresPool = MagicMock(return_value=mock_pg)
+
+        with patch.dict("sys.modules", {"supernova.infrastructure.storage.postgres": pg_mod}):
             result = await _do_forgetting()
 
         assert result["rows_affected"] == 42
@@ -160,7 +182,10 @@ class TestMaintenanceWorkerBody:
         mock_pg.connect = AsyncMock()
         mock_pg.disconnect = AsyncMock()
 
-        with patch("supernova.infrastructure.storage.postgres.AsyncPostgresPool", return_value=mock_pg):
+        pg_mod = MagicMock()
+        pg_mod.AsyncPostgresPool = MagicMock(return_value=mock_pg)
+
+        with patch.dict("sys.modules", {"supernova.infrastructure.storage.postgres": pg_mod}):
             result = await _do_forgetting()
 
         assert result["rows_affected"] == 0
@@ -172,7 +197,10 @@ class TestMaintenanceWorkerBody:
         mock_pg = AsyncMock()
         mock_pg.connect.side_effect = RuntimeError("connection refused")
 
-        with patch("supernova.infrastructure.storage.postgres.AsyncPostgresPool", return_value=mock_pg):
+        pg_mod = MagicMock()
+        pg_mod.AsyncPostgresPool = MagicMock(return_value=mock_pg)
+
+        with patch.dict("sys.modules", {"supernova.infrastructure.storage.postgres": pg_mod}):
             result = await _do_forgetting()
 
         assert result["errors"] == 1

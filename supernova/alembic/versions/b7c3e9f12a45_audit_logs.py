@@ -19,7 +19,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.create_table(
-        "audit_logs",
+        "supernova_audit_logs",
         sa.Column("id", sa.BigInteger, primary_key=True, autoincrement=True),
         sa.Column("timestamp", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("user_id", sa.Text, nullable=False),
@@ -28,10 +28,10 @@ def upgrade() -> None:
         sa.Column("details", sa.JSON, nullable=True),
         sa.Column("ip_address", sa.Text, nullable=True),
     )
-    op.create_index("ix_audit_logs_timestamp", "audit_logs", ["timestamp"])
-    op.create_index("ix_audit_logs_user_id", "audit_logs", ["user_id"])
-    op.create_index("ix_audit_logs_action", "audit_logs", ["action"])
+    op.create_index("ix_sn_audit_logs_timestamp", "supernova_audit_logs", ["timestamp"])
+    op.create_index("ix_sn_audit_logs_user_id", "supernova_audit_logs", ["user_id"])
+    op.create_index("ix_sn_audit_logs_action", "supernova_audit_logs", ["action"])
 
 
 def downgrade() -> None:
-    op.drop_table("audit_logs")
+    op.drop_table("supernova_audit_logs")

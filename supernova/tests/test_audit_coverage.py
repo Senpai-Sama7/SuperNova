@@ -44,7 +44,7 @@ class TestWriteAuditEntry:
         await write_audit_entry(pool, entry)
         conn.execute.assert_awaited_once()
         sql = conn.execute.call_args[0][0]
-        assert "INSERT INTO audit_logs" in sql
+        assert "INSERT INTO supernova_audit_logs" in sql
 
 
 class TestFlushAuditBuffer:
