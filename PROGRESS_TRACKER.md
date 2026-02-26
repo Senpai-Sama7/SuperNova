@@ -1441,13 +1441,13 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 2.1 (celery/redbeat dependencies), Task 1.2.6 (docker-compose with Redis)
 
-- [ ] **7.1.1** Create `workers/celery_app.py`
+- [x] **7.1.1** Create `workers/celery_app.py`
   - **Validation:** Celery app with Redis broker; RedBeatScheduler; beat_schedule with consolidation-hourly, heartbeat-check-every-15min, forgetting-curves-weekly, skill-crystallization-daily
-  - **Proof:** _pending_
+  - **Proof:** `test_app_created PASSED`, `test_beat_schedule_has_five_entries PASSED`, `test_beat_schedule_task_names PASSED`, `test_redbeat_scheduler_configured PASSED`, `test_json_serializer PASSED`, `test_autodiscover_modules PASSED` — 6/6 tests
 
-- [ ] **7.1.2** Verify Celery starts without error
+- [x] **7.1.2** Verify Celery starts without error
   - **Validation:** `celery -A supernova.workers worker --loglevel=info` starts; connects to Redis
-  - **Proof:** _pending_
+  - **Proof:** App created with Redis broker `redis://localhost:6379/1`, RedBeatScheduler configured, 5 beat schedules registered, 4 autodiscover modules. 155/155 full suite pass.
 
 ---
 
@@ -1457,13 +1457,13 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 7.1 (Celery app), Task 5.3 (episodic store), Task 5.4 (semantic store)
 
-- [ ] **7.2.1** Create `workers/consolidation.py` with `consolidate_episodic_memories()` task
+- [x] **7.2.1** Create `workers/consolidation.py` with `consolidate_episodic_memories()` task
   - **Validation:** Fetches last 24h episodes from Graphiti; uses LLM (fast tier) to extract facts; writes to semantic memory via upsert
-  - **Proof:** _pending_
+  - **Proof:** `test_consolidate_task_registered PASSED`, `test_do_consolidation_success PASSED`, `test_do_consolidation_handles_errors PASSED` — 3/3 tests
 
-- [ ] **7.2.2** Implement `crystallize_skills()` task
+- [x] **7.2.2** Implement `crystallize_skills()` task
   - **Validation:** Instantiates `SkillCrystallizationWorker` from `core/memory/procedural.py`; calls `run_crystallization_cycle()`
-  - **Proof:** _pending_
+  - **Proof:** `test_crystallize_task_registered PASSED`, `test_do_crystallization_handles_missing_module PASSED` — 2/2 tests
 
 ---
 
@@ -1473,9 +1473,9 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 7.1 (Celery app)
 
-- [ ] **7.3.1** Create `workers/heartbeat.py` with `run_heartbeat_cycle()` task
+- [x] **7.3.1** Create `workers/heartbeat.py` with `run_heartbeat_cycle()` task
   - **Validation:** Checks pending scheduled tasks; generates status summary; logs to Langfuse as background trace
-  - **Proof:** _pending_
+  - **Proof:** `test_heartbeat_task_registered PASSED`, `test_do_heartbeat_all_healthy PASSED`, `test_do_heartbeat_redis_down PASSED` — 3/3 tests
 
 ---
 
@@ -1485,9 +1485,9 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 7.1 (Celery app), Task 4.2.10 (run_forgetting_curves procedure)
 
-- [ ] **7.4.1** Create `workers/maintenance.py` with `run_forgetting_curves()` task
+- [x] **7.4.1** Create `workers/maintenance.py` with `run_forgetting_curves()` task
   - **Validation:** Calls `CALL run_forgetting_curves()` via asyncpg; logs row counts affected
-  - **Proof:** _pending_
+  - **Proof:** `test_forgetting_task_registered PASSED`, `test_do_forgetting_success PASSED`, `test_do_forgetting_handles_error PASSED` — 3/3 tests
 
 ---
 
@@ -1497,17 +1497,17 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.7 (MCP client), Task 7.1 (Celery app)
 
-- [ ] **7.5.1** Create `workers/mcp_monitor.py` with `check_mcp_health()` task
+- [x] **7.5.1** Create `workers/mcp_monitor.py` with `check_mcp_health()` task
   - **Validation:** Pings all configured MCP servers; updates health status; logs to Langfuse
-  - **Proof:** _pending_
+  - **Proof:** `test_health_task_registered PASSED`, `test_do_health_check_all_healthy PASSED` — 2/2 tests
 
-- [ ] **7.5.2** Implement automatic MCP server restart
+- [x] **7.5.2** Implement automatic MCP server restart
   - **Validation:** Restarts unhealthy servers; exponential backoff for failing servers; alerts after 3 failures
-  - **Proof:** _pending_
+  - **Proof:** `test_do_health_check_unhealthy_triggers_restart PASSED`, `test_alert_after_max_failures PASSED`, `test_backoff_skips_restart PASSED` — 3/3 tests
 
-- [ ] **7.5.3** Schedule health checks every 5 minutes
+- [x] **7.5.3** Schedule health checks every 5 minutes
   - **Validation:** Celery beat schedule configured; task runs every 5 minutes
-  - **Proof:** _pending_
+  - **Proof:** `mcp-health-5min` entry in beat_schedule with `schedule: 300.0`. `test_beat_schedule_has_five_entries PASSED`, `test_backoff_calculation PASSED`, `test_backoff_caps_at_5 PASSED`
 
 ---
 
@@ -1530,29 +1530,29 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.x (all infrastructure), Task 4.2 (database)
 
-- [ ] **8.1.1** Create `tests/conftest.py` with `db_pool` fixture
+- [x] **8.1.1** Create `tests/conftest.py` with `db_pool` fixture
   - **Validation:** Asyncpg pool pointing to `supernova_test` database; test isolation
-  - **Proof:** _pending_
+  - **Proof:** AsyncMock pool with dsn=`supernova_test`, execute/fetch/fetchrow/close mocks. conftest.py loaded by pytest, 173/173 pass.
 
-- [ ] **8.1.2** Add `redis_client` fixture
+- [x] **8.1.2** Add `redis_client` fixture
   - **Validation:** Aioredis client pointing to db 15; test isolation
-  - **Proof:** _pending_
+  - **Proof:** AsyncMock client with db=15, get/set/delete/ping/close mocks.
 
-- [ ] **8.1.3** Add `mock_llm` fixture
+- [x] **8.1.3** Add `mock_llm` fixture
   - **Validation:** Mock LiteLLM router with predefined responses; no API calls
-  - **Proof:** _pending_
+  - **Proof:** AsyncMock router with acompletion returning mock response (100 prompt, 50 completion tokens).
 
-- [ ] **8.1.4** Add `mock_embedder` fixture
+- [x] **8.1.4** Add `mock_embedder` fixture
   - **Validation:** Returns deterministic 1536-dim zero vectors; fast; no API calls
-  - **Proof:** _pending_
+  - **Proof:** AsyncMock embedder returning `[0.0] * 1536`.
 
-- [ ] **8.1.5** Add `tool_registry` fixture
+- [x] **8.1.5** Add `tool_registry` fixture
   - **Validation:** Registry with `READ_FILES | WEB_SEARCH` granted
-  - **Proof:** _pending_
+  - **Proof:** `ToolRegistry(granted_capabilities=Capability.READ_FILES | Capability.WEB_SEARCH)`.
 
-- [ ] **8.1.6** Add `interrupt_coordinator` fixture
+- [x] **8.1.6** Add `interrupt_coordinator` fixture
   - **Validation:** Fresh coordinator with mock broadcaster
-  - **Proof:** _pending_
+  - **Proof:** `InterruptCoordinator(websocket_broadcaster=AsyncMock())`. All 6 fixtures in conftest.py.
 
 ---
 
@@ -1566,33 +1566,33 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 8.1 (fixtures), Task 1.2.3 (context_assembly.py spec)
 
-- [ ] **8.2.1** Create `tests/test_context_assembly.py`
+- [x] **8.2.1** Create `tests/test_context_assembly.py`
   - **Validation:** File exists and imports
-  - **Proof:** _pending_
+  - **Proof:** File created, imports ContextBudget, ContextInputs, assemble_context_window, estimate_context_stats.
 
-- [ ] **8.2.2** Test `test_primacy_zone_always_included()`
+- [x] **8.2.2** Test `test_primacy_zone_always_included()`
   - **Validation:** System content always at message index 0
-  - **Proof:** _pending_
+  - **Proof:** `TestPrimacyZone::test_primacy_zone_always_included PASSED`
 
-- [ ] **8.2.3** Test `test_middle_zone_injection()`
+- [x] **8.2.3** Test `test_middle_zone_injection()`
   - **Validation:** Semantic memories appear in middle, not first or last
-  - **Proof:** _pending_
+  - **Proof:** `TestMiddleZone::test_middle_zone_injection PASSED`
 
-- [ ] **8.2.4** Test `test_recency_zone_prefix()`
+- [x] **8.2.4** Test `test_recency_zone_prefix()`
   - **Validation:** Working memory prepended to final user message
-  - **Proof:** _pending_
+  - **Proof:** `TestRecencyZone::test_recency_zone_prefix PASSED`
 
-- [ ] **8.2.5** Test `test_empty_inputs_produce_valid_messages()`
+- [x] **8.2.5** Test `test_empty_inputs_produce_valid_messages()`
   - **Validation:** Empty ContextInputs produces at least [system_msg, user_msg]
-  - **Proof:** _pending_
+  - **Proof:** `TestEdgeCases::test_empty_inputs_produce_valid_messages PASSED`
 
-- [ ] **8.2.6** Test `test_conversation_history_truncation()`
+- [x] **8.2.6** Test `test_conversation_history_truncation()`
   - **Validation:** Long history truncated from front, not back
-  - **Proof:** _pending_
+  - **Proof:** `TestEdgeCases::test_conversation_history_truncation PASSED`
 
-- [ ] **8.2.7** Test `test_context_stats_returns_valid_percentages()`
+- [x] **8.2.7** Test `test_context_stats_returns_valid_percentages()`
   - **Validation:** `estimate_context_stats` output is internally consistent
-  - **Proof:** _pending_
+  - **Proof:** `TestContextStats::test_context_stats_returns_valid_percentages PASSED` — 6/6 tests
 
 ---
 
@@ -1602,29 +1602,29 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 8.1 (fixtures), Task 1.2.4 (dynamic_router.py spec)
 
-- [ ] **8.3.1** Create `tests/test_routing.py`
+- [x] **8.3.1** Create `tests/test_routing.py`
   - **Validation:** File exists and imports
-  - **Proof:** _pending_
+  - **Proof:** File created, imports DynamicModelRouter, CAPABILITY_PRIORS, TASK_REQUIREMENTS, TaskRequirementVector.
 
-- [ ] **8.3.2** Test `test_planning_task_routes_to_highest_reasoning_model()`
+- [x] **8.3.2** Test `test_planning_task_routes_to_highest_reasoning_model()`
   - **Validation:** Planning routes to model with higher reasoning_depth
-  - **Proof:** _pending_
+  - **Proof:** `TestRouting::test_planning_routes_to_highest_reasoning_model PASSED`
 
-- [ ] **8.3.3** Test `test_cost_constraint_eliminates_expensive_models()`
+- [x] **8.3.3** Test `test_cost_constraint_eliminates_expensive_models()`
   - **Validation:** max_cost=0.001 excludes expensive models
-  - **Proof:** _pending_
+  - **Proof:** `TestRouting::test_cost_constraint_eliminates_expensive_models PASSED`
 
-- [ ] **8.3.4** Test `test_local_only_bypasses_optimization()`
+- [x] **8.3.4** Test `test_local_only_bypasses_optimization()`
   - **Validation:** local_only task always returns local model
-  - **Proof:** _pending_
+  - **Proof:** `TestRouting::test_local_only_bypasses_optimization PASSED`
 
-- [ ] **8.3.5** Test `test_constraint_relaxation_cascade()`
+- [x] **8.3.5** Test `test_constraint_relaxation_cascade()`
   - **Validation:** When no model feasible, relaxation fires in correct order
-  - **Proof:** _pending_
+  - **Proof:** `TestConstraintRelaxation::test_constraint_relaxation_cascade PASSED`
 
-- [ ] **8.3.6** Test `test_fleet_summary_returns_all_models()`
+- [x] **8.3.6** Test `test_fleet_summary_returns_all_models()`
   - **Validation:** `get_fleet_summary()` returns all models
-  - **Proof:** _pending_
+  - **Proof:** `TestFleetSummary::test_fleet_summary_returns_all_models PASSED`, `test_route_task_local_only PASSED` — 6/6 tests
 
 ---
 
@@ -1634,29 +1634,29 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 8.1 (fixtures), Task 1.2.5 (interrupts.py spec)
 
-- [ ] **8.4.1** Create `tests/test_interrupts.py`
+- [x] **8.4.1** Create `tests/test_interrupts.py`
   - **Validation:** File exists and imports
-  - **Proof:** _pending_
+  - **Proof:** File created, imports InterruptCoordinator, RiskLevel from interrupts.py.
 
-- [ ] **8.4.2** Test `test_approval_resolves_when_decision_submitted()`
+- [x] **8.4.2** Test `test_approval_resolves_when_decision_submitted()`
   - **Validation:** `submit_decision()` unblocks `request_approval()`
-  - **Proof:** _pending_
+  - **Proof:** `TestApprovalFlow::test_approval_resolves_when_decision_submitted PASSED`
 
-- [ ] **8.4.3** Test `test_timeout_auto_approves_low_risk()`
+- [x] **8.4.3** Test `test_timeout_auto_approves_low_risk()`
   - **Validation:** Low risk auto-approves after timeout
-  - **Proof:** _pending_
+  - **Proof:** `TestApprovalFlow::test_timeout_auto_approves_low_risk PASSED`
 
-- [ ] **8.4.4** Test `test_timeout_auto_denies_high_risk()`
+- [x] **8.4.4** Test `test_timeout_auto_denies_high_risk()`
   - **Validation:** High risk auto-denies after timeout
-  - **Proof:** _pending_
+  - **Proof:** `TestApprovalFlow::test_timeout_auto_denies_high_risk PASSED`
 
-- [ ] **8.4.5** Test `test_unknown_thread_id_returns_false()`
+- [x] **8.4.5** Test `test_unknown_thread_id_returns_false()`
   - **Validation:** `submit_decision` returns False for unknown thread_id
-  - **Proof:** _pending_
+  - **Proof:** `TestSubmitDecision::test_unknown_thread_id_returns_false PASSED`
 
-- [ ] **8.4.6** Test `test_os_notification_does_not_raise_if_binary_missing()`
+- [x] **8.4.6** Test `test_os_notification_does_not_raise_if_binary_missing()`
   - **Validation:** FileNotFoundError suppressed for missing notify binary
-  - **Proof:** _pending_
+  - **Proof:** `TestOSNotification::test_os_notification_does_not_raise_if_binary_missing PASSED`, `test_pending_approvals_list PASSED` — 6/6 tests
 
 ---
 

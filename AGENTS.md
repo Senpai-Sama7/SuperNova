@@ -155,19 +155,29 @@ supernova/                      # Main Python package
 │
 ├── tests/                      # Test suite
 │   ├── __init__.py
+│   ├── conftest.py             # Shared fixtures (db_pool, redis, mock_llm, embedder, registry, coordinator)
 │   ├── test_auth.py
 │   ├── test_builtin_tools.py
+│   ├── test_context_assembly.py  # Primacy/middle/recency zone tests
 │   ├── test_episodic.py
 │   ├── test_gateway.py
+│   ├── test_interrupts.py      # HITL approval flow, timeout, risk-level tests
 │   ├── test_mcp_api.py
 │   ├── test_mcp_client.py
 │   ├── test_registry.py
+│   ├── test_routing.py         # Capability-vector routing, cost constraints, fleet summary
 │   ├── test_semantic.py
 │   ├── test_skills.py
-│   └── test_websockets.py
+│   ├── test_websockets.py
+│   └── test_workers.py
 │
-└── workers/                    # Celery background workers
-    └── __init__.py
+├── workers/                    # Celery background workers
+│   ├── __init__.py
+│   ├── celery_app.py           # Celery app (Redis broker, RedBeat, 5 beat schedules)
+│   ├── consolidation.py        # Episodic→semantic transfer + skill crystallization
+│   ├── heartbeat.py            # Redis/Postgres/Neo4j health checks + Langfuse trace
+│   ├── maintenance.py          # Forgetting curves via asyncpg stored procedure
+│   └── mcp_monitor.py          # MCP server health + auto-restart with exponential backoff
 
 # Root-level specification files (load-bearing)
 ├── loop.py                     # Cognitive loop (LangGraph StateGraph)
