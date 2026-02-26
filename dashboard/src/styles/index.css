@@ -1,0 +1,160 @@
+/**
+ * SuperNova Dashboard Styles
+ * Main stylesheet entry point
+ */
+
+@import './variables.css';
+
+/* Global reset and base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-main);
+  line-height: 1.5;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(0, 255, 213, 0.3);
+  color: var(--color-text);
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-low);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 213, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 213, 0.5);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 213, 0.3) var(--color-surface-low);
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease;
+}
+
+/* Glass effect utility */
+.glass {
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  background-color: var(--glass-bg);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Typography utilities */
+.text-accent { color: var(--color-accent); }
+.text-secondary { color: var(--color-secondary); }
+.text-warning { color: var(--color-warning); }
+.text-error { color: var(--color-error); }
+.text-success { color: var(--color-success); }
+.text-muted { color: var(--color-text-muted); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-display); }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

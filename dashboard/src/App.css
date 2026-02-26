@@ -1,42 +1,204 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/**
+ * App Component Styles
+ * Neural Constellation Design System v2.0
+ * 
+ * @phase Phase 1 - Foundation
+ */
+
+/* ============================================================================
+   APP CONTAINER
+   ============================================================================ */
+
+.nv-app-container {
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--nv-deep-space);
+  background-image: 
+    /* Purple nebula - top left */
+    radial-gradient(
+      ellipse 60% 50% at 15% 20%,
+      var(--nv-purple-15) 0%,
+      transparent 60%
+    ),
+    /* Cyan aurora - top right */
+    radial-gradient(
+      ellipse 50% 40% at 85% 15%,
+      var(--nv-cyan-10) 0%,
+      transparent 50%
+    ),
+    /* Gold knowledge cluster - center right */
+    radial-gradient(
+      ellipse 40% 60% at 75% 50%,
+      var(--nv-gold-30) 0%,
+      transparent 55%
+    ),
+    /* Coral memory fog - bottom left */
+    radial-gradient(
+      ellipse 55% 45% at 25% 75%,
+      var(--nv-coral-15) 0%,
+      transparent 60%
+    ),
+    /* Amber skill region - bottom right */
+    radial-gradient(
+      ellipse 45% 35% at 80% 85%,
+      var(--nv-amber-30) 0%,
+      transparent 50%
+    ),
+    /* Central glow */
+    radial-gradient(
+      ellipse 30% 30% at 50% 50%,
+      var(--nv-cyan-10) 0%,
+      transparent 70%
+    ),
+    /* Base gradient */
+    linear-gradient(
+      180deg,
+      var(--nv-deep-space) 0%,
+      var(--nv-nebula) 50%,
+      var(--nv-deep-space) 100%
+    );
+  background-attachment: fixed;
+  color: var(--nv-text-primary);
+  font-family: var(--nv-font-ui);
+}
+
+/* ============================================================================
+   ERROR FALLBACK STYLES
+   ============================================================================ */
+
+.nv-error-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--nv-space-layout-xs);
+  background: var(--nv-bg-primary);
+}
+
+.nv-error-card {
+  max-width: 500px;
+  width: 100%;
   text-align: center;
+  padding: var(--nv-space-layout-sm);
+  
+  /* Glassmorphism */
+  background: var(--nv-nebula-90);
+  backdrop-filter: blur(var(--nv-blur-2xl)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-2xl)) saturate(180%);
+  border-radius: var(--nv-radius-xl);
+  border: 1px solid var(--nv-risk-high-50);
+  box-shadow: 
+    var(--nv-shadow-xl),
+    0 0 40px var(--nv-risk-critical-80);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.nv-error-icon {
+  font-size: var(--nv-text-6xl);
+  margin-bottom: var(--nv-space-4);
+  animation: nv-error-pulse 2s ease-in-out infinite;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@keyframes nv-error-pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
   }
-  to {
-    transform: rotate(360deg);
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.1);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+.nv-error-title {
+  margin: 0 0 var(--nv-space-4) 0;
+  font-family: var(--nv-font-display);
+  font-size: var(--nv-text-3xl);
+  font-weight: var(--nv-font-bold);
+  color: var(--nv-risk-high);
+  text-shadow: 0 0 20px var(--nv-risk-high-50);
+}
+
+.nv-error-message {
+  color: var(--nv-text-secondary);
+  margin-bottom: var(--nv-space-6);
+  font-size: var(--nv-text-lg);
+  line-height: var(--nv-leading-relaxed);
+}
+
+.nv-error-details {
+  text-align: left;
+  color: var(--nv-text-muted);
+  font-size: var(--nv-text-sm);
+  margin-bottom: var(--nv-space-6);
+}
+
+.nv-error-details summary {
+  cursor: pointer;
+  padding: var(--nv-space-2);
+  border-radius: var(--nv-radius-md);
+  transition: background var(--nv-duration-fast) var(--nv-ease-standard);
+}
+
+.nv-error-details summary:hover {
+  background: var(--nv-white-5);
+}
+
+.nv-error-stack {
+  background: var(--nv-deep-space-90);
+  padding: var(--nv-space-4);
+  border-radius: var(--nv-radius-md);
+  border: 1px solid var(--nv-border-default);
+  overflow-x: auto;
+  font-family: var(--nv-font-mono);
+  font-size: var(--nv-text-xs);
+  line-height: var(--nv-leading-normal);
+  color: var(--nv-text-secondary);
+  margin-top: var(--nv-space-2);
+}
+
+.nv-error-reload {
+  padding: var(--nv-space-3) var(--nv-space-6);
+  border-radius: var(--nv-radius-md);
+  border: none;
+  background: var(--nv-cyan);
+  color: var(--nv-deep-space);
+  font-family: var(--nv-font-ui);
+  font-size: var(--nv-text-base);
+  font-weight: var(--nv-font-semibold);
+  cursor: pointer;
+  transition: all var(--nv-duration-standard) var(--nv-ease-standard);
+  box-shadow: var(--nv-glow-low);
+}
+
+.nv-error-reload:hover {
+  background: var(--nv-white);
+  box-shadow: var(--nv-glow-medium);
+  transform: translateY(-2px);
+}
+
+.nv-error-reload:active {
+  transform: translateY(0);
+}
+
+.nv-error-reload:focus-visible {
+  outline: 2px solid var(--nv-white);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-error-icon {
+    animation: none;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+  
+  .nv-error-reload {
+    transition: none;
+  }
+  
+  .nv-error-reload:hover {
+    transform: none;
+  }
 }

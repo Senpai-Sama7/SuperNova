@@ -156,18 +156,22 @@ supernova/                      # Main Python package
 ├── tests/                      # Test suite
 │   ├── __init__.py
 │   ├── conftest.py             # Shared fixtures (db_pool, redis, mock_llm, embedder, registry, coordinator)
+│   ├── test_agent_routes.py       # Agent message endpoint (new/existing session)
 │   ├── test_auth.py
 │   ├── test_builtin_tools.py
 │   ├── test_context_assembly.py  # Primacy/middle/recency zone tests
+│   ├── test_dashboard.py         # Dashboard helpers + snapshot/approval endpoints
 │   ├── test_episodic.py
 │   ├── test_gateway.py
 │   ├── test_interrupts.py      # HITL approval flow, timeout, risk-level tests
 │   ├── test_mcp_api.py
 │   ├── test_mcp_client.py
+│   ├── test_memory_retrieval.py  # Upsert/search round trip, forgetting curve, hybrid search, working memory
 │   ├── test_registry.py
 │   ├── test_routing.py         # Capability-vector routing, cost constraints, fleet summary
 │   ├── test_semantic.py
 │   ├── test_skills.py
+│   ├── test_storage.py           # Redis client + Postgres pool CRUD methods
 │   ├── test_websockets.py
 │   └── test_workers.py
 │

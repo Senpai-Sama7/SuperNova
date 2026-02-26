@@ -10,9 +10,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from enum import Flag, auto
-from typing import Any, Callable, Awaitable
+from typing import Any
 
 from supernova.infrastructure.storage.postgres import AsyncPostgresPool
 

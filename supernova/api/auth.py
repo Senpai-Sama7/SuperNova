@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -28,8 +27,8 @@ def create_access_token(user_id: str, *, expires_delta_hours: float = 24.0) -> s
     """Create a JWT access token for the given user_id."""
     payload = {
         "sub": user_id,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=expires_delta_hours),
-        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(UTC) + timedelta(hours=expires_delta_hours),
+        "iat": datetime.now(UTC),
     }
     return jwt.encode(payload, _get_secret(), algorithm=_ALGORITHM)
 
@@ -46,10 +45,10 @@ def verify_token(token: str) -> str:
         if not user_id:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: no subject")
         return user_id
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+    except jwt.ExpiredSignatureError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired") from e
     except jwt.InvalidTokenError as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}") from e
 
 
 async def get_current_user(

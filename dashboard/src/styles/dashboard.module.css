@@ -1,0 +1,367 @@
+/**
+ * Dashboard Layout CSS Modules
+ */
+
+/* ==========================================================================
+   Container & Layout
+   ========================================================================== */
+.container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-main);
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+.header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface-low);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.statusContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.haltButton {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.haltButtonHalted {
+  background-color: var(--color-success);
+  color: #fff;
+}
+
+.haltButtonRunning {
+  background-color: var(--color-error);
+  color: #fff;
+}
+
+.haltButton:hover {
+  filter: brightness(1.1);
+}
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+.tabs {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.tab {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background-color: transparent;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab:hover {
+  background-color: var(--color-surface-mid);
+  color: var(--color-text);
+}
+
+.tabActive {
+  background-color: rgba(0, 255, 213, 0.2);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.tabIcon {
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   Main Content
+   ========================================================================== */
+.main {
+  padding: var(--space-2xl);
+  display: grid;
+  gap: var(--space-2xl);
+}
+
+/* Grid layouts */
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-lg);
+}
+
+/* ==========================================================================
+   Cards
+   ========================================================================== */
+.card {
+  background-color: var(--color-surface-low);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  border: 1px solid var(--color-border);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Metrics
+   ========================================================================== */
+.metricRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.metricLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.metricValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.metricUnit {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   Error Alert
+   ========================================================================== */
+.errorAlert {
+  background-color: rgba(248, 113, 113, 0.2);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  color: var(--color-error);
+  margin-bottom: var(--space-lg);
+}
+
+.errorRetryButton {
+  margin-left: var(--space-md);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-error);
+  background-color: transparent;
+  color: var(--color-error);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.errorRetryButton:hover {
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+/* ==========================================================================
+   Empty State
+   ========================================================================== */
+.emptyState {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-2xl);
+}
+
+/* ==========================================================================
+   Chat Interface
+   ========================================================================== */
+.chatContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 380px;
+  max-height: 500px;
+  background-color: var(--color-surface-low);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  display: flex;
+  flex-direction: column;
+  z-index: var(--z-dropdown);
+}
+
+.chatHeader {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chatHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: 600;
+}
+
+.chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.chatInput {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.chatInputField {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.chatInputField:focus {
+  border-color: var(--color-accent);
+}
+
+.chatInputField::placeholder {
+  color: var(--color-text-muted);
+}
+
+.chatSendButton {
+  padding: 10px 18px;
+  border-radius: var(--radius-lg);
+  border: none;
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.chatSendButton:hover {
+  filter: brightness(1.1);
+}
+
+/* Message bubbles */
+.message {
+  max-width: 80%;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.messageUser {
+  align-self: flex-end;
+  border-radius: 12px 12px 4px 12px;
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.messageAssistant {
+  align-self: flex-start;
+  border-radius: 12px 12px 12px 4px;
+  background-color: var(--color-surface-mid);
+  color: var(--color-text);
+}
+
+.messageSystem {
+  align-self: center;
+  border-radius: var(--radius-lg);
+  background-color: rgba(148, 163, 184, 0.2);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 768px) {
+  .header {
+    padding: var(--space-md);
+  }
+  
+  .headerTop {
+    flex-direction: column;
+    gap: var(--space-md);
+    align-items: flex-start;
+  }
+  
+  .title {
+    font-size: 20px;
+  }
+  
+  .tabs {
+    overflow-x: auto;
+    padding-bottom: var(--space-xs);
+  }
+  
+  .main {
+    padding: var(--space-md);
+  }
+  
+  .grid2,
+  .grid3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .chatContainer {
+    width: calc(100vw - 40px);
+    right: 20px;
+    left: 20px;
+  }
+}

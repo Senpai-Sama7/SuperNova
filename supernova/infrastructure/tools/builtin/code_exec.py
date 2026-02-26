@@ -44,7 +44,7 @@ async def _code_exec(code: str, language: str = "python", timeout: float = 30.0)
         }
     except (FileNotFoundError, OSError):
         logger.info("Docker unavailable, falling back to subprocess")
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"stdout": "", "stderr": "Execution timed out", "exit_code": -1, "sandbox": "docker"}
 
     # Subprocess fallback
@@ -61,7 +61,7 @@ async def _code_exec(code: str, language: str = "python", timeout: float = 30.0)
             "exit_code": proc.returncode,
             "sandbox": "subprocess",
         }
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"stdout": "", "stderr": "Execution timed out", "exit_code": -1, "sandbox": "subprocess"}
 
 

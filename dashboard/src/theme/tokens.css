@@ -1,0 +1,506 @@
+/**
+ * SuperNova Neural Constellation Design Tokens - CSS Custom Properties
+ * 
+ * This file generates CSS custom properties from the TypeScript token definitions.
+ * These properties enable runtime theming and dynamic updates.
+ * 
+ * @phase Phase 1 - Foundation
+ * @generated Do not edit manually - update tokens.ts instead
+ */
+
+/* ============================================================================
+   ROOT VARIABLES
+   ============================================================================ */
+
+:root {
+  /* -------------------------------------------------------------------------
+     PRIMITIVE COLORS
+     ------------------------------------------------------------------------- */
+  
+  /* SuperNova Core */
+  --nv-cyan: #00ffd5;
+  --nv-cyan-50: rgba(0, 255, 213, 0.5);
+  --nv-cyan-30: rgba(0, 255, 213, 0.3);
+  --nv-cyan-10: rgba(0, 255, 213, 0.1);
+  
+  /* Neural Constellation */
+  --nv-purple: #7c3aed;
+  --nv-purple-50: rgba(124, 58, 237, 0.5);
+  --nv-purple-30: rgba(124, 58, 237, 0.3);
+  --nv-purple-15: rgba(124, 58, 237, 0.15);
+  
+  --nv-gold: #fbbf24;
+  --nv-gold-50: rgba(251, 191, 36, 0.5);
+  --nv-gold-30: rgba(251, 191, 36, 0.3);
+  
+  --nv-amber: #f59e0b;
+  --nv-amber-50: rgba(245, 158, 11, 0.5);
+  --nv-amber-30: rgba(245, 158, 11, 0.3);
+  
+  --nv-coral: #f472b6;
+  --nv-coral-50: rgba(244, 114, 182, 0.5);
+  --nv-coral-30: rgba(244, 114, 182, 0.3);
+  --nv-coral-15: rgba(244, 114, 182, 0.15);
+  
+  /* Risk Spectrum */
+  --nv-risk-low: #22c55e;
+  --nv-risk-low-50: rgba(34, 197, 94, 0.5);
+  --nv-risk-medium: #f59e0b;
+  --nv-risk-medium-50: rgba(245, 158, 11, 0.5);
+  --nv-risk-high: #ef4444;
+  --nv-risk-high-50: rgba(239, 68, 68, 0.5);
+  --nv-risk-critical: #dc2626;
+  --nv-risk-critical-80: rgba(220, 38, 38, 0.8);
+  
+  /* Space Environment */
+  --nv-deep-space: #0a0a0f;
+  --nv-deep-space-90: rgba(10, 10, 15, 0.9);
+  --nv-deep-space-70: rgba(10, 10, 15, 0.7);
+  --nv-deep-space-50: rgba(10, 10, 15, 0.5);
+  
+  --nv-nebula: #1a1a2e;
+  --nv-nebula-90: rgba(26, 26, 46, 0.9);
+  --nv-nebula-70: rgba(26, 26, 46, 0.7);
+  --nv-nebula-60: rgba(26, 26, 46, 0.6);
+  --nv-nebula-50: rgba(26, 26, 46, 0.5);
+  
+  /* Utility */
+  --nv-white: #ffffff;
+  --nv-white-80: rgba(255, 255, 255, 0.8);
+  --nv-white-60: rgba(255, 255, 255, 0.6);
+  --nv-white-40: rgba(255, 255, 255, 0.4);
+  --nv-white-20: rgba(255, 255, 255, 0.2);
+  --nv-white-10: rgba(255, 255, 255, 0.1);
+  --nv-white-5: rgba(255, 255, 255, 0.05);
+  
+  --nv-black: #000000;
+  --nv-black-50: rgba(0, 0, 0, 0.5);
+  --nv-black-30: rgba(0, 0, 0, 0.3);
+  
+  /* -------------------------------------------------------------------------
+     SEMANTIC COLORS
+     ------------------------------------------------------------------------- */
+  
+  /* Background */
+  --nv-bg-primary: var(--nv-deep-space);
+  --nv-bg-secondary: var(--nv-nebula);
+  --nv-bg-tertiary: var(--nv-nebula-70);
+  --nv-bg-overlay: var(--nv-deep-space-70);
+  --nv-bg-elevated: var(--nv-nebula-60);
+  
+  /* Text */
+  --nv-text-primary: var(--nv-white);
+  --nv-text-secondary: var(--nv-white-80);
+  --nv-text-tertiary: var(--nv-white-60);
+  --nv-text-muted: var(--nv-white-40);
+  --nv-text-disabled: var(--nv-white-20);
+  
+  /* Border */
+  --nv-border-default: var(--nv-white-10);
+  --nv-border-hover: var(--nv-white-20);
+  --nv-border-active: var(--nv-cyan-50);
+  --nv-border-focus: var(--nv-cyan);
+  --nv-border-error: var(--nv-risk-high);
+  --nv-border-warning: var(--nv-risk-medium);
+  --nv-border-success: var(--nv-risk-low);
+  
+  /* Interactive */
+  --nv-interactive-default: var(--nv-white-10);
+  --nv-interactive-hover: var(--nv-white-20);
+  --nv-interactive-active: var(--nv-cyan-30);
+  --nv-interactive-selected: var(--nv-cyan-50);
+  --nv-interactive-disabled: var(--nv-white-5);
+  
+  /* Feedback */
+  --nv-feedback-info: var(--nv-cyan);
+  --nv-feedback-success: var(--nv-risk-low);
+  --nv-feedback-warning: var(--nv-risk-medium);
+  --nv-feedback-error: var(--nv-risk-high);
+  --nv-feedback-critical: var(--nv-risk-critical);
+  
+  /* Agent Roles */
+  --nv-agent-planner: var(--nv-purple);
+  --nv-agent-researcher: var(--nv-gold);
+  --nv-agent-executor: var(--nv-cyan);
+  --nv-agent-auditor: var(--nv-coral);
+  --nv-agent-creative: var(--nv-amber);
+  
+  /* Memory Types */
+  --nv-memory-episodic: var(--nv-coral);
+  --nv-memory-semantic: var(--nv-gold);
+  --nv-memory-procedural: var(--nv-amber);
+  --nv-memory-working: var(--nv-cyan);
+  
+  /* Cognitive Loop */
+  --nv-cognitive-perceive: var(--nv-purple);
+  --nv-cognitive-remember: var(--nv-coral);
+  --nv-cognitive-prime: var(--nv-gold);
+  --nv-cognitive-assemble: var(--nv-amber);
+  --nv-cognitive-reason: var(--nv-cyan);
+  --nv-cognitive-act: var(--nv-risk-low);
+  --nv-cognitive-reflect: var(--nv-coral-50);
+  --nv-cognitive-consolidate: var(--nv-purple-50);
+  
+  /* Risk */
+  --nv-risk-low-color: var(--nv-risk-low);
+  --nv-risk-medium-color: var(--nv-risk-medium);
+  --nv-risk-high-color: var(--nv-risk-high);
+  --nv-risk-critical-color: var(--nv-risk-critical);
+  
+  /* Atmosphere */
+  --nv-atmosphere-pristine: var(--nv-cyan);
+  --nv-atmosphere-clear: var(--nv-purple);
+  --nv-atmosphere-normal: var(--nv-gold);
+  --nv-atmosphere-hazy: var(--nv-amber);
+  --nv-atmosphere-turbulent: var(--nv-coral);
+  --nv-atmosphere-storm: var(--nv-risk-high);
+  
+  /* -------------------------------------------------------------------------
+     SPACING
+     ------------------------------------------------------------------------- */
+  --nv-space-0: 0;
+  --nv-space-1: 4px;
+  --nv-space-2: 8px;
+  --nv-space-3: 12px;
+  --nv-space-4: 16px;
+  --nv-space-5: 20px;
+  --nv-space-6: 24px;
+  --nv-space-8: 32px;
+  --nv-space-10: 40px;
+  --nv-space-12: 48px;
+  --nv-space-16: 64px;
+  --nv-space-20: 80px;
+  --nv-space-24: 96px;
+  
+  /* Component Spacing */
+  --nv-space-component-xs: var(--nv-space-1);
+  --nv-space-component-sm: var(--nv-space-2);
+  --nv-space-component-md: var(--nv-space-3);
+  --nv-space-component-lg: var(--nv-space-4);
+  --nv-space-component-xl: var(--nv-space-6);
+  
+  /* Layout Spacing */
+  --nv-space-layout-xs: var(--nv-space-4);
+  --nv-space-layout-sm: var(--nv-space-6);
+  --nv-space-layout-md: var(--nv-space-8);
+  --nv-space-layout-lg: var(--nv-space-12);
+  --nv-space-layout-xl: var(--nv-space-16);
+  
+  /* -------------------------------------------------------------------------
+     TYPOGRAPHY
+     ------------------------------------------------------------------------- */
+  --nv-font-display: "Clash Display", "Space Grotesk", sans-serif;
+  --nv-font-ui: "Space Grotesk", system-ui, sans-serif;
+  --nv-font-mono: "JetBrains Mono", "Fira Code", monospace;
+  
+  --nv-text-xs: 12px;
+  --nv-text-sm: 14px;
+  --nv-text-base: 16px;
+  --nv-text-lg: 18px;
+  --nv-text-xl: 20px;
+  --nv-text-2xl: 24px;
+  --nv-text-3xl: 30px;
+  --nv-text-4xl: 36px;
+  --nv-text-5xl: 48px;
+  --nv-text-6xl: 60px;
+  --nv-text-7xl: 72px;
+  
+  --nv-font-light: 300;
+  --nv-font-normal: 400;
+  --nv-font-medium: 500;
+  --nv-font-semibold: 600;
+  --nv-font-bold: 700;
+  
+  --nv-leading-tight: 1.25;
+  --nv-leading-normal: 1.5;
+  --nv-leading-relaxed: 1.75;
+  
+  --nv-tracking-tight: -0.02em;
+  --nv-tracking-normal: 0;
+  --nv-tracking-wide: 0.02em;
+  --nv-tracking-wider: 0.05em;
+  
+  /* -------------------------------------------------------------------------
+     ANIMATION
+     ------------------------------------------------------------------------- */
+  --nv-duration-instant: 0ms;
+  --nv-duration-micro: 150ms;
+  --nv-duration-fast: 200ms;
+  --nv-duration-standard: 300ms;
+  --nv-duration-emphasis: 500ms;
+  --nv-duration-slow: 800ms;
+  --nv-duration-ambient: 3000ms;
+  
+  --nv-ease-linear: linear;
+  --nv-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --nv-ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --nv-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --nv-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --nv-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  --nv-stagger-fast: 30ms;
+  --nv-stagger-standard: 50ms;
+  --nv-stagger-slow: 100ms;
+  
+  /* -------------------------------------------------------------------------
+     Z-INDEX
+     ------------------------------------------------------------------------- */
+  --nv-z-base: 0;
+  --nv-z-dropdown: 100;
+  --nv-z-sticky: 200;
+  --nv-z-fixed: 300;
+  --nv-z-modal-backdrop: 400;
+  --nv-z-modal: 500;
+  --nv-z-popover: 600;
+  --nv-z-tooltip: 700;
+  --nv-z-toast: 800;
+  --nv-z-devtools: 9999;
+  
+  /* -------------------------------------------------------------------------
+     SHADOW
+     ------------------------------------------------------------------------- */
+  --nv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --nv-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --nv-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --nv-shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.5);
+  
+  --nv-glow-low: 0 0 10px rgba(0, 255, 213, 0.3);
+  --nv-glow-medium: 0 0 20px rgba(0, 255, 213, 0.5);
+  --nv-glow-high: 0 0 40px rgba(0, 255, 213, 0.7);
+  --nv-glow-critical: 0 0 60px rgba(220, 38, 38, 0.8);
+  
+  /* -------------------------------------------------------------------------
+     BLUR
+     ------------------------------------------------------------------------- */
+  --nv-blur-sm: 4px;
+  --nv-blur-md: 8px;
+  --nv-blur-lg: 12px;
+  --nv-blur-xl: 20px;
+  --nv-blur-2xl: 40px;
+  
+  /* -------------------------------------------------------------------------
+     RADIUS
+     ------------------------------------------------------------------------- */
+  --nv-radius-none: 0;
+  --nv-radius-sm: 4px;
+  --nv-radius-md: 8px;
+  --nv-radius-lg: 12px;
+  --nv-radius-xl: 16px;
+  --nv-radius-2xl: 24px;
+  --nv-radius-full: 9999px;
+  
+  /* -------------------------------------------------------------------------
+     DYNAMIC TOKENS (Runtime updates)
+     ------------------------------------------------------------------------- */
+  
+  /* Atmosphere */
+  --atmosphere-brightness: 1;
+  --atmosphere-color-temp: var(--nv-cyan);
+  --atmosphere-turbulence: 0;
+  --atmosphere-fog-density: 0.3;
+  
+  /* Constellation */
+  --constellation-node-count: 0;
+  --constellation-connection-opacity: 0.5;
+  --constellation-pulse-phase: 0;
+  
+  /* Cognitive */
+  --cognitive-current-phase: 0;
+  --cognitive-flow-speed: 1;
+  --cognitive-bottleneck-severity: 0;
+  
+  /* Memory Camera */
+  --memory-camera-x: 0;
+  --memory-camera-y: 0;
+  --memory-camera-z: 10;
+  --memory-zoom: 1;
+}
+
+/* ============================================================================
+   REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --nv-duration-micro: 0ms;
+    --nv-duration-fast: 0ms;
+    --nv-duration-standard: 0ms;
+    --nv-duration-emphasis: 0ms;
+    --nv-duration-slow: 0ms;
+    --nv-duration-ambient: 0ms;
+  }
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/* Background Colors */
+.nv-bg-primary { background-color: var(--nv-bg-primary); }
+.nv-bg-secondary { background-color: var(--nv-bg-secondary); }
+.nv-bg-tertiary { background-color: var(--nv-bg-tertiary); }
+.nv-bg-elevated { background-color: var(--nv-bg-elevated); }
+
+/* Text Colors */
+.nv-text-primary { color: var(--nv-text-primary); }
+.nv-text-secondary { color: var(--nv-text-secondary); }
+.nv-text-tertiary { color: var(--nv-text-tertiary); }
+.nv-text-muted { color: var(--nv-text-muted); }
+
+/* Agent Colors */
+.nv-agent-planner { color: var(--nv-agent-planner); }
+.nv-agent-researcher { color: var(--nv-agent-researcher); }
+.nv-agent-executor { color: var(--nv-agent-executor); }
+.nv-agent-auditor { color: var(--nv-agent-auditor); }
+.nv-agent-creative { color: var(--nv-agent-creative); }
+
+.nv-bg-agent-planner { background-color: var(--nv-agent-planner); }
+.nv-bg-agent-researcher { background-color: var(--nv-agent-researcher); }
+.nv-bg-agent-executor { background-color: var(--nv-agent-executor); }
+.nv-bg-agent-auditor { background-color: var(--nv-agent-auditor); }
+.nv-bg-agent-creative { background-color: var(--nv-agent-creative); }
+
+/* Memory Colors */
+.nv-memory-episodic { color: var(--nv-memory-episodic); }
+.nv-memory-semantic { color: var(--nv-memory-semantic); }
+.nv-memory-procedural { color: var(--nv-memory-procedural); }
+.nv-memory-working { color: var(--nv-memory-working); }
+
+/* Risk Colors */
+.nv-risk-low { color: var(--nv-risk-low-color); }
+.nv-risk-medium { color: var(--nv-risk-medium-color); }
+.nv-risk-high { color: var(--nv-risk-high-color); }
+.nv-risk-critical { color: var(--nv-risk-critical-color); }
+
+/* Glow Effects */
+.nv-glow { box-shadow: var(--nv-glow-low); }
+.nv-glow-medium { box-shadow: var(--nv-glow-medium); }
+.nv-glow-high { box-shadow: var(--nv-glow-high); }
+.nv-glow-critical { box-shadow: var(--nv-glow-critical); }
+
+.nv-text-glow {
+  text-shadow: 
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 40px currentColor;
+}
+
+/* Glassmorphism */
+.nv-glass {
+  background: var(--nv-nebula-60);
+  backdrop-filter: blur(var(--nv-blur-xl)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-xl)) saturate(180%);
+  border: 1px solid var(--nv-border-default);
+  box-shadow: 
+    var(--nv-shadow-lg),
+    inset 0 1px 0 var(--nv-white-5);
+}
+
+.nv-glass-strong {
+  background: var(--nv-nebula-90);
+  backdrop-filter: blur(var(--nv-blur-2xl)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-2xl)) saturate(180%);
+  border: 1px solid var(--nv-border-hover);
+  box-shadow: var(--nv-shadow-xl);
+}
+
+/* Animations */
+@keyframes nv-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes nv-pulse-glow {
+  0%, 100% { box-shadow: var(--nv-glow-low); }
+  50% { box-shadow: var(--nv-glow-medium); }
+}
+
+@keyframes nv-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes nv-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nv-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes nv-slide-up {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nv-animate-pulse {
+  animation: nv-pulse var(--nv-duration-ambient) var(--nv-ease-standard) infinite;
+}
+
+.nv-animate-pulse-glow {
+  animation: nv-pulse-glow var(--nv-duration-ambient) var(--nv-ease-standard) infinite;
+}
+
+.nv-animate-float {
+  animation: nv-float 3s var(--nv-ease-standard) infinite;
+}
+
+.nv-animate-spin {
+  animation: nv-spin 1s linear infinite;
+}
+
+.nv-animate-fade-in {
+  animation: nv-fade-in var(--nv-duration-standard) var(--nv-ease-enter);
+}
+
+.nv-animate-slide-up {
+  animation: nv-slide-up var(--nv-duration-standard) var(--nv-ease-enter);
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .nv-animate-pulse,
+  .nv-animate-pulse-glow,
+  .nv-animate-float,
+  .nv-animate-spin,
+  .nv-animate-fade-in,
+  .nv-animate-slide-up {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   ATMOSPHERIC DYNAMIC CLASSES
+   These classes respond to CSS custom property updates
+   ============================================================================ */
+
+.nv-atmosphere-lighting {
+  filter: brightness(var(--atmosphere-brightness));
+}
+
+.nv-atmosphere-fog {
+  position: relative;
+}
+
+.nv-atmosphere-fog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    var(--atmosphere-color-temp) calc(var(--atmosphere-fog-density) * 100%),
+    var(--nv-deep-space) 100%
+  );
+  opacity: var(--atmosphere-turbulence);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}

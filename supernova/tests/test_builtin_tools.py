@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from supernova.infrastructure.tools.registry import Capability, Tool
-
 
 # ── web_search tests ──────────────────────────────────────────────────────────
 
@@ -87,13 +85,13 @@ class TestFileOps:
             _safe_path("../etc/passwd")
 
     def test_safe_path_rejects_escape(self):
-        from supernova.infrastructure.tools.builtin.file_ops import _safe_path, WORKSPACE
+        from supernova.infrastructure.tools.builtin.file_ops import _safe_path
         # Absolute path outside workspace
         with pytest.raises(PermissionError):
             _safe_path("/etc/passwd")
 
     def test_safe_path_allows_valid(self):
-        from supernova.infrastructure.tools.builtin.file_ops import _safe_path, WORKSPACE
+        from supernova.infrastructure.tools.builtin.file_ops import WORKSPACE, _safe_path
         p = _safe_path("subdir/file.txt")
         assert str(p).startswith(str(WORKSPACE))
 

@@ -5,13 +5,13 @@ Provides async clients for PostgreSQL and Redis.
 
 from supernova.infrastructure.storage.postgres import (
     AsyncPostgresPool,
-    get_postgres_pool,
     close_postgres_pool,
+    get_postgres_pool,
 )
 from supernova.infrastructure.storage.redis import (
     AsyncRedisClient,
-    get_redis_client,
     close_redis_client,
+    get_redis_client,
 )
 
 __all__ = [

@@ -1,0 +1,312 @@
+/**
+ * Card Components CSS Modules
+ */
+
+/* ==========================================================================
+   AgentCard Component
+   ========================================================================== */
+.agentCard {
+  background-color: var(--color-surface-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-base);
+}
+
+.agentCardInteractive {
+  cursor: pointer;
+}
+
+.agentCardInteractive:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.agentCardSelected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px rgba(0, 255, 213, 0.2);
+}
+
+.agentCardIdle {
+  opacity: 0.7;
+}
+
+.agentCardDefault {
+  padding: var(--space-lg);
+}
+
+.agentCardCompact {
+  padding: var(--space-md);
+}
+
+.agentCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agentCardHeaderDefault {
+  margin-bottom: var(--space-md);
+}
+
+.agentCardHeaderCompact {
+  margin-bottom: var(--space-sm);
+}
+
+.agentCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.agentCardIconDefault {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+.agentCardIconCompact {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+}
+
+.agentCardIconActive {
+  background-color: rgba(0, 255, 213, 0.2);
+  color: var(--color-accent);
+}
+
+.agentCardIconReasoning {
+  background-color: rgba(167, 139, 250, 0.2);
+  color: var(--color-secondary);
+}
+
+.agentCardIconWaiting {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: var(--color-warning);
+}
+
+.agentCardIconIdle {
+  background-color: rgba(148, 163, 184, 0.2);
+  color: var(--color-text-muted);
+}
+
+.agentCardIconError {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: var(--color-error);
+}
+
+.agentCardInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.agentCardNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agentCardName {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.agentCardNameDefault {
+  font-size: 14px;
+}
+
+.agentCardNameCompact {
+  font-size: 13px;
+}
+
+.agentCardRole {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.agentCardTask {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agentCardTaskDefault {
+  font-size: 12px;
+  margin-top: var(--space-xs);
+}
+
+.agentCardTaskCompact {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.agentCardMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.agentCardMetricsDefault {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+}
+
+.agentCardMetricsCompact {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+}
+
+.agentCardMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agentCardMetricLabel {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.agentCardSuccessRate {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agentCardProgress {
+  margin-top: 10px;
+}
+
+/* ==========================================================================
+   ApprovalCard Component
+   ========================================================================== */
+.approvalCard {
+  background-color: var(--color-surface-low);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.approvalCardCompact {
+  padding: var(--space-md);
+}
+
+.approvalCardDefault {
+  padding: var(--space-lg);
+}
+
+.approvalCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.approvalCardMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: 6px;
+}
+
+.approvalCardAgent {
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+.approvalCardAction {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.approvalCardDescription {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-md);
+  line-height: 1.5;
+}
+
+.approvalCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.approvalCardTimer {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.approvalCardTimerNormal {
+  color: var(--color-text-muted);
+}
+
+.approvalCardTimerExpiring {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.approvalCardButtons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.approvalCardButton {
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.approvalCardButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.approvalCardApprove {
+  background-color: var(--color-success);
+  color: #000;
+  border: none;
+}
+
+.approvalCardApprove:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.approvalCardDeny {
+  background-color: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.approvalCardDeny:hover:not(:disabled) {
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+.approvalCardProgressBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  transition: width 1s linear;
+}
+
+.approvalCardProgressBarNormal {
+  background-color: var(--color-accent);
+}
+
+.approvalCardProgressBarExpiring {
+  background-color: var(--color-error);
+}

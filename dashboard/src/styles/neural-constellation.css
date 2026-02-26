@@ -1,0 +1,835 @@
+/**
+ * Neural Constellation Visual Foundation
+ * 
+ * Core CSS for the AWWWARDS-inspired design system.
+ * Features:
+ * - Gradient mesh backgrounds
+ * - Noise texture overlays
+ * - Glassmorphism 2.0 (improved blur, depth)
+ * - Particle system foundation
+ * - Atmospheric effects
+ * - Animation keyframes
+ * 
+ * @phase Phase 1 - Foundation
+ * @requires tokens.css
+ */
+
+/* ============================================================================
+   IMPORTS
+   ============================================================================ */
+
+@import url('../theme/tokens.css');
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--nv-font-ui);
+  font-size: var(--nv-text-base);
+  line-height: var(--nv-leading-normal);
+  color: var(--nv-text-primary);
+  background-color: var(--nv-bg-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================================================================
+   NEURAL BACKGROUND SYSTEM
+   ============================================================================ */
+
+/**
+ * Base neural background with gradient mesh
+ * Creates depth through layered radial gradients
+ */
+.nv-bg-neural {
+  background-color: var(--nv-deep-space);
+  background-image: 
+    /* Purple nebula - top left */
+    radial-gradient(
+      ellipse 60% 50% at 15% 20%,
+      var(--nv-purple-15) 0%,
+      transparent 60%
+    ),
+    /* Cyan aurora - top right */
+    radial-gradient(
+      ellipse 50% 40% at 85% 15%,
+      var(--nv-cyan-10) 0%,
+      transparent 50%
+    ),
+    /* Gold knowledge cluster - center right */
+    radial-gradient(
+      ellipse 40% 60% at 75% 50%,
+      var(--nv-gold-30) 0%,
+      transparent 55%
+    ),
+    /* Coral memory fog - bottom left */
+    radial-gradient(
+      ellipse 55% 45% at 25% 75%,
+      var(--nv-coral-15) 0%,
+      transparent 60%
+    ),
+    /* Amber skill region - bottom right */
+    radial-gradient(
+      ellipse 45% 35% at 80% 85%,
+      var(--nv-amber-30) 0%,
+      transparent 50%
+    ),
+    /* Central glow */
+    radial-gradient(
+      ellipse 30% 30% at 50% 50%,
+      var(--nv-cyan-10) 0%,
+      transparent 70%
+    ),
+    /* Base gradient */
+    linear-gradient(
+      180deg,
+      var(--nv-deep-space) 0%,
+      var(--nv-nebula) 50%,
+      var(--nv-deep-space) 100%
+    );
+  background-attachment: fixed;
+}
+
+/**
+ * Animated gradient background
+ * Subtle movement for "living" feel
+ */
+@keyframes nv-bg-shift {
+  0%, 100% {
+    background-position: 
+      0% 0%,
+      100% 0%,
+      100% 50%,
+      0% 100%,
+      100% 100%,
+      50% 50%,
+      0% 0%;
+  }
+  50% {
+    background-position: 
+      10% 5%,
+      90% 10%,
+      85% 55%,
+      15% 70%,
+      75% 80%,
+      52% 48%,
+      0% 0%;
+  }
+}
+
+.nv-bg-neural-animated {
+  animation: nv-bg-shift 20s ease-in-out infinite;
+  background-size: 
+    120% 120%,
+    120% 120%,
+    120% 120%,
+    120% 120%,
+    120% 120%,
+    120% 120%,
+    100% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-bg-neural-animated {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   NOISE TEXTURE OVERLAY
+   ============================================================================ */
+
+/**
+ * SVG noise texture for film grain effect
+ * Adds texture and prevents banding in gradients
+ */
+.nv-noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--nv-z-base);
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+.nv-noise-overlay-subtle {
+  opacity: 0.02;
+}
+
+.nv-noise-overlay-strong {
+  opacity: 0.06;
+}
+
+/* ============================================================================
+   GLASSMORPHISM 2.0
+   Enhanced with better blur, depth, and borders
+   ============================================================================ */
+
+/**
+ * Base glass morphism container
+ */
+.nv-glass {
+  position: relative;
+  background: var(--nv-nebula-60);
+  backdrop-filter: blur(var(--nv-blur-xl)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-xl)) saturate(180%);
+  border: 1px solid var(--nv-border-default);
+  border-radius: var(--nv-radius-lg);
+  box-shadow: 
+    /* Outer shadow for depth */
+    var(--nv-shadow-lg),
+    /* Inner highlight for glass edge */
+    inset 0 1px 0 var(--nv-white-5),
+    /* Subtle inner glow */
+    inset 0 0 20px var(--nv-cyan-10);
+}
+
+/**
+ * Stronger glass for important elements
+ */
+.nv-glass-strong {
+  background: var(--nv-nebula-90);
+  backdrop-filter: blur(var(--nv-blur-2xl)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-2xl)) saturate(200%);
+  border: 1px solid var(--nv-border-hover);
+  box-shadow: 
+    var(--nv-shadow-xl),
+    inset 0 1px 0 var(--nv-white-10),
+    inset 0 0 30px var(--nv-cyan-10);
+}
+
+/**
+ * Subtle glass for less important elements
+ */
+.nv-glass-subtle {
+  background: var(--nv-nebula-50);
+  backdrop-filter: blur(var(--nv-blur-lg)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-lg)) saturate(150%);
+  border: 1px solid var(--nv-border-default);
+  box-shadow: var(--nv-shadow-md);
+}
+
+/**
+ * Glass with glow effect
+ */
+.nv-glass-glow {
+  background: var(--nv-nebula-60);
+  backdrop-filter: blur(var(--nv-blur-xl)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--nv-blur-xl)) saturate(180%);
+  border: 1px solid var(--nv-border-active);
+  box-shadow: 
+    var(--nv-shadow-lg),
+    var(--nv-glow-medium),
+    inset 0 1px 0 var(--nv-white-5);
+}
+
+/**
+ * Interactive glass states
+ */
+.nv-glass-interactive {
+  cursor: pointer;
+  transition: 
+    background var(--nv-duration-standard) var(--nv-ease-standard),
+    border-color var(--nv-duration-standard) var(--nv-ease-standard),
+    box-shadow var(--nv-duration-standard) var(--nv-ease-standard);
+}
+
+.nv-glass-interactive:hover {
+  background: var(--nv-nebula-70);
+  border-color: var(--nv-border-hover);
+  box-shadow: 
+    var(--nv-shadow-lg),
+    inset 0 1px 0 var(--nv-white-10);
+}
+
+.nv-glass-interactive:active {
+  background: var(--nv-interactive-active);
+  border-color: var(--nv-border-active);
+  transform: translateY(1px);
+}
+
+.nv-glass-interactive:focus-visible {
+  outline: 2px solid var(--nv-border-focus);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   GLOW EFFECTS
+   ============================================================================ */
+
+/**
+ * Text glow for headings and emphasis
+ */
+.nv-text-glow {
+  text-shadow: 
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 40px currentColor;
+}
+
+.nv-text-glow-subtle {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor;
+}
+
+.nv-text-glow-strong {
+  text-shadow: 
+    0 0 10px currentColor,
+    0 0 20px currentColor,
+    0 0 40px currentColor,
+    0 0 80px currentColor;
+}
+
+/**
+ * Box glow effects
+ */
+.nv-glow {
+  box-shadow: var(--nv-glow-low);
+}
+
+.nv-glow-medium {
+  box-shadow: var(--nv-glow-medium);
+}
+
+.nv-glow-high {
+  box-shadow: var(--nv-glow-high);
+}
+
+.nv-glow-critical {
+  box-shadow: var(--nv-glow-critical);
+}
+
+.nv-glow-animated {
+  animation: nv-pulse-glow 3s var(--nv-ease-standard) infinite;
+}
+
+/**
+ * Inner glow for containers
+ */
+.nv-inner-glow {
+  box-shadow: inset 0 0 20px var(--nv-cyan-10);
+}
+
+.nv-inner-glow-purple {
+  box-shadow: inset 0 0 30px var(--nv-purple-15);
+}
+
+/* ============================================================================
+   AGENT NODE STYLES
+   ============================================================================ */
+
+/**
+ * Base agent node styling
+ */
+.nv-agent-node {
+  position: relative;
+  width: var(--nv-size-lg);
+  height: var(--nv-size-lg);
+  border-radius: var(--nv-radius-full);
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--nv-white-20),
+    transparent 50%
+  );
+  box-shadow: 
+    inset 0 0 10px var(--nv-white-10),
+    var(--nv-glow-low);
+  transition: all var(--nv-duration-standard) var(--nv-ease-standard);
+}
+
+.nv-agent-node::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--nv-radius-full);
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.nv-agent-node::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--nv-radius-full);
+  border: 2px solid currentColor;
+  opacity: 0.3;
+  animation: nv-pulse-ring 2s var(--nv-ease-standard) infinite;
+}
+
+/**
+ * Agent node size variants
+ */
+.nv-agent-node-sm {
+  width: var(--nv-size-md);
+  height: var(--nv-size-md);
+}
+
+.nv-agent-node-lg {
+  width: var(--nv-size-xl);
+  height: var(--nv-size-xl);
+}
+
+/**
+ * Agent node state variants
+ */
+.nv-agent-node-idle {
+  opacity: 0.6;
+  animation: none;
+}
+
+.nv-agent-node-active {
+  opacity: 1;
+  box-shadow: 
+    inset 0 0 15px var(--nv-white-20),
+    var(--nv-glow-medium);
+}
+
+.nv-agent-node-busy {
+  animation: nv-pulse-glow 1s var(--nv-ease-standard) infinite;
+}
+
+.nv-agent-node-error {
+  box-shadow: 
+    inset 0 0 15px var(--nv-risk-high-50),
+    var(--nv-glow-critical);
+}
+
+/* ============================================================================
+   CONNECTION LINES
+   ============================================================================ */
+
+/**
+ * SVG connection line styles
+ */
+.nv-connection-line {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.4;
+  transition: all var(--nv-duration-standard) var(--nv-ease-standard);
+}
+
+.nv-connection-line-active {
+  opacity: 0.8;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.nv-connection-line-dimmed {
+  opacity: 0.1;
+}
+
+.nv-connection-line-animated {
+  stroke-dasharray: 10 5;
+  animation: nv-dash-flow 1s linear infinite;
+}
+
+@keyframes nv-dash-flow {
+  to {
+    stroke-dashoffset: -15;
+  }
+}
+
+/* ============================================================================
+   MEMORY CRYSTAL STYLES
+   ============================================================================ */
+
+/**
+ * Crystal node for memory visualization
+ */
+.nv-memory-crystal {
+  position: relative;
+  width: var(--nv-size-md);
+  height: var(--nv-size-md);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: linear-gradient(
+    135deg,
+    var(--nv-white-20),
+    currentColor 50%,
+    transparent
+  );
+  box-shadow: var(--nv-glow-low);
+  transition: all var(--nv-duration-standard) var(--nv-ease-standard);
+}
+
+.nv-memory-crystal:hover {
+  transform: scale(1.2);
+  box-shadow: var(--nv-glow-medium);
+}
+
+/* Crystal type variants */
+.nv-memory-crystal-episodic {
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+}
+
+.nv-memory-crystal-semantic {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.nv-memory-crystal-procedural {
+  clip-path: inset(10%);
+}
+
+/* ============================================================================
+   PROGRESS & LOADING
+   ============================================================================ */
+
+/**
+ * Progress bar with glow effect
+ */
+.nv-progress {
+  height: 8px;
+  background: var(--nv-white-10);
+  border-radius: var(--nv-radius-full);
+  overflow: hidden;
+}
+
+.nv-progress-bar {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    var(--nv-white-40) 50%,
+    currentColor 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--nv-radius-full);
+  box-shadow: 0 0 10px currentColor;
+  transition: width var(--nv-duration-emphasis) var(--nv-ease-enter);
+  animation: nv-shimmer 2s linear infinite;
+}
+
+@keyframes nv-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/**
+ * Loading spinner
+ */
+.nv-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--nv-white-10);
+  border-top-color: var(--nv-cyan);
+  border-radius: var(--nv-radius-full);
+  animation: nv-spin 1s linear infinite;
+}
+
+.nv-spinner-glow {
+  box-shadow: 
+    inset 0 0 5px var(--nv-cyan-30),
+    0 0 10px var(--nv-cyan-30);
+}
+
+/* ============================================================================
+   TAB NAVIGATION
+   ============================================================================ */
+
+/**
+ * Neural tab navigation
+ */
+.nv-tabs {
+  display: flex;
+  gap: var(--nv-space-2);
+  padding: var(--nv-space-2);
+  background: var(--nv-nebula-50);
+  border-radius: var(--nv-radius-xl);
+  border: 1px solid var(--nv-border-default);
+}
+
+.nv-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--nv-space-2);
+  padding: var(--nv-space-2) var(--nv-space-4);
+  border-radius: var(--nv-radius-lg);
+  color: var(--nv-text-tertiary);
+  font-size: var(--nv-text-sm);
+  font-weight: var(--nv-font-medium);
+  cursor: pointer;
+  transition: all var(--nv-duration-standard) var(--nv-ease-standard);
+  border: none;
+  background: transparent;
+}
+
+.nv-tab:hover {
+  color: var(--nv-text-secondary);
+  background: var(--nv-white-5);
+}
+
+.nv-tab-active {
+  color: var(--nv-cyan);
+  background: var(--nv-cyan-30);
+}
+
+.nv-tab-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nv-radius-lg);
+  box-shadow: var(--nv-glow-low);
+  pointer-events: none;
+}
+
+.nv-tab-icon {
+  font-size: var(--nv-text-lg);
+  line-height: 1;
+}
+
+/* ============================================================================
+   CHAT INTERFACE
+   ============================================================================ */
+
+/**
+ * Chat message bubbles
+ */
+.nv-chat-message {
+  max-width: 80%;
+  padding: var(--nv-space-3) var(--nv-space-4);
+  border-radius: var(--nv-radius-lg);
+  font-size: var(--nv-text-base);
+  line-height: var(--nv-leading-relaxed);
+  animation: nv-message-appear var(--nv-duration-standard) var(--nv-ease-enter);
+}
+
+@keyframes nv-message-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nv-chat-message-user {
+  align-self: flex-end;
+  background: var(--nv-cyan-30);
+  color: var(--nv-cyan);
+  border-bottom-right-radius: var(--nv-radius-sm);
+  box-shadow: var(--nv-glow-low);
+}
+
+.nv-chat-message-system {
+  align-self: flex-start;
+  background: var(--nv-nebula-70);
+  color: var(--nv-text-primary);
+  border: 1px solid var(--nv-border-default);
+  border-bottom-left-radius: var(--nv-radius-sm);
+}
+
+.nv-chat-message-code {
+  font-family: var(--nv-font-mono);
+  font-size: var(--nv-text-sm);
+  background: var(--nv-deep-space-90);
+  border: 1px solid var(--nv-border-default);
+  border-radius: var(--nv-radius-md);
+  overflow-x: auto;
+}
+
+/* ============================================================================
+   BADGE & STATUS
+   ============================================================================ */
+
+/**
+ * Status badges with glow variants
+ */
+.nv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nv-space-1);
+  padding: var(--nv-space-1) var(--nv-space-2);
+  border-radius: var(--nv-radius-full);
+  font-size: var(--nv-text-xs);
+  font-weight: var(--nv-font-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--nv-tracking-wide);
+}
+
+.nv-badge-glow {
+  box-shadow: 0 0 10px currentColor;
+}
+
+.nv-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--nv-radius-full);
+  background: currentColor;
+}
+
+.nv-badge-dot-pulse {
+  animation: nv-pulse 2s var(--nv-ease-standard) infinite;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+/* Webkit scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--nv-deep-space);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--nv-white-10);
+  border-radius: var(--nv-radius-full);
+  border: 2px solid var(--nv-deep-space);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--nv-white-20);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--nv-deep-space);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nv-white-10) var(--nv-deep-space);
+}
+
+/* ============================================================================
+   SELECTION STYLING
+   ============================================================================ */
+
+::selection {
+  background: var(--nv-cyan-30);
+  color: var(--nv-cyan);
+}
+
+::-moz-selection {
+  background: var(--nv-cyan-30);
+  color: var(--nv-cyan);
+}
+
+/* ============================================================================
+   FOCUS STYLES
+   ============================================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--nv-border-focus);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/* Layout */
+.nv-flex { display: flex; }
+.nv-flex-col { flex-direction: column; }
+.nv-items-center { align-items: center; }
+.nv-justify-center { justify-content: center; }
+.nv-gap-1 { gap: var(--nv-space-1); }
+.nv-gap-2 { gap: var(--nv-space-2); }
+.nv-gap-4 { gap: var(--nv-space-4); }
+
+/* Spacing */
+.nv-p-2 { padding: var(--nv-space-2); }
+.nv-p-4 { padding: var(--nv-space-4); }
+.nv-p-6 { padding: var(--nv-space-6); }
+.nv-m-2 { margin: var(--nv-space-2); }
+.nv-m-4 { margin: var(--nv-space-4); }
+
+/* Typography */
+.nv-font-display { font-family: var(--nv-font-display); }
+.nv-font-mono { font-family: var(--nv-font-mono); }
+.nv-text-center { text-align: center; }
+.nv-text-sm { font-size: var(--nv-text-sm); }
+.nv-text-lg { font-size: var(--nv-text-lg); }
+.nv-font-medium { font-weight: var(--nv-font-medium); }
+.nv-font-bold { font-weight: var(--nv-font-bold); }
+
+/* Visual */
+.nv-rounded { border-radius: var(--nv-radius-md); }
+.nv-rounded-lg { border-radius: var(--nv-radius-lg); }
+.nv-rounded-full { border-radius: var(--nv-radius-full); }
+.nv-border { border: 1px solid var(--nv-border-default); }
+
+/* Effects */
+.nv-blur { filter: blur(var(--nv-blur-md)); }
+.nv-blur-lg { filter: blur(var(--nv-blur-lg)); }
+
+/* ============================================================================
+   ATMOSPHERIC STATE CLASSES
+   These respond to dynamic CSS custom properties
+   ============================================================================ */
+
+.nv-atmosphere-dimming {
+  filter: brightness(var(--atmosphere-brightness, 1));
+  transition: filter var(--nv-duration-slow) var(--nv-ease-standard);
+}
+
+.nv-atmosphere-tint {
+  position: relative;
+}
+
+.nv-atmosphere-tint::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--atmosphere-color-temp, transparent);
+  opacity: 0.1;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  transition: background var(--nv-duration-slow) var(--nv-ease-standard);
+}
+
+/* ============================================================================
+   DEBUG & DEVELOPMENT
+   ============================================================================ */
+
+.nv-debug-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--nv-z-devtools);
+  background-image: 
+    linear-gradient(var(--nv-white-10) 1px, transparent 1px),
+    linear-gradient(90deg, var(--nv-white-10) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.1;
+}
+
+.nv-debug-baseline {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--nv-z-devtools);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 23px,
+    var(--nv-cyan-10) 23px,
+    var(--nv-cyan-10) 24px
+  );
+}

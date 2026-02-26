@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from supernova.skills.loader import SkillLoader, Skill
+from supernova.skills.loader import SkillLoader
 
 
 class TestSkillLoader:
@@ -141,3 +141,14 @@ class TestSkillLoader:
         assert skill is not None
         prompt = loader.to_prompt("mcp-builder")
         assert "MCP" in prompt
+
+
+    def test_skill_injection_into_context(self, tmp_path):
+        """8.6.9: Active skill content appears in assembled context string."""
+        skills_dir = self._make_skill_dir(tmp_path)
+        loader = SkillLoader(skills_dir)
+        loader.discover()
+        loader.activate("mcp-builder")
+        context = loader.get_active_prompts()
+        assert "MCP" in context
+        assert "Build stuff" in context

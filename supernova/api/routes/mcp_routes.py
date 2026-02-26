@@ -70,9 +70,9 @@ async def call_mcp_tool(
     try:
         return await _mcp_client.call_tool(server_name, actual_tool, body.arguments)
     except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ── Skills endpoints ──────────────────────────────────────────────────────────

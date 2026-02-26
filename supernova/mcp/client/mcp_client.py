@@ -24,8 +24,9 @@ def _import_mcp():
     if mcp_mod and not hasattr(mcp_mod, "ClientSession"):
         for k in to_remove:
             saved[k] = sys.modules.pop(k)
-    import mcp as _mcp
     from mcp.client.stdio import stdio_client as _stdio_client
+
+    import mcp as _mcp
     # Restore saved modules
     for k, v in saved.items():
         sys.modules.setdefault(k, v)

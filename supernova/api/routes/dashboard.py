@@ -276,7 +276,7 @@ async def get_dashboard_snapshot() -> dict[str, Any]:
         LIMIT 1
         """
     )
-    cognitive_loop = {
+    cognitive_loop: dict[str, Any] = {
         "phase": None,
         "step": None,
         "phase_progress": None,

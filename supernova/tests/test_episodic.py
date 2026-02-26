@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -65,7 +64,7 @@ class TestRecall:
     async def test_recall_returns_formatted_results(self, store, mock_graphiti):
         edge = MagicMock()
         edge.fact = "The sky is blue"
-        edge.valid_at = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        edge.valid_at = datetime(2025, 1, 1, tzinfo=UTC)
         edge.invalid_at = None
         mock_graphiti.search.return_value = [edge]
 
@@ -97,7 +96,7 @@ class TestGetRecent:
         ep.uuid = "abc-123"
         ep.name = "chat_episode"
         ep.content = "Hello world"
-        ep.created_at = datetime.now(timezone.utc)
+        ep.created_at = datetime.now(UTC)
         ep.source = "agent"
         mock_graphiti.retrieve_episodes.return_value = [ep]
 
@@ -112,7 +111,7 @@ class TestGetRecent:
         old_ep.uuid = "old"
         old_ep.name = "old"
         old_ep.content = "old"
-        old_ep.created_at = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        old_ep.created_at = datetime(2020, 1, 1, tzinfo=UTC)
         old_ep.source = "agent"
         mock_graphiti.retrieve_episodes.return_value = [old_ep]
 

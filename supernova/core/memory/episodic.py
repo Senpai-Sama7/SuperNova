@@ -8,12 +8,12 @@ logged but never raised to callers.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from graphiti_core import Graphiti
-from graphiti_core.llm_client import LLMClient
 from graphiti_core.embedder.client import EmbedderClient
+from graphiti_core.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class EpisodicMemoryStore:
                 name=name,
                 episode_body=content,
                 source_description=source,
-                reference_time=reference_time or datetime.now(timezone.utc),
+                reference_time=reference_time or datetime.now(UTC),
                 group_id=group_id,
             )
         except Exception as e:
@@ -132,11 +132,11 @@ class EpisodicMemoryStore:
         """
         try:
             episodes = await self._client.retrieve_episodes(
-                reference_time=datetime.now(timezone.utc),
+                reference_time=datetime.now(UTC),
                 last_n=last_n,
                 group_ids=group_ids,
             )
-            cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+            cutoff = datetime.now(UTC) - timedelta(hours=hours)
             return [
                 {
                     "uuid": str(ep.uuid),

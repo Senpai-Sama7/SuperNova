@@ -1,0 +1,259 @@
+/**
+ * UI Components CSS Modules
+ */
+
+/* ==========================================================================
+   Glow Component
+   ========================================================================== */
+.glow {
+  display: inline-block;
+}
+
+.glowIntensityLow {
+  filter: 0 0 10px var(--glow-color, var(--color-accent));
+}
+
+.glowIntensityMedium {
+  filter: 0 0 20px var(--glow-color, var(--color-accent));
+}
+
+.glowIntensityHigh {
+  filter: 0 0 40px var(--glow-color, var(--color-accent));
+}
+
+.glowAnimate {
+  transition: filter var(--transition-base);
+}
+
+/* ==========================================================================
+   Badge Component
+   ========================================================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: 500;
+}
+
+/* Sizes */
+.badgeSizeSm {
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.badgeSizeMd {
+  padding: var(--space-xs) 10px;
+  font-size: 12px;
+  border-radius: var(--radius-md);
+}
+
+.badgeSizeLg {
+  padding: 6px 14px;
+  font-size: 14px;
+  border-radius: var(--radius-lg);
+}
+
+/* Variants */
+.badgeVariantDefault {
+  background-color: var(--color-surface-mid);
+  color: var(--color-text);
+}
+
+.badgeVariantSuccess {
+  background-color: rgba(52, 211, 153, 0.2);
+  color: var(--color-success);
+}
+
+.badgeVariantWarning {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: var(--color-warning);
+}
+
+.badgeVariantError {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: var(--color-error);
+}
+
+.badgeVariantInfo {
+  background-color: rgba(56, 189, 248, 0.2);
+  color: var(--color-info);
+}
+
+/* ==========================================================================
+   StatusDot Component
+   ========================================================================== */
+.statusDot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDotIndicator {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotSizeSm {
+  width: 6px;
+  height: 6px;
+}
+
+.statusDotSizeMd {
+  width: 10px;
+  height: 10px;
+}
+
+.statusDotSizeLg {
+  width: 14px;
+  height: 14px;
+}
+
+.statusDotOnline {
+  background-color: var(--color-success);
+}
+
+.statusDotOffline {
+  background-color: var(--color-text-muted);
+}
+
+.statusDotBusy {
+  background-color: var(--color-error);
+}
+
+.statusDotAway {
+  background-color: var(--color-warning);
+}
+
+.statusDotError {
+  background-color: var(--color-error);
+}
+
+.statusDotPulse {
+  animation: pulse 2s infinite;
+}
+
+.statusDotLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ==========================================================================
+   MiniBar Component
+   ========================================================================== */
+.miniBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.miniBarTrack {
+  flex: 1;
+  background-color: var(--color-surface-mid);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.miniBarFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width var(--transition-slow);
+}
+
+.miniBarValue {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   RiskPill Component
+   ========================================================================== */
+.riskPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-sm);
+}
+
+.riskPillSizeSm {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.riskPillSizeMd {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.riskPillSizeLg {
+  padding: var(--space-xs) 12px;
+  font-size: 12px;
+}
+
+.riskPillDot {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.riskPillDotSizeSm {
+  width: 4px;
+  height: 4px;
+}
+
+.riskPillDotSizeMd {
+  width: 6px;
+  height: 6px;
+}
+
+.riskPillDotSizeLg {
+  width: 8px;
+  height: 8px;
+}
+
+.riskPillLow {
+  background-color: rgba(0, 255, 213, 0.2);
+  color: var(--color-accent);
+}
+
+.riskPillLow .riskPillDot {
+  background-color: var(--color-accent);
+}
+
+.riskPillMedium {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: var(--color-warning);
+}
+
+.riskPillMedium .riskPillDot {
+  background-color: var(--color-warning);
+}
+
+.riskPillHigh {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: var(--color-error);
+}
+
+.riskPillHigh .riskPillDot {
+  background-color: var(--color-error);
+}
+
+.riskPillCritical {
+  background-color: rgba(167, 139, 250, 0.2);
+  color: var(--color-secondary);
+}
+
+.riskPillCritical .riskPillDot {
+  background-color: var(--color-secondary);
+}

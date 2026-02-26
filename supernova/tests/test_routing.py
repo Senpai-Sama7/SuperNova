@@ -16,7 +16,6 @@ from dynamic_router import (
     CAPABILITY_PRIORS,
     TASK_REQUIREMENTS,
     DynamicModelRouter,
-    ModelCapabilityVector,
     TaskRequirementVector,
 )
 

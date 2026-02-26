@@ -12,8 +12,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from supernova.api.auth import create_access_token, get_current_user, verify_token
-from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
+from supernova.api.routes.agent import router as agent_router
+from supernova.api.routes.dashboard import router as dashboard_router
 from supernova.api.routes.mcp_routes import router as mcp_router
+from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,8 @@ app.add_middleware(
 
 # Mount MCP and Skills routes
 app.include_router(mcp_router)
+app.include_router(dashboard_router)
+app.include_router(agent_router)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -85,7 +89,7 @@ async def issue_token(body: TokenRequest) -> TokenResponse:
 async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query(...)):
     """WebSocket endpoint for streaming agent events. Requires JWT in query param."""
     try:
-        user_id = verify_token(token)
+        user_id = verify_token(token)  # noqa: F841
     except Exception:
         await websocket.close(code=4001, reason="Invalid token")
         return
@@ -149,7 +153,6 @@ async def get_fleet_summary() -> dict[str, Any]:
 
 def mount_interrupt_router(coordinator: Any) -> None:
     """Mount the HITL interrupt router at /hitl."""
-    from sys import path as sys_path
     import importlib.util
     # Import from root-level interrupts.py spec
     spec_path = os.path.join(os.path.dirname(__file__), "..", "..", "interrupts.py")

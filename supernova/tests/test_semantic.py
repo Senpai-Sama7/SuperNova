@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
@@ -94,8 +94,8 @@ class TestSearch:
             {
                 "id": test_id, "content": "Python is great", "category": "tech",
                 "confidence": 0.9, "importance": 0.8, "tags": ["python"],
-                "source": "chat", "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc), "rrf_score": 0.032,
+                "source": "chat", "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC), "rrf_score": 0.032,
             }
         ]
 
@@ -183,8 +183,8 @@ class TestGetByCategory:
             {
                 "id": uuid4(), "content": "fact1", "category": "tech",
                 "confidence": 0.9, "importance": 0.8, "tags": [],
-                "source": None, "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "source": None, "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             }
         ]
         results = await store.get_by_category("user1", "tech")

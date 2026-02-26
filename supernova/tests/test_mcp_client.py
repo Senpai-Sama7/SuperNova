@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -156,6 +155,18 @@ class TestMCPClient:
         assert client._connections["bad"].healthy is False
 
     @pytest.mark.asyncio
+    async def test_call_tool_timeout(self):
+        """8.6.4: Tool exceeding timeout returns error, doesn't hang."""
+        client = MCPClient()
+        mock_session = AsyncMock()
+        mock_session.call_tool.side_effect = TimeoutError()
+        cfg = ServerConfig(name="slow", command="node")
+        client._connections["slow"] = ServerConnection(config=cfg, session=mock_session)
+
+        with pytest.raises(asyncio.TimeoutError):
+            await client.call_tool("slow", "heavy_tool", {"x": 1})
+
+    @pytest.mark.asyncio
     async def test_start_server_disabled(self):
         client = MCPClient()
         cfg = ServerConfig(name="disabled", command="node", enabled=False)
@@ -165,8 +176,8 @@ class TestMCPClient:
 
 class TestMCPToolBridge:
     def test_bridge_creates_tools(self):
-        from supernova.mcp.tools.mcp_tool_bridge import bridge_mcp_tools
         from supernova.infrastructure.tools.registry import Capability
+        from supernova.mcp.tools.mcp_tool_bridge import bridge_mcp_tools
 
         mock_client = MagicMock()
         mcp_tools = [{
@@ -195,5 +206,5 @@ class TestMCPToolBridge:
             "_mcp_server": "srv",
         }]
         tools = bridge_mcp_tools(mock_client, mcp_tools)
-        result = await tools[0].fn(q="test")
+        await tools[0].fn(q="test")
         mock_client.call_tool.assert_called_once_with("srv", "search", {"q": "test"})

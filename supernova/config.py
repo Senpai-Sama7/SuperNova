@@ -233,7 +233,7 @@ class DevelopmentSettings(BaseSettings):
 
 class Settings(BaseSettings):
     """SuperNova main configuration.
-    
+
     All settings are loaded from environment variables and .env file.
     Nested settings are grouped by functionality.
     """
@@ -295,13 +295,13 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance.
-    
+
     Use this function to access settings throughout the application.
     The result is cached to avoid repeated .env file parsing.
-    
+
     Returns:
         Settings: Application configuration
-        
+
     Example:
         >>> from supernova.config import get_settings
         >>> settings = get_settings()

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -188,7 +188,7 @@ class SemanticMemoryStore:
                 """UPDATE semantic_memories
                    SET last_accessed_at = $1, access_count = access_count + 1
                    WHERE id = $2""",
-                datetime.now(timezone.utc), memory_id,
+                datetime.now(UTC), memory_id,
             )
         except Exception as e:
             logger.error(f"Error updating access time: {e}")
