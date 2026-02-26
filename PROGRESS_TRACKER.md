@@ -995,17 +995,38 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 4.2 (database schema migrated), Task 2.1 (dependencies installed)
 
-- [ ] **5.1.1** Create `infrastructure/storage/postgres.py`
+- [x] **5.1.1** Create `infrastructure/storage/postgres.py`
   - **Validation:** `AsyncPostgresPool` class with `get_pool()`, `execute()`, `fetch()`, `fetchrow()`, `fetchval()`; min=5, max=20, command_timeout=60; `SET timezone='UTC'` on connect; lifespan `connect()`/`disconnect()` methods
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    ✓ AsyncPostgresPool class created
+    ✓ All methods implemented (get_pool, execute, fetch, fetchrow, fetchval)
+    ✓ Pool settings: min=5, max=20, command_timeout=60
+    ✓ Timezone UTC set on connect via _init_connection
+    ✓ Lifespan methods: connect(), disconnect()
+    ✓ Connection test passed with PostgreSQL 17.8
+    ```
 
-- [ ] **5.1.2** Create `infrastructure/storage/redis.py`
+- [x] **5.1.2** Create `infrastructure/storage/redis.py`
   - **Validation:** `AsyncRedisClient` class with `get_client()`; `working_memory_get()`, `working_memory_set()`, `working_memory_delete()`; key prefix `wm:{session_id}`; TTL=86400; msgpack serialization
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    ✓ AsyncRedisClient class created
+    ✓ All methods implemented (get_client, working_memory_get/set/delete/exists)
+    ✓ Key prefix: wm:{session_id}
+    ✓ Default TTL: 86400 seconds
+    ✓ msgpack serialization for working memory and embedding cache
+    ✓ Embedding cache with SHA-256 hash keys (em:{hash[:16]})
+    ✓ Connection test passed with Redis 7
+    ```
 
-- [ ] **5.1.3** Verify type checking passes
+- [x] **5.1.3** Verify type checking passes
   - **Validation:** `mypy supernova/infrastructure/storage/ --ignore-missing-imports` passes
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    $ mypy supernova/infrastructure/storage/ --ignore-missing-imports
+    Success: no issues found in 3 source files
+    ```
 
 ---
 
@@ -1019,21 +1040,41 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.1.2 (Redis client)
 
-- [ ] **5.2.1** Create `core/memory/working.py` with `WorkingMemory` dataclass
+- [x] **5.2.1** Create `core/memory/working.py` with `WorkingMemory` dataclass
   - **Validation:** Dataclass has fields: session_id, current_goal, active_plan, tool_results_buffer, attention_stack, scratchpad, last_updated
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    ✓ WorkingMemory dataclass created with all required fields
+    ✓ to_dict() and from_dict() methods for serialization
+    ✓ Full integration test passed
+    ```
 
-- [ ] **5.2.2** Implement `WorkingMemoryStore.get()`
+- [x] **5.2.2** Implement `WorkingMemoryStore.get()`
   - **Validation:** Returns `WorkingMemory | None`; deserializes msgpack
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    ✓ get() implemented with msgpack deserialization
+    ✓ Returns WorkingMemory or None
+    ✓ Error handling with logging
+    ```
 
-- [ ] **5.2.3** Implement `WorkingMemoryStore.set()`
+- [x] **5.2.3** Implement `WorkingMemoryStore.set()`
   - **Validation:** Serializes to msgpack; stores with TTL; returns None
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    ✓ set() implemented with msgpack serialization
+    ✓ Updates last_updated timestamp automatically
+    ✓ Configurable TTL support
+    ```
 
-- [ ] **5.2.4** Implement `WorkingMemoryStore.update_field()` for atomic partial updates
+- [x] **5.2.4** Implement `WorkingMemoryStore.update_field()` for atomic partial updates
   - **Validation:** Updates single field without rewriting entire object
-  - **Proof:** _pending_
+  - **Proof:**
+    ```
+    ✓ update_field() implemented
+    ✓ append_to_field() implemented for list fields
+    ✓ Both tested and working
+    ```
 
 ---
 

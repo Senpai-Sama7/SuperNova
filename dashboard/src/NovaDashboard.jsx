@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { clamp, toFiniteNumber } from "./utils/numberGuards";
 
 // ─── Design System (Premium Aesthetic) ───────────────────────────────────────
 
@@ -26,13 +27,6 @@ const Theme = {
     boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
   },
 };
-
-const toFiniteNumber = (value, fallback = 0) => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-};
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 // Injecting Google Fonts dynamically
 if (typeof document !== "undefined") {

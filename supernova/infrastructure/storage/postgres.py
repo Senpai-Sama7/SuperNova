@@ -47,7 +47,11 @@ class AsyncPostgresPool:
             command_timeout: Query timeout in seconds. Default 60.
         """
         self._pool: Optional[Pool] = None
-        self._dsn = dsn or get_settings().database_url
+        # asyncpg expects 'postgresql' not 'postgresql+asyncpg'
+        dsn = dsn or get_settings().database_url
+        if dsn and "postgresql+asyncpg" in dsn:
+            dsn = dsn.replace("postgresql+asyncpg", "postgresql")
+        self._dsn = dsn
         self._min_size = min_size
         self._max_size = max_size
         self._command_timeout = command_timeout
