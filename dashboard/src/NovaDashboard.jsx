@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { clamp, toFiniteNumber } from "./utils/numberGuards";
 
 // ─── Design System (Premium Aesthetic) ───────────────────────────────────────
@@ -28,6 +28,9 @@ const Theme = {
   },
 };
 
+const API_BASE = import.meta.env.VITE_SUPERNOVA_API_BASE || "http://127.0.0.1:8000";
+const POLL_INTERVAL_MS = 3000;
+
 // Injecting Google Fonts dynamically
 if (typeof document !== "undefined") {
   const link = document.createElement("link");
@@ -37,369 +40,273 @@ if (typeof document !== "undefined") {
   document.head.appendChild(link);
 }
 
-// ─── Engines (from UPS decision-intelligence-ui skill) ───────────────────────
-
-class BayesianEngine {
-  constructor() {
-    this.alpha = 1;
-    this.beta = 1;
-  }
-  update(success) {
-    if (success) this.alpha++;
-    else this.beta++;
-  }
-  get mean() {
-    return this.alpha / (this.alpha + this.beta);
-  }
-  get variance() {
-    const n = this.alpha + this.beta;
-    return (this.alpha * this.beta) / (n * n * (n + 1));
-  }
-  get credibleInterval() {
-    const m = this.mean,
-      v = this.variance;
-    const w = 1.96 * Math.sqrt(v);
-    return [Math.max(0, m - w), Math.min(1, m + w)];
-  }
-}
-
-class ConformalEngine {
-  constructor() {
-    this.residuals = [];
-    this.windowSize = 30;
-  }
-  update(actual, predicted) {
-    this.residuals.push(Math.abs(actual - predicted));
-    if (this.residuals.length > this.windowSize) this.residuals.shift();
-  }
-  getInterval(prediction, alpha = 0.1) {
-    if (this.residuals.length < 3) return [prediction - 0.2, prediction + 0.2];
-    const sorted = [...this.residuals].sort((a, b) => a - b);
-    const q = sorted[Math.floor((1 - alpha) * sorted.length)] || 0.15;
-    return [prediction - q, prediction + q];
-  }
-  get coverage() {
-    if (this.residuals.length < 3) return 0.9;
-    return Math.min(0.99, 0.7 + this.residuals.length / 300);
-  }
-}
-
 function computeSemanticEntropy(hypotheses) {
   if (!hypotheses.length) return { entropy: 0, confidence: 1, clusters: [] };
-  const clusters = hypotheses.reduce((acc, h) => {
-    const key = h.cluster || "default";
-    (acc[key] = acc[key] || []).push(h);
-    return acc;
-  }, {});
-  const probs = Object.values(clusters).map(
-    (c) => c.length / hypotheses.length,
-  );
+  let probs = [];
+  let clusterRows = [];
+
+  if (
+    hypotheses.every(
+      (h) =>
+        h &&
+        typeof h === "object" &&
+        (Object.prototype.hasOwnProperty.call(h, "probability") ||
+          Object.prototype.hasOwnProperty.call(h, "prob")),
+    )
+  ) {
+    const normalized = hypotheses
+      .map((h) => ({
+        name: h.name || h.cluster || "default",
+        prob: clamp(
+          toFiniteNumber(h.probability ?? h.prob, 0),
+          0,
+          1,
+        ),
+      }))
+      .filter((h) => h.prob > 0);
+
+    const total = normalized.reduce((sum, row) => sum + row.prob, 0);
+    if (total <= 0) return { entropy: 0, confidence: 1, clusters: [] };
+
+    clusterRows = normalized.map((row) => ({
+      name: row.name,
+      count: row.prob,
+      prob: row.prob / total,
+    }));
+    probs = clusterRows.map((row) => row.prob);
+  } else {
+    const clusters = hypotheses.reduce((acc, h) => {
+      const key = h.cluster || "default";
+      (acc[key] = acc[key] || []).push(h);
+      return acc;
+    }, {});
+    probs = Object.values(clusters).map((c) => c.length / hypotheses.length);
+    clusterRows = Object.entries(clusters).map(([k, v]) => ({
+      name: k,
+      count: v.length,
+      prob: v.length / hypotheses.length,
+    }));
+  }
+
   const entropy = -probs.reduce(
     (s, p) => s + (p > 0 ? p * Math.log2(p) : 0),
     0,
   );
-  const maxEntropy = Math.log2(Object.keys(clusters).length || 1);
+  const maxEntropy = Math.log2(clusterRows.length || 1);
   const normalized = maxEntropy > 0 ? entropy / maxEntropy : 0;
   const confidence = Math.max(0.05, 1 - normalized);
   return {
     entropy: normalized,
     confidence,
-    clusters: Object.entries(clusters).map(([k, v]) => ({
-      name: k,
-      count: v.length,
-      prob: v.length / hypotheses.length,
-    })),
+    clusters: clusterRows,
   };
 }
 
-// ─── Simulation layer ─────────────────────────────────────────────────────────
+// ─── Live data layer ─────────────────────────────────────────────────────────
 
-function useNovaSimulation(isHalted = false) {
-  const bayesian = useRef(new BayesianEngine());
-  const conformal = useRef(new ConformalEngine());
-  const [tick, setTick] = useState(0);
-  const [stream, setStream] = useState([]);
-  const [agents, setAgents] = useState([
-    {
-      id: "planner",
-      name: "Nova Prime",
-      role: "Planner",
-      status: "reasoning",
-      task: "Strategic goal decomposition",
-      load: 3,
-      max: 5,
-      success: 0.96,
-      latency: 1.2,
-      model: "claude-sonnet-4-5",
-      memory_hits: 14,
-      tools_called: 0,
-    },
-    {
-      id: "researcher",
-      name: "Iris",
-      role: "Researcher",
-      status: "active",
-      task: "Temporal KG enrichment",
-      load: 2,
-      max: 5,
-      success: 0.94,
-      latency: 0.8,
-      model: "gemini-2-flash",
-      memory_hits: 31,
-      tools_called: 3,
-    },
-    {
-      id: "executor",
-      name: "Atlas",
-      role: "Executor",
-      status: "waiting",
-      task: "Awaiting plan delta",
-      load: 0,
-      max: 5,
-      success: 0.91,
-      latency: 1.9,
-      model: "groq-llama-3-70b",
-      memory_hits: 7,
-      tools_called: 0,
-    },
-    {
-      id: "auditor",
-      name: "Aegis",
-      role: "Auditor",
-      status: "active",
-      task: "Security threat scan",
-      load: 1,
-      max: 3,
-      success: 0.99,
-      latency: 0.3,
-      model: "qwen2.5-32b-local",
-      memory_hits: 2,
-      tools_called: 1,
-    },
-    {
-      id: "creative",
-      name: "Muse",
-      role: "Creative",
-      status: "idle",
-      task: "Dream-phase consolidation",
-      load: 0,
-      max: 4,
-      success: 0.88,
-      latency: 2.1,
-      model: "claude-sonnet-4-5",
-      memory_hits: 22,
-      tools_called: 0,
-    },
-  ]);
-  const [memoryNodes, setMemoryNodes] = useState([
-    {
-      id: "m1",
-      label: "Project Helios",
-      type: "episodic",
-      connections: 5,
-      strength: 0.92,
-      age: "2h",
-      x: 30,
-      y: 25,
-    },
-    {
-      id: "m2",
-      label: "Weekly fitness",
-      type: "procedural",
-      connections: 3,
-      strength: 0.78,
-      age: "1d",
-      x: 65,
-      y: 20,
-    },
-    {
-      id: "m3",
-      label: "Client: Zara",
-      type: "semantic",
-      connections: 8,
-      strength: 0.95,
-      age: "5m",
-      x: 50,
-      y: 50,
-    },
-    {
-      id: "m4",
-      label: "API key mgmt",
-      type: "procedural",
-      connections: 2,
-      strength: 0.65,
-      age: "3d",
-      x: 20,
-      y: 65,
-    },
-    {
-      id: "m5",
-      label: "Q3 Strategy",
-      type: "semantic",
-      connections: 6,
-      strength: 0.88,
-      age: "30m",
-      x: 75,
-      y: 60,
-    },
-    {
-      id: "m6",
-      label: "Creative block fix",
-      type: "procedural",
-      connections: 4,
-      strength: 0.71,
-      age: "2d",
-      x: 45,
-      y: 80,
-    },
-    {
-      id: "m7",
-      label: "Morning routine",
-      type: "episodic",
-      connections: 7,
-      strength: 0.83,
-      age: "8h",
-      x: 85,
-      y: 35,
-    },
-  ]);
-  const [pendingApprovals, setPendingApprovals] = useState([
-    {
-      id: "a1",
-      tool: "send_email",
-      risk: "high",
-      agent: "Nova Prime",
-      args: { to: "team@company.com", subject: "Sprint review" },
-      expires: 285,
-      auto_resolve: false,
-    },
-    {
-      id: "a2",
-      tool: "file_write",
-      risk: "medium",
-      agent: "Atlas",
-      args: { path: "workspace/report.md" },
-      expires: 102,
-      auto_resolve: false,
-    },
-  ]);
-  const [cognitiveLoop, setCognitiveLoop] = useState({
-    phase: "REASON",
-    step: 2,
-    phaseProgress: 0.6,
-  });
-  const [metrics, setMetrics] = useState({
-    totalCalls: 847,
-    successRate: 0.94,
-    avgLatency: 1.3,
-    cost: 2.47,
-    skillsCompiled: 12,
-    memoriesConsolidated: 341,
-  });
-  const [decisionData, setDecisionData] = useState({
-    actual: 0.72,
-    predicted: 0.75,
-    regime: "stable",
-    success: 1,
-  });
+function toApiNumber(value, fallback = 0) {
+  return toFiniteNumber(value, fallback);
+}
+
+function useNovaRealtime(isHalted = false) {
+  const [snapshot, setSnapshot] = useState(null);
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/dashboard/snapshot`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body?.detail || response.statusText);
+      }
+      setSnapshot(body);
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
 
   useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (isHalted) return undefined;
     const interval = setInterval(() => {
-      if (isHalted) return;
-      const t = Date.now();
-      const predicted =
-        0.7 + 0.15 * Math.sin(t / 8000) + (Math.random() - 0.5) * 0.04;
-      const actual = predicted + (Math.random() - 0.5) * 0.08;
-      const success = actual > 0.6 ? 1 : 0;
-
-      bayesian.current.update(success);
-      conformal.current.update(actual, predicted);
-
-      const newPoint = {
-        t: tick,
-        actual,
-        predicted,
-        regime: Math.abs(actual - predicted) > 0.1 ? "volatile" : "stable",
-        success,
-        timestamp: t,
-      };
-      setStream((prev) => [...prev.slice(-40), newPoint]);
-
-      setDecisionData({ actual, predicted, regime: newPoint.regime, success });
-
-      // Rotate cognitive loop phases
-      const phases = [
-        "PERCEIVE",
-        "REMEMBER",
-        "REASON",
-        "ACT",
-        "REFLECT",
-        "CONSOLIDATE",
-      ];
-      setCognitiveLoop((prev) => {
-        const prog = prev.phaseProgress + 0.08;
-        if (prog >= 1) {
-          const nextIdx = (phases.indexOf(prev.phase) + 1) % phases.length;
-          return { phase: phases[nextIdx], step: nextIdx, phaseProgress: 0 };
-        }
-        return { ...prev, phaseProgress: prog };
-      });
-
-      // Drift agent states
-      setAgents((prev) =>
-        prev.map((a) => ({
-          ...a,
-          load: Math.min(
-            a.max,
-            Math.max(
-              0,
-              a.load +
-                (Math.random() > 0.85 ? (Math.random() > 0.5 ? 1 : -1) : 0),
-            ),
-          ),
-          latency: Math.max(0.1, a.latency + (Math.random() - 0.5) * 0.1),
-          tools_called: a.tools_called + (Math.random() > 0.95 ? 1 : 0),
-          status:
-            Math.random() > 0.97
-              ? ["active", "reasoning", "waiting", "idle"][
-                  Math.floor(Math.random() * 4)
-                ]
-              : a.status,
-        })),
-      );
-
-      // Drift memory strengths
-      setMemoryNodes((prev) =>
-        prev.map((m) => ({
-          ...m,
-          strength: Math.min(
-            1,
-            Math.max(0.3, m.strength + (Math.random() - 0.5) * 0.01),
-          ),
-        })),
-      );
-
-      // Tick approvals down
-      setPendingApprovals((prev) =>
-        prev
-          .map((a) => ({ ...a, expires: a.expires - 1 }))
-          .filter((a) => a.expires > 0),
-      );
-
-      setMetrics((prev) => ({
-        ...prev,
-        totalCalls: prev.totalCalls + (Math.random() > 0.7 ? 1 : 0),
-        cost: prev.cost + Math.random() * 0.002,
-        avgLatency: Math.max(
-          0.5,
-          prev.avgLatency + (Math.random() - 0.5) * 0.05,
-        ),
-      }));
-
-      setTick((t) => t + 1);
-    }, 800);
+      void refresh();
+    }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [tick, isHalted]);
+  }, [isHalted, refresh]);
+
+  const resolveApproval = useCallback(
+    async (approvalId, approved) => {
+      const response = await fetch(
+        `${API_BASE}/api/v1/dashboard/approvals/${approvalId}/resolve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ approved, actor: "dashboard-user" }),
+        },
+      );
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body?.detail || response.statusText);
+      }
+      await refresh();
+      return body;
+    },
+    [refresh],
+  );
+
+  const sendAgentMessage = useCallback(async (message, sessionId = "dashboard-session") => {
+    const response = await fetch(`${API_BASE}/api/v1/agent/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: sessionId,
+        message,
+        actor: "dashboard-user",
+      }),
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      throw new Error(body?.detail || response.statusText);
+    }
+    await refresh();
+    return body;
+  }, [refresh]);
+
+  const stream = Array.isArray(snapshot?.stream)
+    ? snapshot.stream.map((point, idx) => ({
+        t: idx,
+        actual: clamp(toApiNumber(point.actual, 0), 0, 1),
+        predicted: clamp(toApiNumber(point.predicted, 0), 0, 1),
+        regime: point.regime || "unknown",
+        timestamp: point.timestamp || new Date().toISOString(),
+      }))
+    : [];
+
+  const metrics = {
+    totalCalls: toApiNumber(snapshot?.metrics?.total_calls, 0),
+    successRate: clamp(toApiNumber(snapshot?.metrics?.success_rate, 0), 0, 1),
+    avgLatency: Math.max(0, toApiNumber(snapshot?.metrics?.avg_latency_sec, 0)),
+    cost: Math.max(0, toApiNumber(snapshot?.metrics?.cost_usd, 0)),
+    skillsCompiled: toApiNumber(snapshot?.metrics?.skills_compiled, 0),
+    memoriesConsolidated: toApiNumber(
+      snapshot?.metrics?.memories_consolidated,
+      0,
+    ),
+    activeSessions: toApiNumber(snapshot?.metrics?.active_sessions, 0),
+    episodicNodes: toApiNumber(snapshot?.metrics?.episodic_nodes, 0),
+  };
+
+  const cognitiveLoop = {
+    phase: snapshot?.cognitive_loop?.phase || "unknown",
+    step: toApiNumber(snapshot?.cognitive_loop?.step, 0),
+    phaseProgress: clamp(
+      toApiNumber(snapshot?.cognitive_loop?.phase_progress, 0),
+      0,
+      1,
+    ),
+  };
+
+  const decisionData = {
+    actual: clamp(toApiNumber(snapshot?.decision?.actual, 0), 0, 1),
+    predicted: clamp(toApiNumber(snapshot?.decision?.predicted, 0), 0, 1),
+    regime: snapshot?.decision?.regime || "unknown",
+  };
+
+  const bayesian = {
+    alpha: toApiNumber(snapshot?.bayesian?.alpha, 1),
+    beta: toApiNumber(snapshot?.bayesian?.beta, 1),
+    mean: clamp(toApiNumber(snapshot?.bayesian?.mean, 0), 0, 1),
+    variance: Math.max(0, toApiNumber(snapshot?.bayesian?.variance, 0)),
+  };
+
+  const intervalLower = snapshot?.conformal?.interval_lower;
+  const intervalUpper = snapshot?.conformal?.interval_upper;
+  const conformal = {
+    coverage: clamp(toApiNumber(snapshot?.conformal?.coverage, 0), 0, 1),
+    getInterval(prediction) {
+      const safePrediction = clamp(toApiNumber(prediction, 0), 0, 1);
+      const lower = intervalLower === null || intervalLower === undefined
+        ? safePrediction
+        : clamp(toApiNumber(intervalLower, safePrediction), 0, 1);
+      const upper = intervalUpper === null || intervalUpper === undefined
+        ? safePrediction
+        : clamp(toApiNumber(intervalUpper, safePrediction), 0, 1);
+      return [lower, upper];
+    },
+  };
+
+  const agents = Array.isArray(snapshot?.agents)
+    ? snapshot.agents.map((agent) => ({
+        id: agent.id,
+        name: agent.name || agent.id,
+        role: agent.role || "session",
+        status: agent.status || "unknown",
+        task: agent.task || "",
+        load: toApiNumber(agent.load, 0),
+        max: Math.max(1, toApiNumber(agent.max, 1)),
+        success: clamp(toApiNumber(agent.success_rate, 0), 0, 1),
+        latency: Math.max(0, toApiNumber(agent.latency_sec, 0)),
+        model: agent.model || "unknown",
+        memory_hits: toApiNumber(agent.memory_hits, 0),
+        tools_called: toApiNumber(agent.tools_called, 0),
+      }))
+    : [];
+
+  const memoryNodes = Array.isArray(snapshot?.memory_nodes)
+    ? snapshot.memory_nodes.map((node) => ({
+        id: node.id,
+        label: node.label || node.id,
+        type: node.type || "unknown",
+        strength: clamp(toApiNumber(node.strength, 0), 0, 1),
+        age: node.age || "unknown",
+        x: toApiNumber(node.x, 50),
+        y: toApiNumber(node.y, 50),
+      }))
+    : [];
+
+  const pendingApprovals = Array.isArray(snapshot?.pending_approvals)
+    ? snapshot.pending_approvals.map((approval) => ({
+        id: approval.id,
+        type: approval.tool,
+        tool: approval.tool,
+        risk: approval.risk || "unknown",
+        agent: approval.agent || "unknown",
+        args: approval.args || {},
+        expires: Math.max(0, toApiNumber(approval.expires_seconds, 0)),
+      }))
+    : [];
+
+  const memoryStats = {
+    episodicNodes: toApiNumber(snapshot?.memory_stats?.episodic_nodes, 0),
+    semanticFacts: toApiNumber(snapshot?.memory_stats?.semantic_facts, 0),
+    compiledSkills: toApiNumber(snapshot?.memory_stats?.compiled_skills, 0),
+    activeSessions: toApiNumber(snapshot?.memory_stats?.active_sessions, 0),
+  };
+
+  const modelFleet = Array.isArray(snapshot?.model_fleet) ? snapshot.model_fleet : [];
+  const semanticClusters = Array.isArray(snapshot?.semantic_clusters)
+    ? snapshot.semantic_clusters
+    : [];
+
+  const policy = {
+    proceedThreshold: clamp(
+      toApiNumber(snapshot?.policy?.proceed_threshold, 0.8),
+      0,
+      1,
+    ),
+    monitorThreshold: clamp(
+      toApiNumber(snapshot?.policy?.monitor_threshold, 0.55),
+      0,
+      1,
+    ),
+  };
 
   return {
     stream,
@@ -409,9 +316,16 @@ function useNovaSimulation(isHalted = false) {
     cognitiveLoop,
     metrics,
     decisionData,
-    bayesian: bayesian.current,
-    conformal: conformal.current,
-    setPendingApprovals,
+    bayesian,
+    conformal,
+    modelFleet,
+    semanticClusters,
+    policy,
+    memoryStats,
+    sourceErrors: Array.isArray(snapshot?.source_errors) ? snapshot.source_errors : [],
+    error,
+    resolveApproval,
+    sendAgentMessage,
   };
 }
 
@@ -663,22 +577,24 @@ const CognitiveCycleRing = ({ phase, step, progress }) => {
 };
 
 // ─── Confidence Meter ──────────────────────────────────────────────────────────
-const ConfidenceMeter = ({ confidence, entropy }) => {
+const ConfidenceMeter = ({
+  confidence,
+  entropy,
+  proceedThreshold = 0.8,
+  monitorThreshold = 0.55,
+}) => {
   const safeConfidence = clamp(toFiniteNumber(confidence, 0), 0, 1);
   const safeEntropy = clamp(toFiniteNumber(entropy, 0), 0, 1);
   const decision =
-    safeConfidence > 0.8
+    safeConfidence > proceedThreshold
       ? { label: "PROCEED", color: "#34d399", icon: "◈" }
-      : safeConfidence > 0.55
+      : safeConfidence > monitorThreshold
         ? { label: "MONITOR", color: "#fbbf24", icon: "◉" }
         : { label: "DEFER", color: "#f87171", icon: "◎" };
 
-  const angle = safeConfidence * 180 - 90;
   const r = 45,
     cx = 70,
     cy = 65;
-  const startAngle = -Math.PI;
-  const endAngle = (endAngle) => endAngle;
 
   return (
     <div style={{ textAlign: "center" }}>
@@ -1652,8 +1568,15 @@ export default function NovaDashboard() {
     decisionData,
     bayesian,
     conformal,
-    setPendingApprovals,
-  } = useNovaSimulation(isHalted);
+    modelFleet,
+    semanticClusters,
+    policy,
+    memoryStats,
+    sourceErrors,
+    error: backendError,
+    resolveApproval,
+    sendAgentMessage,
+  } = useNovaRealtime(isHalted);
   const [activeTab, setActiveTab] = useState("overview");
   const [isNovaTyping, setIsNovaTyping] = useState(false);
   const [decisionLog, setDecisionLog] = useState([]);
@@ -1661,27 +1584,32 @@ export default function NovaDashboard() {
   const [chatHistory, setChatHistory] = useState([
     {
       role: "nova",
-      content:
-        "Good morning. I've completed your 06:00 review. 3 tasks crystallized into skills overnight. Zara's proposal is ready for your review. Your 10am is confirmed. What shall we focus on?",
+      content: "Live mode active. Connected to SuperNova API.",
     },
   ]);
 
-  const hypotheses = [
-    { cluster: "proceed" },
-    { cluster: "proceed" },
-    { cluster: "proceed" },
-    { cluster: "monitor" },
-    { cluster: "monitor" },
-    { cluster: "defer" },
-  ];
-  const { entropy, confidence, clusters } = computeSemanticEntropy(hypotheses);
-  const bayesianConf = bayesian.mean;
+  const { entropy, confidence, clusters } = computeSemanticEntropy(semanticClusters);
+  const bayesianConf = clamp(toApiNumber(bayesian.mean, 0), 0, 1);
   const ci = conformal.getInterval(decisionData.predicted);
-  const blended = bayesianConf * 0.6 + confidence * 0.4;
+  const blended = clamp(bayesianConf * 0.6 + confidence * 0.4, 0, 1);
+  const proceedThreshold = policy.proceedThreshold;
+  const monitorThreshold = policy.monitorThreshold;
 
-  const handleDecide = (id, approved) => {
+  const handleDecide = async (id, approved) => {
     const approval = pendingApprovals.find((a) => a.id === id);
-    setPendingApprovals((prev) => prev.filter((a) => a.id !== id));
+    try {
+      await resolveApproval(id, approved);
+    } catch (err) {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "nova",
+          content: `Approval request failed: ${err instanceof Error ? err.message : String(err)}`,
+        },
+      ]);
+      return;
+    }
+
     setDecisionLog((prev) =>
       [
         {
@@ -1696,37 +1624,40 @@ export default function NovaDashboard() {
       ].slice(0, 10),
     );
     setChatHistory((prev) => [
-      ...prev,
+        ...prev,
       {
         role: "nova",
-        content: `Tool ${approved ? "approved ✓" : "denied ✕"}. ${approved ? "Proceeding with execution." : "Action cancelled. I'll find an alternative approach."}`,
+        content: `Approval ${approved ? "approved ✓" : "denied ✕"} for ${approval?.tool || "tool"} and persisted to audit log.`,
       },
     ]);
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!chatInput.trim()) return;
     const msg = chatInput.trim();
     setChatInput("");
     setChatHistory((prev) => [...prev, { role: "user", content: msg }]);
     setIsNovaTyping(true);
-    setTimeout(() => {
-      const responses = [
-        "On it. Routing to the appropriate specialist and assembling context from temporal memory.",
-        "I've added that to your active goals. Atlas will begin execution in the next cycle.",
-        "Interesting. Cross-referencing with your recent episodic context... I see a pattern worth discussing.",
-        "Noted. I'll crystallize a skill from this once we have 3 successful completions.",
-        "Already thinking about this. The Bayesian confidence for that path is currently 84%. Shall I proceed?",
-      ];
-      setIsNovaTyping(false);
+    try {
+      const result = await sendAgentMessage(msg);
       setChatHistory((prev) => [
         ...prev,
         {
           role: "nova",
-          content: responses[Math.floor(Math.random() * responses.length)],
+          content: `Message accepted by live agent endpoint for session ${result.session_id} at ${result.received_at}.`,
         },
       ]);
-    }, 900);
+    } catch (err) {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "nova",
+          content: `Agent API error: ${err instanceof Error ? err.message : String(err)}`,
+        },
+      ]);
+    } finally {
+      setIsNovaTyping(false);
+    }
   };
 
   const tabs = [
@@ -1741,6 +1672,10 @@ export default function NovaDashboard() {
     acc[m] = (acc[m] || 0) + 1;
     return acc;
   }, {});
+  const maxModelInvocations = Math.max(
+    1,
+    ...modelFleet.map((m) => toApiNumber(m.invocations, 0)),
+  );
 
   return (
     <div
@@ -1961,6 +1896,26 @@ export default function NovaDashboard() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {(backendError || sourceErrors.length > 0) && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "#fbbf2422",
+                  border: "1px solid #fbbf2455",
+                  borderRadius: 6,
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  color: "#fbbf24",
+                }}
+              >
+                <span>⚠</span>
+                {backendError
+                  ? "backend degraded"
+                  : `${sourceErrors.length} source warning${sourceErrors.length > 1 ? "s" : ""}`}
+              </div>
+            )}
             {pendingApprovals.length > 0 && (
               <div
                 style={{
@@ -2184,8 +2139,8 @@ export default function NovaDashboard() {
                     label: "skills crystallized",
                     value: metrics.skillsCompiled,
                   },
-                  { label: "context tokens", value: "87.2k" },
-                  { label: "model tier", value: "planning" },
+                  { label: "active sessions", value: metrics.activeSessions },
+                  { label: "episodic nodes", value: metrics.episodicNodes },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
@@ -2237,7 +2192,12 @@ export default function NovaDashboard() {
               >
                 DECISION INTELLIGENCE
               </div>
-              <ConfidenceMeter confidence={blended} entropy={entropy} />
+              <ConfidenceMeter
+                confidence={blended}
+                entropy={entropy}
+                proceedThreshold={proceedThreshold}
+                monitorThreshold={monitorThreshold}
+              />
               <div style={{ marginTop: 8 }}>
                 <div
                   style={{ fontSize: 9, color: "#ffffff33", marginBottom: 4 }}
@@ -2513,8 +2473,8 @@ export default function NovaDashboard() {
                   color: "#ffffff44",
                 }}
               >
-                Risk policy: LOW=auto-approve(30s) · MED/HIGH=await ·
-                CRIT=await(10m)
+                Approval queue is sourced from live `tool_approval_requested`
+                events in audit_log.
               </div>
             </div>
 
@@ -2765,7 +2725,6 @@ export default function NovaDashboard() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder="Tell Nova anything..."
                   style={{
                     flex: 1,
                     background: "#ffffff08",
@@ -3010,22 +2969,34 @@ export default function NovaDashboard() {
                   MEMORY STATISTICS
                 </div>
                 {[
-                  { label: "Episodic nodes", value: "1,241", color: "#a78bfa" },
-                  { label: "Semantic facts", value: "341", color: "#fbbf24" },
+                  {
+                    label: "Episodic nodes",
+                    value: memoryStats.episodicNodes,
+                    color: "#a78bfa",
+                  },
+                  {
+                    label: "Semantic facts",
+                    value: memoryStats.semanticFacts,
+                    color: "#fbbf24",
+                  },
                   {
                     label: "Compiled skills",
-                    value: metrics.skillsCompiled,
+                    value: memoryStats.compiledSkills,
                     color: "#00ffd5",
                   },
-                  { label: "Forgotten (decay)", value: "47", color: "#6b7280" },
                   {
-                    label: "Context primacy %",
-                    value: "3.4%",
+                    label: "Active sessions",
+                    value: memoryStats.activeSessions,
+                    color: "#6b7280",
+                  },
+                  {
+                    label: "Snapshot errors",
+                    value: sourceErrors.length,
                     color: "#38bdf8",
                   },
                   {
-                    label: "Context recency %",
-                    value: "22.1%",
+                    label: "Backend status",
+                    value: backendError ? "degraded" : "healthy",
                     color: "#34d399",
                   },
                 ].map(({ label, value, color }) => (
@@ -3163,7 +3134,12 @@ export default function NovaDashboard() {
                 BAYESIAN POSTERIOR
               </div>
               <div style={{ padding: "16px 0" }}>
-                <ConfidenceMeter confidence={bayesianConf} entropy={entropy} />
+                <ConfidenceMeter
+                  confidence={bayesianConf}
+                  entropy={entropy}
+                  proceedThreshold={proceedThreshold}
+                  monitorThreshold={monitorThreshold}
+                />
               </div>
               <div
                 style={{
@@ -3236,102 +3212,97 @@ export default function NovaDashboard() {
               >
                 MODEL CAPABILITY FLEET
               </div>
-              {[
-                {
-                  model: "claude-sonnet-4-5",
-                  reasoning: 0.91,
-                  tool_use: 0.94,
-                  context: 0.92,
-                  cost: "$3/$15",
-                  latency: "800ms",
-                },
-                {
-                  model: "gemini-2-flash",
-                  reasoning: 0.82,
-                  tool_use: 0.88,
-                  context: 0.9,
-                  cost: "$0.1/$0.4",
-                  latency: "400ms",
-                },
-                {
-                  model: "groq-llama-3-70b",
-                  reasoning: 0.78,
-                  tool_use: 0.81,
-                  context: 0.75,
-                  cost: "$0.6/$0.8",
-                  latency: "150ms",
-                },
-                {
-                  model: "qwen2.5-32b-local",
-                  reasoning: 0.72,
-                  tool_use: 0.73,
-                  context: 0.7,
-                  cost: "free",
-                  latency: "1200ms",
-                },
-              ].map((m) => (
+              {modelFleet.length === 0 ? (
                 <div
-                  key={m.model}
                   style={{
-                    marginBottom: 10,
-                    padding: "8px 10px",
-                    background: "#ffffff05",
-                    borderRadius: 8,
+                    fontSize: 11,
+                    color: "#ffffff55",
+                    padding: "8px 4px",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "#ffffff",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {m.model}
-                    </span>
+                  No model usage data found in audit_log.
+                </div>
+              ) : (
+                modelFleet.map((m) => {
+                  const successRate = clamp(toApiNumber(m.success_rate, 0), 0, 1);
+                  const invocationShare = clamp(
+                    toApiNumber(m.invocations, 0) / maxModelInvocations,
+                    0,
+                    1,
+                  );
+                  const latencyScore = clamp(
+                    1 / (1 + Math.max(0, toApiNumber(m.avg_latency_sec, 0))),
+                    0,
+                    1,
+                  );
+                  const avgCost = Math.max(0, toApiNumber(m.avg_cost_usd, 0));
+                  const avgLatency = Math.max(0, toApiNumber(m.avg_latency_sec, 0));
+
+                  return (
                     <div
+                      key={m.model}
                       style={{
-                        display: "flex",
-                        gap: 8,
-                        fontSize: 10,
-                        color: "#ffffff44",
+                        marginBottom: 10,
+                        padding: "8px 10px",
+                        background: "#ffffff05",
+                        borderRadius: 8,
                       }}
                     >
-                      <span>{m.cost}</span>
-                      <span>{m.latency}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {[
-                      ["reasoning", m.reasoning, "#00ffd5"],
-                      ["tool_use", m.tool_use, "#a78bfa"],
-                      ["context", m.context, "#fbbf24"],
-                    ].map(([label, val, color]) => (
-                      <div key={label} style={{ flex: 1 }}>
-                        <div
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span
                           style={{
-                            fontSize: 9,
-                            color: "#ffffff33",
-                            marginBottom: 2,
+                            fontSize: 11,
+                            color: "#ffffff",
+                            fontWeight: 600,
                           }}
                         >
-                          {label}
-                        </div>
-                        <MiniBar value={val} max={1} color={color} width={70} />
-                        <div style={{ fontSize: 9, color, marginTop: 1 }}>
-                          {(val * 100).toFixed(0)}%
+                          {m.model}
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            fontSize: 10,
+                            color: "#ffffff44",
+                          }}
+                        >
+                          <span>${avgCost.toFixed(4)}</span>
+                          <span>{(avgLatency * 1000).toFixed(0)}ms</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {[
+                          ["success", successRate, "#00ffd5"],
+                          ["volume", invocationShare, "#a78bfa"],
+                          ["latency", latencyScore, "#fbbf24"],
+                        ].map(([label, val, color]) => (
+                          <div key={label} style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: 9,
+                                color: "#ffffff33",
+                                marginBottom: 2,
+                              }}
+                            >
+                              {label}
+                            </div>
+                            <MiniBar value={val} max={1} color={color} width={70} />
+                            <div style={{ fontSize: 9, color, marginTop: 1 }}>
+                              {(val * 100).toFixed(0)}%
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
 
             <div
@@ -3359,13 +3330,13 @@ export default function NovaDashboard() {
               </div>
               {[
                 {
-                  threshold: 0.8,
+                  threshold: proceedThreshold,
                   label: "PROCEED",
                   desc: "High confidence — execute autonomously",
                   color: "#34d399",
                 },
                 {
-                  threshold: 0.55,
+                  threshold: monitorThreshold,
                   label: "MONITOR",
                   desc: "Moderate confidence — execute with logging",
                   color: "#fbbf24",
@@ -3377,17 +3348,13 @@ export default function NovaDashboard() {
                   color: "#f87171",
                 },
               ].map((tier) => {
-                const active =
-                  blended >= tier.threshold &&
-                  (tier.threshold === 0.8
-                    ? true
-                    : blended < (tier.threshold === 0.55 ? 0.8 : 0.55));
                 const isActive =
-                  (tier.threshold === 0.8 && blended >= 0.8) ||
-                  (tier.threshold === 0.55 &&
-                    blended >= 0.55 &&
-                    blended < 0.8) ||
-                  (tier.threshold === 0 && blended < 0.55);
+                  (tier.threshold === proceedThreshold &&
+                    blended >= proceedThreshold) ||
+                  (tier.threshold === monitorThreshold &&
+                    blended >= monitorThreshold &&
+                    blended < proceedThreshold) ||
+                  (tier.threshold === 0 && blended < monitorThreshold);
                 return (
                   <div
                     key={tier.label}
@@ -3473,17 +3440,17 @@ export default function NovaDashboard() {
                 <span
                   style={{
                     color:
-                      blended >= 0.8
+                      blended >= proceedThreshold
                         ? "#34d399"
-                        : blended >= 0.55
+                        : blended >= monitorThreshold
                           ? "#fbbf24"
                           : "#f87171",
                     fontWeight: 700,
                   }}
                 >
-                  {blended >= 0.8
+                  {blended >= proceedThreshold
                     ? "PROCEED"
-                    : blended >= 0.55
+                    : blended >= monitorThreshold
                       ? "MONITOR"
                       : "DEFER"}
                 </span>{" "}
@@ -3600,7 +3567,6 @@ export default function NovaDashboard() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ffffff22; border-radius: 2px; }
         * { box-sizing: border-box; }
-        input::placeholder { color: #ffffff33; }
         button:focus-visible { outline: 2px solid #00ffd5; outline-offset: 2px; }
       `}</style>
     </div>

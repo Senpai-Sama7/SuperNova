@@ -6,72 +6,6 @@
 
 ---
 
-## ⚠️ CRITICAL: Canonical Build Guide
-
-### PRIMARY REFERENCE: `PROGRESS_TRACKER.md`
-
-**This file (`AGENTS.md`) is reference documentation. The authoritative build guide is `PROGRESS_TRACKER.md`.**
-
-All implementation work **MUST** follow the 16-phase checklist in `PROGRESS_TRACKER.md`. Every task must be:
-1. **Implemented** — Code written and functional
-2. **Tested** — Validation commands executed
-3. **Verified** — Proof of completion documented
-4. **Checked off** — `[ ]` → `[x]` with evidence
-
-**DO NOT PROCEED** to the next bullet point until the current one is fully validated with real, working, tested code.
-
----
-
-## TRACKER RULES — Mandatory Compliance
-
-### Rule 1: Sequential Execution
-**NEVER** skip tasks. **NEVER** mark a task complete without proof. **NEVER** move forward until validation passes.
-
-### Rule 2: Real Validation Required
-Every task has a **Validation** line. Execute it. If it fails, stop. Debug. Fix. Re-validate.
-
-### Rule 3: Proof Documentation
-Replace `_pending_` with actual evidence:
-```markdown
-- **Proof:** Command output, test results, or verification log showing the task is complete
-```
-
-### Rule 4: Failed Task Handling
-If a task fails:
-1. Leave `[ ]` unchecked
-2. Add `❌ FAIL:` note with explanation
-3. Add `✅ FIX:` note with resolution
-4. Do NOT proceed to next task until resolved
-
-### Rule 5: No Hand-Waving
-"It should work" is not validation. "Tests pass" requires pytest output. "Service healthy" requires health check response.
-
-### Rule 6: Update AGENTS.md After Each Task
-After completing each `PROGRESS_TRACKER.md` task, update this `AGENTS.md` file to reflect the current state. Keep documentation synchronized with implementation.
-
----
-
-## Build Status
-
-| Phase | Status | Key Milestones |
-|-------|--------|----------------|
-| **Phase 0** | ✅ COMPLETE | Python 3.13.7, Docker 29.2.1, Node.js 22.22.0, 43 skills, MCP servers ready |
-| **Phase 1** | ✅ COMPLETE | All 10 directory structures, 13 __init__.py files, import paths verified |
-| **Phase 2** | ✅ COMPLETE | pyproject.toml with 36 runtime + 17 dev deps, 150+ packages installed |
-| **Phase 3** | ✅ COMPLETE | .env.example (72 vars, 17 sections), Pydantic Settings loader, config tested |
-| **Phase 4** | ✅ COMPLETE | Alembic async configured, pgvector/pg_trgm, 5 tables, 26 indexes |
-| **Phase 5** | ✅ COMPLETE | Storage layer ✅, Working Memory ✅, Episodic Memory ✅, Semantic Memory ✅, Tool Registry ✅ |
-| Phase 6 | ⏳ PENDING | Core agent logic (interrupts, router, context assembly) |
-| Phase 2 | ⏳ PENDING | pyproject.toml, dependencies |
-| Phase 3 | ⏳ PENDING | .env.example expansion |
-| Phases 4-10 | ⏳ PENDING | Core implementation |
-| Phase -1 | ⏳ DEFERRED | Packaging (requires working core) |
-| Phases 11-15 | ⏳ PENDING | Security, cost, backup, UX, observability |
-
-**Last Updated:** Phase 0 completion — all environment prerequisites validated.
-
----
-
 ## Project Overview
 
 SuperNova is a durable, observable, and self-improving AI agent system implementing a cognitive architecture inspired by human memory systems. The agent features:
@@ -96,27 +30,54 @@ SuperNova is a durable, observable, and self-improving AI agent system implement
 
 ## Technology Stack
 
-### Core Dependencies
+### Backend Dependencies
+
+Core runtime dependencies (from `supernova/pyproject.toml`):
 
 ```
 langgraph>=0.2.0              # Stateful agent graph with checkpointing
 langgraph-checkpoint-postgres>=0.1  # PostgreSQL checkpoint backend
+langchain-core>=0.3.0         # Core LangChain components
 litellm>=1.40.0               # Universal LLM proxy (100+ providers)
 graphiti-core>=0.3.0          # Temporal knowledge graph (episodic memory)
 asyncpg>=0.29.0               # Async PostgreSQL driver
+sqlalchemy[asyncio]>=2.0.0    # ORM for database operations
 redis[hiredis]>=5.0.0         # Working memory + Celery broker
+neo4j>=5.20.0                 # Neo4j driver for episodic memory
 fastapi>=0.111.0              # API layer
 uvicorn[standard]>=0.29.0     # ASGI server with uvloop
+websockets>=12.0              # WebSocket support
+python-jose[cryptography]>=3.3.0  # JWT authentication
+pydantic>=2.7.0               # Data validation
+pydantic-settings>=2.2.0      # Environment configuration
 celery[gevent]>=5.4.0         # Background task execution
-redbeat>=2.2.0                # Redis-backed Celery Beat scheduler
+celery-redbeat>=2.2.0         # Redis-backed Celery Beat scheduler
 langfuse>=2.0.0               # Observability and tracing
 msgpack>=1.0.8                # Binary serialization for working memory
-httpx>=0.27.0                 # Async HTTP client for external APIs
+httpx>=0.27.0                 # Async HTTP client
+orjson>=3.10.0                # Fast JSON serialization
+structlog>=24.1.0             # Structured logging
+openai>=1.30.0                # OpenAI API client
+tiktoken>=0.7.0               # Token counting
+numpy>=1.26.0                 # Numerical operations
+mcp>=1.0.0                    # Model Context Protocol client
+```
+
+### Frontend Dependencies
+
+Dashboard UI (from `dashboard/package.json`):
+
+```
+React 19.2.0                  # UI framework
+Vite 7.3.1                    # Build tool and dev server
+Vitest 3.2.4                  # Unit testing
+Playwright 1.56.1             # E2E testing
+ESLint 9.39.1                 # Linting
 ```
 
 ### Infrastructure Services
 
-- **PostgreSQL** — Semantic memory, procedural memory, checkpoints
+- **PostgreSQL** — Semantic memory, procedural memory, checkpoints, pgvector extension
 - **Neo4j** — Episodic memory via Graphiti temporal knowledge graph
 - **Redis** — Working memory, Celery broker, embedding cache
 - **Langfuse** — Trace observability dashboard
@@ -126,145 +87,379 @@ httpx>=0.27.0                 # Async HTTP client for external APIs
 ## Project Structure
 
 ```
-supernova/
-├── loop.py                     # ← SPEC: Cognitive loop (LangGraph StateGraph)
-├── context_assembly.py         # ← SPEC: Positional context window assembly
-├── procedural.py               # ← SPEC: Compiled skill storage & crystallization
-├── dynamic_router.py           # ← SPEC: Capability-vector model router
-├── interrupts.py               # ← SPEC: HITL interrupt coordinator
-├── DEPLOYMENT.conf             # ← SPEC: Systemd services, Dockerfile, Nginx config
-├── nova-dashboard.jsx          # React monitoring dashboard with Bayesian/Conformal engines
-├── PROGRESS_TRACKER.md         # 16-phase build progress tracker
+supernova/                      # Main Python package
+├── __init__.py
+├── config.py                   # Pydantic Settings configuration loader
+├── pyproject.toml              # Python dependencies and tool configs
+├── alembic.ini                 # Database migration configuration
+├── README.md
+│
+├── alembic/                    # Database migrations
+│   ├── env.py
+│   └── versions/
+│       └── 23aa65fd8071_initial_schema.py
+│
+├── api/                        # FastAPI application layer
+│   ├── __init__.py
+│   ├── auth.py                 # JWT authentication (create_access_token, verify_token, get_current_user)
+│   ├── gateway.py              # FastAPI gateway (lifespan, health, auth, WS, memory, admin, CORS)
+│   ├── main.py                 # Legacy FastAPI app factory
+│   ├── websockets.py           # WebSocket broadcaster and event stream handler
+│   └── routes/
+│       ├── __init__.py
+│       ├── agent.py            # Agent execution endpoints
+│       ├── dashboard.py        # Dashboard API endpoints
+│       └── mcp_routes.py       # MCP server and skills API endpoints
+│
+├── core/                       # Core agent logic
+│   ├── __init__.py
+│   ├── agent/
+│   │   └── __init__.py
+│   ├── memory/                 # Memory system implementations
+│   │   ├── __init__.py
+│   │   ├── episodic.py         # Graphiti/Neo4j episodic memory
+│   │   ├── semantic.py         # PostgreSQL/pgvector semantic memory
+│   │   └── working.py          # Redis working memory
+│   └── reasoning/
+│       └── __init__.py
+│
+├── infrastructure/             # Infrastructure adapters
+│   ├── __init__.py
+│   ├── llm/
+│   │   └── __init__.py
+│   ├── storage/                # Database connections
+│   │   ├── __init__.py
+│   │   ├── postgres.py         # PostgreSQL connection pool
+│   │   └── redis.py            # Redis client
+│   └── tools/                  # Tool implementations
+│       ├── __init__.py
+│       ├── builtin/            # Built-in tools
+│       │   ├── __init__.py
+│       │   ├── code_exec.py    # Code execution sandbox (Docker + subprocess fallback)
+│       │   ├── file_ops.py     # File operations (path jail to ./workspace/)
+│       │   └── web_search.py   # Web search (Tavily/SerpAPI)
+│       └── registry.py         # Tool registry (capability-gated)
+│
+├── mcp/                        # Model Context Protocol integration
+│   ├── __init__.py
+│   ├── client/                 # MCP client implementation
+│   │   ├── __init__.py
+│   │   └── mcp_client.py
+│   └── tools/                  # MCP tool bridge
+│       ├── __init__.py
+│       └── mcp_tool_bridge.py
+│
+├── skills/                     # Skill system
+│   ├── __init__.py
+│   └── loader.py
+│
+├── tests/                      # Test suite
+│   ├── __init__.py
+│   ├── test_auth.py
+│   ├── test_builtin_tools.py
+│   ├── test_episodic.py
+│   ├── test_gateway.py
+│   ├── test_mcp_api.py
+│   ├── test_mcp_client.py
+│   ├── test_registry.py
+│   ├── test_semantic.py
+│   ├── test_skills.py
+│   └── test_websockets.py
+│
+└── workers/                    # Celery background workers
+    └── __init__.py
+
+# Root-level specification files (load-bearing)
+├── loop.py                     # Cognitive loop (LangGraph StateGraph)
+├── context_assembly.py         # Positional context window assembly
+├── procedural.py               # Compiled skill storage & crystallization
+├── dynamic_router.py           # Capability-vector model router
+├── interrupts.py               # HITL interrupt coordinator
+├── DEPLOYMENT.conf             # Systemd services, Dockerfile, Nginx config
+├── nova-dashboard.jsx          # React monitoring dashboard
 ├── setup.sh                    # Environment setup script
+├── PROGRESS_TRACKER.md         # 16-phase build progress tracker
 ├── AGENTS.md                   # This file
-├── mcp_and_skills/             # MCP servers and skill definitions
-│   ├── mcp-servers/            # Pre-built MCP servers (filesystem, fetch, etc.)
-│   ├── custom-mcp-servers/     # Custom MCP servers (omega, titanium, etc.)
-│   ├── skills/                 # Skill definitions
-│   ├── claude-config/          # Claude Desktop MCP configurations
-│   ├── vscode-config/          # VS Code MCP settings
-│   └── ...
-└── .agent/                     # Agent configuration
+├── .env.example                # Environment variable template
+└── .env                        # Local environment configuration (gitignored)
+
+# Dashboard (React frontend)
+dashboard/
+├── package.json
+├── vite.config.js
+├── playwright.config.js
+├── eslint.config.js
+├── index.html
+├── src/
+│   ├── App.jsx
+│   ├── App.css
+│   ├── main.jsx
+│   ├── index.css
+│   ├── NovaDashboard.jsx
+│   ├── assets/
+│   └── utils/
+├── tests/
+│   └── e2e/
+├── public/
+└── dist/
+
+# MCP and Skills
+mcp_and_skills/                 # MCP servers and skill definitions
+├── MCP_INTEGRATION_SUMMARY.md
+├── MCP_QUICK_REFERENCE.md
+├── MCP_SERVERS.md
+├── README-RESTORE.md
+├── claude-config/              # Claude Desktop MCP configurations
+├── copilot-config/             # GitHub Copilot MCP settings
+├── custom-mcp-servers/         # Custom MCP servers
+├── dot-mcp/
+├── kimiconfig/
+├── mcp-auth/
+├── mcp-data/
+├── mcp-servers/                # Pre-built MCP servers
+├── skills/                     # Skill definitions
+└── vscode-config/              # VS Code MCP settings
+
+# Workspace and logs
+workspace/                      # Jailed file access directory
+logs/                           # Application logs
 ```
-
-### Note on Directory Layout
-
-The Python source files are currently at the **root level** of the project. This is intentional for the specification phase. In a complete implementation, these would be organized under `core/`, `api/`, `infrastructure/` directories as described in the architecture documentation.
 
 ---
 
-## Specification Files (Read-Only)
-
-The following files are **load-bearing specifications**. Copy them exactly as provided—do not refactor, restructure, or "improve" them:
-
-| File                  | Purpose                                                                      |
-| --------------------- | ---------------------------------------------------------------------------- |
-| `context_assembly.py` | Positionally-aware context window assembly with Primacy/Middle/Recency zones |
-| `procedural.py`       | Procedural memory with SkillCrystallizationWorker                            |
-| `loop.py`             | The cognitive loop (LangGraph StateGraph with checkpointing)                 |
-| `dynamic_router.py`   | Capability-vector model routing with live pricing                            |
-| `interrupts.py`       | HITL interrupt coordinator with risk-stratified timeouts                     |
-| `DEPLOYMENT.conf`     | Systemd services, multi-stage Dockerfile, Nginx configuration                |
-
-### Critical Constraint from loop.py
-
-The `AgentState.messages` field **must** use `Annotated[list[dict], operator.add]`:
-
-```python
-class AgentState(TypedDict):
-    messages: Annotated[list[dict], operator.add]  # CRITICAL: LangGraph appends, not replaces
-```
-
-If this annotation is missing, tool results will overwrite conversation history and the agent will have no memory within a session.
-
----
-
-## Build and Run Commands
+## Build and Development Commands
 
 ### Environment Setup
 
 ```bash
-# Run the setup script for automated environment validation
+# Run the automated setup script
 ./setup.sh
 
-# Or manually validate environment (Python 3.12+, Docker, PostgreSQL tools)
-python3 --version
+# Manual validation of environment
+python3 --version    # Requires 3.12+
 docker --version
 docker compose version
 psql --version
 
-# Install uv (Astral's Python package manager) for faster dependency sync
+# Install uv (Astral's Python package manager)
 curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install dependencies (when pyproject.toml is present)
-uv sync --all-extras
-# or: pip install -e ".[dev]"
 ```
 
-### Database Initialization
+### Python Backend
 
 ```bash
-# Start infrastructure services
-docker compose up -d postgres neo4j redis langfuse
+# Navigate to supernova directory
+cd supernova
 
-# Wait for healthy status
-docker compose ps
+# Install dependencies with uv (recommended)
+uv sync --all-extras
 
-# Run migrations (when alembic is configured)
+# Or with pip
+pip install -e ".[dev]"
+
+# Install GPU extras
+pip install -e ".[gpu]"
+```
+
+### Database Migrations
+
+```bash
+# Navigate to supernova directory
+cd supernova
+
+# Run migrations
 alembic upgrade head
+
+# Create new migration
+alembic revision --autogenerate -m "description"
 ```
 
 ### Running the Application
 
 ```bash
-# Start the API server
+# Start the API server (from supernova/ directory)
 uvicorn api.gateway:app --reload --log-level debug
 
-# Start Celery worker (terminal 2)
+# Or from project root with PYTHONPATH
+PYTHONPATH=./supernova uvicorn supernova.api.gateway:app --reload
+
+# Start Celery worker (terminal 2, from supernova/)
 celery -A workers worker --loglevel=debug
 
-# Start Celery Beat scheduler (terminal 3)
-celery -A workers beat --loglevel=debug
+# Start Celery Beat scheduler (terminal 3, from supernova/)
+celery -A workers beat --loglevel=debug --scheduler=redbeat.RedBeatScheduler
 ```
 
-### Testing
+### Dashboard (Frontend)
 
 ```bash
-# Run full test suite with coverage
-pytest tests/ -v --cov=core --cov=infrastructure --cov=api --cov-report=term-missing
+cd dashboard
 
-# Target: ≥80% coverage
-```
+# Install dependencies
+npm install
 
-### Code Quality
+# Development server
+npm run dev
 
-```bash
-# Linting
-ruff check .
+# Build for production
+npm run build
 
-# Type checking
-mypy core/ infrastructure/ api/ --ignore-missing-imports
+# Preview production build
+npm run preview
 ```
 
 ---
 
-## Testing Strategy
+## Testing Commands
+
+### Python Backend Tests
+
+```bash
+cd supernova
+
+# Run all tests with coverage
+pytest tests/ -v --cov=supernova --cov-report=term-missing
+
+# Run with coverage threshold (80% minimum)
+pytest tests/ --cov=supernova --cov-fail-under=80
+
+# Run specific test file
+pytest tests/test_auth.py -v
+
+# Run unit tests only (exclude integration)
+pytest tests/ -v -m "not integration"
+
+# Run integration tests only
+pytest tests/ -v -m integration
+
+# Run slow tests
+pytest tests/ -v -m slow
+
+# Parallel test execution
+pytest tests/ -x --tb=short
+```
+
+### Frontend Tests
+
+```bash
+cd dashboard
+
+# Run unit tests (Vitest)
+npm run test:unit
+
+# Run E2E tests (Playwright)
+npm run test:e2e
+
+# Run all tests
+npm run test
+```
 
 ### Test Coverage Requirements
 
-| Test File                  | Coverage Target                                                           |
-| -------------------------- | ------------------------------------------------------------------------- |
-| `test_context_assembly.py` | Primacy zone, middle zone injection, recency prefix, truncation           |
-| `test_routing.py`          | Planning routing, cost constraints, local-only bypass, relaxation cascade |
-| `test_interrupts.py`       | Approval resolution, timeout policies, unknown thread handling            |
-| `test_memory_retrieval.py` | Round-trip upsert/search, forgetting curves, hybrid search RRF            |
+| Module | Minimum Coverage |
+|--------|-----------------|
+| supernova/ | 80% |
+| api/ | 80% |
+| core/ | 85% |
+| infrastructure/ | 80% |
 
-### Key Test Scenarios
+---
 
-1. **Context Assembly**: Verify primacy zone always includes system content at index 0
-2. **Memory Retrieval**: Verify episodic, semantic, procedural, and working memory run in parallel (`asyncio.gather`)
-3. **Routing**: Verify constraint relaxation fires in correct order (latency → cost → unconstrained)
-4. **Interrupts**: Verify low-risk auto-approves on timeout, high-risk auto-denies
+## Code Style Guidelines
+
+### Python Standards
+
+**Ruff Configuration** (from `pyproject.toml`):
+- Target: Python 3.12+
+- Line length: 100 characters
+- Indent: 4 spaces, double quotes
+
+```bash
+# Linting
+cd supernova
+ruff check .
+
+# Auto-fix issues
+ruff check . --fix
+
+# Format code
+ruff format .
+```
+
+**Enabled Rules**:
+- `E`, `W` - pycodestyle errors/warnings
+- `F` - Pyflakes
+- `I` - isort (import sorting)
+- `N` - pep8-naming
+- `D` - pydocstyle (Google convention)
+- `UP` - pyupgrade
+- `B` - flake8-bugbear
+- `C4` - flake8-comprehensions
+- `SIM` - flake8-simplify
+- `ARG` - flake8-unused-arguments
+- `PTH` - flake8-use-pathlib
+- `ERA` - eradicate
+- `PL` - Pylint
+- `PERF` - Perflint
+- `RUF` - Ruff-specific rules
+
+### MyPy Type Checking
+
+```bash
+cd supernova
+mypy . --ignore-missing-imports
+```
+
+Configuration:
+- Strict mode enabled
+- All functions must have type annotations
+- No bare `Any` without justification comment
+
+### JavaScript/React Standards
+
+```bash
+cd dashboard
+
+# Linting
+npm run lint
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
+```
+
+**Critical Variables**:
+- `SUPERNOVA_SECRET_KEY` - Cryptographic key (generate: `openssl rand -hex 32`)
+- `SUPERNOVA_ENV` - development/staging/production
+- `DATABASE_URL` - PostgreSQL connection
+- `NEO4J_URI` / `NEO4J_PASSWORD` - Neo4j connection
+- `REDIS_URL` - Redis connection
+- `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` - LLM provider keys
+- `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` - Observability
+- `PICKLE_HMAC_KEY` - Secure deserialization key
+- `API_KEY_ENCRYPTION_KEY` - API key encryption
+
+See `.env.example` for complete documentation of all 70+ configuration options.
+
+### Pydantic Settings
+
+Configuration is loaded via `supernova/config.py` using Pydantic Settings:
+
+```python
+from supernova.config import get_settings
+
+settings = get_settings()
+print(settings.database_url)
+print(settings.is_development)
+```
 
 ---
 
@@ -288,7 +483,7 @@ class Capability(Flag):
 
 ### Path Jail
 
-File operations are restricted to `./workspace/`—any path containing `..` is rejected.
+File operations are restricted to `./workspace/` — any path containing `..` is rejected.
 
 ### Risk Levels and HITL
 
@@ -304,7 +499,7 @@ File operations are restricted to `./workspace/`—any path containing `..` is r
 - Never log API keys, JWT tokens, or database passwords
 - Log only first 8 characters of any secret for debugging
 - Environment variables loaded from `/etc/supernova/secrets.env` (systemd)
-- Pickle deserialization only from trusted PostgreSQL (see procedural.py security note)
+- Pickle deserialization only from trusted PostgreSQL
 
 ---
 
@@ -312,71 +507,46 @@ File operations are restricted to `./workspace/`—any path containing `..` is r
 
 ### Systemd Services
 
+Defined in `DEPLOYMENT.conf`:
+
 | Service                    | Purpose               | Resource Limits              |
 | -------------------------- | --------------------- | ---------------------------- |
 | `supernova-agent.service`  | Main FastAPI process  | MemoryMax=2G, CPUQuota=200%  |
 | `supernova-worker.service` | Celery worker         | MemoryMax=1G, CPUQuota=100%  |
 | `supernova-beat.service`   | Celery Beat scheduler | MemoryMax=256M, CPUQuota=25% |
 
+**Deployment Commands**:
+```bash
+sudo cp deploy/systemd/*.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now supernova-agent supernova-worker supernova-beat
+
+# Monitor
+sudo journalctl -u supernova-agent -f
+sudo systemctl status supernova-agent
+```
+
 ### Docker Multi-Stage Build
 
-- **Builder stage**: Full build environment with compilers (~1.2GB)
+- **Builder stage**: Full build environment (~1.2GB)
 - **Production stage**: Minimal runtime image (~400-600MB)
-- Uses `python:3.12-slim` (Debian Bookworm) not Alpine (musl compatibility issues)
+- Base: `python:3.12-slim` (Debian Bookworm)
+
+```bash
+# Build image
+docker build -f deploy/Dockerfile -t supernova:latest .
+
+# Run container
+docker run -p 8000:8000 --env-file .env supernova:latest
+```
 
 ### Nginx Reverse Proxy
 
+Features (from `DEPLOYMENT.conf`):
 - TLS termination (Certbot/Let's Encrypt)
-- WebSocket upgrade support (`proxy_read_timeout 300s` for slow LLM responses)
+- WebSocket upgrade support (300s timeout for slow LLM responses)
 - Rate limiting: 60 req/min general, 10 conn/min WebSocket
-
----
-
-## Code Style Guidelines
-
-### Python Standards
-
-- **Type annotations** required on all function signatures—no bare `Any` without comment
-- **Docstrings** explaining _why_, not just _what_
-- **Async error handling**—never let exceptions propagate from memory stores or tools
-- **State serialization**—all LangGraph state must be JSON-serializable primitives only
-
-### Ruff Configuration (pyproject.toml)
-
-```toml
-[tool.ruff]
-target-version = "py312"
-line-length = 100
-select = ["E", "F", "I", "UP", "B", "SIM"]
-```
-
-### MyPy Configuration
-
-```toml
-[tool.mypy]
-python_version = "3.12"
-strict = true
-ignore_missing_imports = true
-```
-
----
-
-## Performance Requirements
-
-| Operation                       | Target Latency | Strategy                       |
-| ------------------------------- | -------------- | ------------------------------ |
-| Memory retrieval (all 4 stores) | ~80ms          | Parallel `asyncio.gather`      |
-| Episodic (Graphiti)             | 20-80ms        | ANN over temporal graph        |
-| Semantic (pgvector)             | 5-30ms         | HNSW index                     |
-| Working memory (Redis)          | <5ms           | In-memory with AOF persistence |
-| Context assembly                | <1ms           | CPU-bound string ops           |
-
-### Critical Optimizations
-
-1. **Compiled graph reuse** — LangGraph graph created once at startup, reused across all sessions
-2. **Embedding cache** — Redis cache with `em:{sha256(text)[:16]}` keys, TTL=3600
-3. **Msgpack serialization** — 3-5× smaller, 10× faster than JSON for working memory
-4. **Parallel tool execution** — Read-only tools run concurrently; writes run sequentially
+- Security headers (HSTS, CSP, X-Frame-Options)
 
 ---
 
@@ -385,13 +555,13 @@ ignore_missing_imports = true
 The agent's cognitive cycle (implemented in `loop.py`):
 
 ```
-PERCEIVE   → restore state from checkpoint, receive new input
-REMEMBER   → parallel retrieval from episodic + semantic + procedural + working memory
-PRIME      → check procedural memory for applicable compiled skill
-ASSEMBLE   → build optimally-positioned context window
-REASON     → LLM call with assembled context
-ACT        → execute tool calls (with interrupt checkpoint)
-REFLECT    → optional self-evaluation if quality criteria triggered
+PERCEIVE    → restore state from checkpoint, receive new input
+REMEMBER    → parallel retrieval from episodic + semantic + procedural + working memory
+PRIME       → check procedural memory for applicable compiled skill
+ASSEMBLE    → build optimally-positioned context window
+REASON      → LLM call with assembled context
+ACT         → execute tool calls (with interrupt checkpoint)
+REFLECT     → optional self-evaluation if quality criteria triggered
 CONSOLIDATE → write new episodes and update working memory
 ```
 
@@ -410,55 +580,87 @@ def route_after_reasoning(state: AgentState) -> str:
 
 ---
 
-## Development Workflow
+## Memory Systems
 
-1. **Read the spec** — Before modifying any file, read the corresponding specification section
-2. **Verify mental model** — Before running commands, verify your understanding of what they will do
-3. **Check library APIs** — Use bash/read tools to check installed package documentation rather than hallucinating signatures
-4. **Run tests** — All changes must pass `pytest tests/` with ≥80% coverage
-5. **Quality gates** — `ruff check .` and `mypy` must pass before committing
+### Episodic Memory (Neo4j + Graphiti)
+- **Purpose**: Temporal reasoning — "what happened when?"
+- **Store**: `core/memory/episodic.py`
+- **Latency**: 20-80ms (ANN over temporal graph)
+
+### Semantic Memory (PostgreSQL + pgvector)
+- **Purpose**: Factual retrieval — "what do I know about X?"
+- **Store**: `core/memory/semantic.py`
+- **Latency**: 5-30ms (HNSW index)
+
+### Working Memory (Redis)
+- **Purpose**: Fast ephemeral storage, current context
+- **Store**: `core/memory/working.py`
+- **Latency**: <5ms (in-memory with AOF persistence)
+
+### Procedural Memory (PostgreSQL)
+- **Purpose**: Compiled skills — "how do I do Y?"
+- **Store**: `procedural.py` (root level)
+- Contains skill crystallization logic
+
+---
+
+## MCP Integration
+
+The project includes comprehensive MCP (Model Context Protocol) infrastructure:
+
+- **17 MCP servers** configured (see `mcp_and_skills/MCP_INTEGRATION_SUMMARY.md`)
+- Custom servers: code-intelligence, execution-engine, version-control, quality-assurance
+- Official servers: filesystem, memory, git, fetch, time
+- Browser automation: playwright, chrome-devtools
+- Documentation: context7
+
+MCP client implementation: `supernova/mcp/client/mcp_client.py`
+
+---
+
+## API Endpoints
+
+### Health Check
+- `GET /healthz` - Liveness/readiness with backend checks
+
+### Agent API
+- Defined in `api/routes/agent.py`
+- WebSocket streaming support
+
+### Dashboard API
+- Defined in `api/routes/dashboard.py`
+- Metrics and monitoring endpoints
 
 ---
 
 ## Key Design Decisions
 
-### Why LangGraph over custom orchestration?
-
+### Why LangGraph?
 LangGraph provides checkpointing, state management, and interrupt semantics that would require ~6 months of engineering to replicate reliably.
 
-### Why PostgreSQL for checkpoints?
-
+### Why PostgreSQL for Checkpoints?
 Durability guarantees across process restarts; enables horizontal scaling of stateless workers.
 
-### Why three memory systems?
-
+### Why Three Memory Systems?
 - **Episodic** (Graphiti/Neo4j): Temporal reasoning — "what happened when?"
 - **Semantic** (pgvector): Factual retrieval — "what do I know about X?"
 - **Procedural** (PostgreSQL): Compiled skills — "how do I do Y?"
 
-### Why positional context assembly?
-
+### Why Positional Context Assembly?
 Liu et al. (2023) demonstrated that transformer attention has U-shaped bias: primacy and recency zones are attended reliably; middle degrades to ~40% recall.
-
----
-
-## MCP and Skills System
-
-The project includes a comprehensive MCP (Model Context Protocol) and skills infrastructure in the `mcp_and_skills/` directory:
-
-- **MCP Servers**: Pre-built and custom MCP servers for tool integration
-- **Skills**: Modular skill definitions for agent capabilities
-- **Configurations**: IDE-specific MCP configurations (Claude Desktop, VS Code, Copilot)
-
-See `mcp_and_skills/MCP_INTEGRATION_SUMMARY.md` for details.
 
 ---
 
 ## Resources
 
-- **Build Specification**: `PROGRESS_TRACKER.md` (16 phases, from packaging to observability)
+- **Build Specification**: `PROGRESS_TRACKER.md` (16 phases)
 - **Deployment Config**: `DEPLOYMENT.conf` (systemd, Docker, Nginx)
-- **Dashboard UI**: `nova-dashboard.jsx` (React component with real-time simulation)
-- **Setup Script**: `setup.sh` (automated environment setup)
+- **Dashboard UI**: `dashboard/src/NovaDashboard.jsx`
+- **Setup Script**: `setup.sh`
 - **LangGraph Docs**: https://langchain-ai.github.io/langgraph/
 - **Graphiti Docs**: https://github.com/getzep/graphiti
+- **MCP Docs**: https://modelcontextprotocol.io/
+
+---
+
+*Last Updated: 2026-02-26*
