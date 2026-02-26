@@ -14,7 +14,7 @@ import pytest
 class TestBackupWorkerBody:
     @pytest.mark.asyncio
     async def test_do_backup_disabled(self):
-        from workers.backup import _do_backup
+        from supernova.workers.backup import _do_backup
 
         settings = MagicMock()
         settings.backup.enabled = False
@@ -24,7 +24,7 @@ class TestBackupWorkerBody:
 
     @pytest.mark.asyncio
     async def test_do_backup_runs(self, tmp_path):
-        from workers.backup import _do_backup
+        from supernova.workers.backup import _do_backup
 
         settings = MagicMock()
         settings.backup.enabled = True
@@ -55,7 +55,7 @@ class TestBackupWorkerBody:
 class TestConsolidationWorkerBody:
     @pytest.mark.asyncio
     async def test_do_consolidation_extracts_facts(self):
-        from workers.consolidation import _do_consolidation
+        from supernova.workers.consolidation import _do_consolidation
 
         mock_episodic = AsyncMock()
         mock_episodic.search.return_value = [
@@ -85,7 +85,7 @@ class TestConsolidationWorkerBody:
 
     @pytest.mark.asyncio
     async def test_do_consolidation_handles_store_error(self):
-        from workers.consolidation import _do_consolidation
+        from supernova.workers.consolidation import _do_consolidation
 
         mock_episodic = AsyncMock()
         mock_episodic.search.return_value = [{"fact": "data", "uuid": "1"}]
@@ -110,7 +110,7 @@ class TestConsolidationWorkerBody:
 
     @pytest.mark.asyncio
     async def test_do_crystallization_success(self):
-        from workers.consolidation import _do_crystallization
+        from supernova.workers.consolidation import _do_crystallization
 
         mock_worker = MagicMock()
         mock_worker.run_crystallization_cycle = AsyncMock(return_value={"crystallized": 3})
@@ -128,7 +128,7 @@ class TestConsolidationWorkerBody:
 
     @pytest.mark.asyncio
     async def test_do_crystallization_import_error(self):
-        from workers.consolidation import _do_crystallization
+        from supernova.workers.consolidation import _do_crystallization
 
         with patch("importlib.import_module", side_effect=ImportError("no module")):
             result = await _do_crystallization()
@@ -143,7 +143,7 @@ class TestConsolidationWorkerBody:
 class TestMaintenanceWorkerBody:
     @pytest.mark.asyncio
     async def test_do_forgetting_parses_result(self):
-        from workers.maintenance import _do_forgetting
+        from supernova.workers.maintenance import _do_forgetting
 
         mock_conn = AsyncMock()
         mock_conn.execute.return_value = "CALL 42"
@@ -168,7 +168,7 @@ class TestMaintenanceWorkerBody:
 
     @pytest.mark.asyncio
     async def test_do_forgetting_no_digit_in_result(self):
-        from workers.maintenance import _do_forgetting
+        from supernova.workers.maintenance import _do_forgetting
 
         mock_conn = AsyncMock()
         mock_conn.execute.return_value = "CALL"
@@ -192,7 +192,7 @@ class TestMaintenanceWorkerBody:
 
     @pytest.mark.asyncio
     async def test_do_forgetting_connection_error(self):
-        from workers.maintenance import _do_forgetting
+        from supernova.workers.maintenance import _do_forgetting
 
         mock_pg = AsyncMock()
         mock_pg.connect.side_effect = RuntimeError("connection refused")

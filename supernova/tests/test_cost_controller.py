@@ -171,25 +171,52 @@ class TestCostController:
 class TestBudgetAwareRouting:
     """Tests for DynamicModelRouter cost integration."""
 
+    class _MockLLMRouter:
+        def __init__(self, response):
+            self.calls = 0
+            self._response = response
+
+        async def acompletion(self, *args, **kwargs):
+            self.calls += 1
+            return self._response
+
+    class _MockCostController:
+        def __init__(self):
+            self.check_budget_calls = 0
+            self.record_cost_calls = 0
+            self._check_budget_result = True
+            self._estimate_cost_result = 0.01
+            self._needs_confirmation_result = False
+
+        async def check_budget(self, estimated_cost):
+            self.check_budget_calls += 1
+            return self._check_budget_result
+
+        def estimate_cost(self, model_id, input_tokens, output_tokens):
+            _ = (model_id, input_tokens, output_tokens)
+            return self._estimate_cost_result
+
+        def needs_confirmation(self, estimated_cost):
+            _ = estimated_cost
+            return self._needs_confirmation_result
+
+        async def record_cost(self, amount, model_id):
+            _ = (amount, model_id)
+            self.record_cost_calls += 1
+            return {"daily": 0.01, "monthly": 0.01}
+
     @pytest.fixture
     def mock_llm(self):
-        router = AsyncMock()
         response = MagicMock()
         response.choices = [MagicMock()]
         response.choices[0].message.content = "Mock response"
         response.usage.prompt_tokens = 100
         response.usage.completion_tokens = 50
-        router.acompletion = AsyncMock(return_value=response)
-        return router
+        return self._MockLLMRouter(response)
 
     @pytest.fixture
     def cost_controller(self):
-        cc = AsyncMock()
-        cc.check_budget = AsyncMock(return_value=True)
-        cc.estimate_cost = MagicMock(return_value=0.01)
-        cc.needs_confirmation = MagicMock(return_value=False)
-        cc.record_cost = AsyncMock(return_value={"daily": 0.01, "monthly": 0.01})
-        return cc
+        return self._MockCostController()
 
     @pytest.fixture
     def router(self, mock_llm, cost_controller):
@@ -203,22 +230,22 @@ class TestBudgetAwareRouting:
     async def test_route_records_cost_after_call(self, router, cost_controller):
         """Router records actual cost after successful LLM call."""
         await router.route_task("planning", [{"role": "user", "content": "test"}])
-        cost_controller.record_cost.assert_awaited_once()
+        assert cost_controller.record_cost_calls == 1
 
     @pytest.mark.asyncio
     async def test_route_checks_budget_before_call(self, router, cost_controller):
         """Router checks budget before making LLM call."""
         await router.route_task("tool_call", [{"role": "user", "content": "test"}])
-        cost_controller.check_budget.assert_awaited()
+        assert cost_controller.check_budget_calls > 0
 
     @pytest.mark.asyncio
     async def test_budget_exceeded_triggers_fallback(self, router, cost_controller):
         """When budget exceeded, router falls back to cheaper model."""
-        cost_controller.check_budget = AsyncMock(return_value=False)
-        cost_controller.estimate_cost = MagicMock(return_value=0.0)  # local = free
+        cost_controller._check_budget_result = False
+        cost_controller._estimate_cost_result = 0.0  # local = free
         await router.route_task("planning", [{"role": "user", "content": "test"}])
         # Should have called acompletion with a model (fallback)
-        router.litellm.acompletion.assert_awaited_once()
+        assert router.litellm.calls == 1
 
     def test_fallback_chain_exists(self, router):
         """Router has a defined fallback chain."""
@@ -227,13 +254,13 @@ class TestBudgetAwareRouting:
 
     def test_find_budget_fallback_returns_local(self, router, cost_controller):
         """_find_budget_fallback returns local model when all API models too expensive."""
-        cost_controller.estimate_cost = MagicMock(return_value=0.0)
+        cost_controller._estimate_cost_result = 0.0
         result = router._find_budget_fallback(5000, 500)
         assert "ollama" in result
 
     def test_confirmation_threshold(self, router, cost_controller):
         """needs_confirmation is checked for expensive operations."""
-        cost_controller.needs_confirmation = MagicMock(return_value=True)
+        cost_controller._needs_confirmation_result = True
         assert cost_controller.needs_confirmation(0.60) is True
 
 
@@ -260,19 +287,20 @@ class TestCostAPI:
     def test_cost_endpoint_with_controller(self, app):
         from supernova.api.gateway import _state
         from starlette.testclient import TestClient
-        import asyncio
+        class _CostController:
+            async def get_spend_summary(self):
+                return {
+                    "daily_spend": 3.50,
+                    "monthly_spend": 45.00,
+                    "daily_limit": 10.0,
+                    "monthly_limit": None,
+                    "daily_projection": 7.00,
+                    "daily_pct": 35.0,
+                    "confirmation_threshold": 0.50,
+                    "tracking_enabled": True,
+                }
 
-        mock_cc = AsyncMock()
-        mock_cc.get_spend_summary = AsyncMock(return_value={
-            "daily_spend": 3.50,
-            "monthly_spend": 45.00,
-            "daily_limit": 10.0,
-            "monthly_limit": None,
-            "daily_projection": 7.00,
-            "daily_pct": 35.0,
-            "confirmation_threshold": 0.50,
-            "tracking_enabled": True,
-        })
+        mock_cc = _CostController()
         _state["cost_controller"] = mock_cc
 
         client = TestClient(app)
@@ -321,7 +349,11 @@ class TestOllamaClient:
 
         with patch("httpx.AsyncClient") as MockClient:
             mock_client = MagicMock()
-            mock_client.post = AsyncMock(return_value=mock_resp)
+            async def _post(*args, **kwargs):
+                _ = (args, kwargs)
+                return mock_resp
+
+            mock_client.post = _post
             MockClient.return_value = self._AsyncClientCM(mock_client)
 
             result = await client.chat([{"role": "user", "content": "Hi"}])
@@ -338,7 +370,11 @@ class TestOllamaClient:
 
         with patch("httpx.AsyncClient") as MockClient:
             mock_client = MagicMock()
-            mock_client.post = AsyncMock(return_value=mock_resp)
+            async def _post(*args, **kwargs):
+                _ = (args, kwargs)
+                return mock_resp
+
+            mock_client.post = _post
             MockClient.return_value = self._AsyncClientCM(mock_client)
 
             result = await client.embed("test text")
@@ -351,7 +387,11 @@ class TestOllamaClient:
         import httpx as _httpx
         with patch("httpx.AsyncClient") as MockClient:
             mock_client = MagicMock()
-            mock_client.get = AsyncMock(side_effect=_httpx.ConnectError("refused"))
+            async def _get(*args, **kwargs):
+                _ = (args, kwargs)
+                raise _httpx.ConnectError("refused")
+
+            mock_client.get = _get
             MockClient.return_value = self._AsyncClientCM(mock_client)
 
             result = await client.is_available()
@@ -369,7 +409,11 @@ class TestOllamaClient:
 
         with patch("httpx.AsyncClient") as MockClient:
             mock_client = MagicMock()
-            mock_client.get = AsyncMock(return_value=mock_resp)
+            async def _get(*args, **kwargs):
+                _ = (args, kwargs)
+                return mock_resp
+
+            mock_client.get = _get
             MockClient.return_value = self._AsyncClientCM(mock_client)
 
             result = await client.list_models()
@@ -381,7 +425,11 @@ class TestOllamaClient:
         """list_models returns empty list on connection error."""
         with patch("httpx.AsyncClient") as MockClient:
             mock_client = MagicMock()
-            mock_client.get = AsyncMock(side_effect=Exception("fail"))
+            async def _get(*args, **kwargs):
+                _ = (args, kwargs)
+                raise Exception("fail")
+
+            mock_client.get = _get
             MockClient.return_value = self._AsyncClientCM(mock_client)
 
             result = await client.list_models()
