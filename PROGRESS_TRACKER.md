@@ -1088,25 +1088,25 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.1.1 (PostgreSQL pool), Task 1.2.1 (Graphiti dependency)
 
-- [ ] **5.3.1** Create `core/memory/episodic.py` with `EpisodicMemoryStore` class
+- [x] **5.3.1** Create `core/memory/episodic.py` with `EpisodicMemoryStore` class
   - **Validation:** Class wraps `graphiti_core.Graphiti`; constructor takes neo4j_uri, neo4j_password, llm_client, embedder
-  - **Proof:** _pending_
+  - **Proof:** `test_constructor_creates_graphiti_client PASSED` — 10/10 tests pass
 
-- [ ] **5.3.2** Implement `record_episode()`
+- [x] **5.3.2** Implement `record_episode()`
   - **Validation:** Writes content + metadata to Graphiti; handles exceptions without raising
-  - **Proof:** _pending_
+  - **Proof:** `test_record_episode_calls_add_episode PASSED`, `test_record_episode_handles_exception PASSED`
 
-- [ ] **5.3.3** Implement `recall()` with embedding-based retrieval
+- [x] **5.3.3** Implement `recall()` with embedding-based retrieval
   - **Validation:** Returns list[dict] with keys: fact, valid_from, valid_until, score; limit parameter works
-  - **Proof:** _pending_
+  - **Proof:** `test_recall_returns_formatted_results PASSED`, `test_recall_respects_limit PASSED`
 
-- [ ] **5.3.4** Implement `get_recent()` for consolidation
+- [x] **5.3.4** Implement `get_recent()` for consolidation
   - **Validation:** Fetches raw episodes from last N hours; returns list[dict]
-  - **Proof:** _pending_
+  - **Proof:** `test_get_recent_returns_episodes PASSED`, `test_get_recent_filters_old_episodes PASSED`
 
-- [ ] **5.3.5** Add error handling (never raise to caller)
+- [x] **5.3.5** Add error handling (never raise to caller)
   - **Validation:** All methods catch exceptions, log them, return empty result or None
-  - **Proof:** _pending_
+  - **Proof:** `test_*_handles_exception PASSED` for all methods, `test_close_handles_exception PASSED`
 
 ---
 
@@ -1120,29 +1120,29 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.1.1 (PostgreSQL pool), Task 4.2 (schema with hybrid function)
 
-- [ ] **5.4.1** Create `core/memory/semantic.py` with `SemanticMemoryStore` class
+- [x] **5.4.1** Create `core/memory/semantic.py` with `SemanticMemoryStore` class
   - **Validation:** Class initialized with Postgres pool + embedder client
-  - **Proof:** _pending_
+  - **Proof:** `test_constructor PASSED` — 14/14 tests pass
 
-- [ ] **5.4.2** Implement `embed()` with Redis caching
+- [x] **5.4.2** Implement `embed()` with Redis caching
   - **Validation:** Calls text-embedding-3-small via LiteLLM; caches in Redis with `em:{sha256(text)[:16]}` key; TTL=3600
-  - **Proof:** _pending_
+  - **Proof:** `test_embed_returns_from_cache PASSED`, `test_embed_calls_litellm_on_cache_miss PASSED`, `test_embed_works_without_redis PASSED`
 
-- [ ] **5.4.3** Implement `search()` using hybrid SQL function
+- [x] **5.4.3** Implement `search()` using hybrid SQL function
   - **Validation:** Calls `hybrid_memory_search()`; returns list[dict]; category filter works
-  - **Proof:** _pending_
+  - **Proof:** `test_search_returns_results PASSED`, `test_search_with_category_filter PASSED`. Uses CTE-based RRF hybrid search (vector + full-text) instead of SQL function.
 
-- [ ] **5.4.4** Implement `upsert()` with content hash deduplication
+- [x] **5.4.4** Implement `upsert()` with content hash deduplication
   - **Validation:** Inserts or updates by content hash; returns UUID
-  - **Proof:** _pending_
+  - **Proof:** `test_upsert_inserts_new PASSED`, `test_upsert_updates_existing PASSED`
 
-- [ ] **5.4.5** Implement `update_access_time()`
+- [x] **5.4.5** Implement `update_access_time()`
   - **Validation:** Updates `last_accessed` timestamp for memory_id
-  - **Proof:** _pending_
+  - **Proof:** `test_update_access_time PASSED`
 
-- [ ] **5.4.6** Implement `get_by_category()`
+- [x] **5.4.6** Implement `get_by_category()`
   - **Validation:** Returns all memories for user_id + category
-  - **Proof:** _pending_
+  - **Proof:** `test_get_by_category_returns_results PASSED`
 
 ---
 
@@ -1157,29 +1157,29 @@ tests/test_context_assembly.py::test_recency_zone PASSED [ 50%]
 
 **Dependencies:** Task 5.1.1 (PostgreSQL for audit log), Task 2.1 (dependencies)
 
-- [ ] **5.5.1** Create `infrastructure/tools/registry.py` with `Capability` Flag enum
+- [x] **5.5.1** Create `infrastructure/tools/registry.py` with `Capability` Flag enum
   - **Validation:** READ_FILES, WRITE_FILES, EXECUTE_CODE, WEB_SEARCH, WEB_BROWSE, SEND_EMAIL, SHELL_ACCESS, EXTERNAL_API flags defined
-  - **Proof:** _pending_
+  - **Proof:** `test_all_flags_defined PASSED`, `test_flags_combinable PASSED` — 14/14 tests pass
 
-- [ ] **5.5.2** Create `ToolRegistry` class
+- [x] **5.5.2** Create `ToolRegistry` class
   - **Validation:** Initialized with `granted_capabilities: Capability`
-  - **Proof:** _pending_
+  - **Proof:** `test_constructor PASSED`
 
-- [ ] **5.5.3** Implement `register()` with capability validation
+- [x] **5.5.3** Implement `register()` with capability validation
   - **Validation:** Validates tool's `required_capabilities` subset of granted; raises `PermissionError` if not
-  - **Proof:** _pending_
+  - **Proof:** `test_register_permitted_tool PASSED`, `test_register_rejects_unpermitted_tool PASSED`
 
-- [ ] **5.5.4** Implement `execute()` with runtime capability check
+- [x] **5.5.4** Implement `execute()` with runtime capability check
   - **Validation:** Re-validates capabilities at execution; 30-second timeout via `asyncio.wait_for`; writes to `tool_execution_log`
-  - **Proof:** _pending_
+  - **Proof:** `test_execute_returns_result PASSED`, `test_execute_runtime_capability_check PASSED`, `test_execute_timeout PASSED`, `test_execute_logs_to_audit PASSED`
 
-- [ ] **5.5.5** Implement `get_tool_schemas()` for LLM function calling
+- [x] **5.5.5** Implement `get_tool_schemas()` for LLM function calling
   - **Validation:** Returns OpenAI-format schemas only for tools user can execute
-  - **Proof:** _pending_
+  - **Proof:** `test_returns_openai_format PASSED`, `test_only_registered_tools PASSED`
 
-- [ ] **5.5.6** Implement `get_tool()` for direct access
+- [x] **5.5.6** Implement `get_tool()` for direct access
   - **Validation:** Returns Tool | None by name
-  - **Proof:** _pending_
+  - **Proof:** `test_returns_tool PASSED`, `test_returns_none_for_missing PASSED`
 
 ---
 

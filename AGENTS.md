@@ -60,7 +60,7 @@ After completing each `PROGRESS_TRACKER.md` task, update this `AGENTS.md` file t
 | **Phase 2** | ✅ COMPLETE | pyproject.toml with 36 runtime + 17 dev deps, 150+ packages installed |
 | **Phase 3** | ✅ COMPLETE | .env.example (72 vars, 17 sections), Pydantic Settings loader, config tested |
 | **Phase 4** | ✅ COMPLETE | Alembic async configured, pgvector/pg_trgm, 5 tables, 26 indexes |
-| **Phase 5** | 🔄 IN PROGRESS | Storage layer ✅, Working Memory ✅, Episodic/Semantic pending |
+| **Phase 5** | ✅ COMPLETE | Storage layer ✅, Working Memory ✅, Episodic Memory ✅, Semantic Memory ✅, Tool Registry ✅ |
 | Phase 6 | ⏳ PENDING | Core agent logic (interrupts, router, context assembly) |
 | Phase 2 | ⏳ PENDING | pyproject.toml, dependencies |
 | Phase 3 | ⏳ PENDING | .env.example expansion |

@@ -195,6 +195,63 @@ class AsyncRedisClient:
         client = self.get_client()
         key = self._working_memory_key(session_id)
         return await client.exists(key) > 0
+
+    async def working_memory_list(
+        self,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List working memory entries.
+
+        Scans keys with the working memory prefix and returns decoded payloads.
+
+        Args:
+            limit: Maximum entries to return.
+
+        Returns:
+            List of objects with keys:
+                - session_id: Redis session identifier.
+                - memory: Decoded working memory payload.
+        """
+        client = self.get_client()
+        entries: list[dict[str, Any]] = []
+        cursor = 0
+        match_pattern = f"{WORKING_MEMORY_PREFIX}:*"
+
+        while True:
+            cursor, keys = await client.scan(
+                cursor=cursor,
+                match=match_pattern,
+                count=min(limit, 200),
+            )
+
+            for raw_key in keys:
+                if len(entries) >= limit:
+                    break
+
+                key = (
+                    raw_key.decode("utf-8")
+                    if isinstance(raw_key, (bytes, bytearray))
+                    else str(raw_key)
+                )
+                if ":" not in key:
+                    continue
+
+                session_id = key.split(":", 1)[1]
+                data = await self.working_memory_get(session_id)
+                if data is None:
+                    continue
+
+                entries.append(
+                    {
+                        "session_id": session_id,
+                        "memory": data,
+                    }
+                )
+
+            if cursor == 0 or len(entries) >= limit:
+                break
+
+        return entries
     
     def _embedding_cache_key(self, text: str) -> str:
         """Generate embedding cache key.
