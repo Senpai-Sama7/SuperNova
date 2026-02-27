@@ -90,6 +90,9 @@ dependencies = [
     "jsonschema>=4.22.0",
     "pyyaml>=6.0.1",
     "pendulum>=3.0.0",
+    
+    # TUI (Terminal User Interface)
+    "textual>=3.0.0",
 ]
 
 # =============================================================================
@@ -140,6 +143,7 @@ all = [
 [project.scripts]
 supernova = "supernova.cli:main"
 sn = "supernova.cli:main"
+supernova-tui = "tui.__main__:main"
 
 # =============================================================================
 # Tool Configurations (Task 2.1.10)
