@@ -26,6 +26,11 @@ class SuperNovaClient:
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
         )
 
+    def reset_session(self) -> str:
+        """Reset session ID and return the new one."""
+        self.session_id = uuid.uuid4().hex[:16]
+        return self.session_id
+
     # ── Health ─────────────────────────────────────────────────
 
     async def health(self) -> dict[str, Any]:

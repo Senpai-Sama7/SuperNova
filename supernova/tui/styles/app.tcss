@@ -56,6 +56,20 @@ TabPane {
     padding: 0 0 0 0;
 }
 
+#slash-suggest {
+    height: auto;
+    max-height: 12;
+    width: 100%;
+    background: $surface;
+    border: tall $accent;
+    dock: bottom;
+    display: block;
+}
+
+#slash-suggest.hidden {
+    display: none;
+}
+
 #chat-input {
     width: 1fr;
     border: round #B38200;

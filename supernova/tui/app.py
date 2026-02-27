@@ -16,16 +16,29 @@ from textual.widgets import (
     Footer,
     Header,
     Input,
+    OptionList,
     RichLog,
     Static,
     TabbedContent,
     TabPane,
 )
+from textual.widgets.option_list import Option
 from textual import work
 
 from tui.client import SuperNovaClient
 
 MAX_MESSAGE_LEN = 4096
+
+SLASH_COMMANDS: list[tuple[str, str]] = [
+    ("/help", "Show available commands"),
+    ("/status", "Show connection, model, session info"),
+    ("/reset", "Start a new session"),
+    ("/clear", "Clear the chat log"),
+    ("/model", "Show current model info"),
+    ("/export", "Export memories to JSON"),
+    ("/health", "Run a deep health check"),
+    ("/costs", "Show cost summary"),
+]
 
 
 def _escape(text: str) -> str:
@@ -97,11 +110,12 @@ class SuperNovaApp(App):
                 yield RichLog(id="chat-log", highlight=True, markup=True, wrap=True)
                 with Container(id="chat-input-area"):
                     yield Input(
-                        placeholder="Send a message to SuperNova…",
+                        placeholder="Send a message to SuperNova…  (type / for commands)",
                         id="chat-input",
                         max_length=MAX_MESSAGE_LEN,
                     )
                     yield Button("Send", id="send-btn", variant="warning")
+                    yield OptionList(id="slash-suggest", classes="hidden")
             with TabPane("🧠 Memory", id="memory"):
                 yield Input(placeholder="Search memories… (press Enter)", id="memory-search")
                 yield DataTable(id="memory-table", cursor_type="row", zebra_stripes=True)
@@ -136,6 +150,7 @@ class SuperNovaApp(App):
             "\n"
             "  Type a message below and press [bold]Enter[/] to chat.\n"
             "  Use [bold]Ctrl+1‑5[/] to switch tabs, [bold]Ctrl+P[/] for commands.\n"
+            "  Type [bold yellow]/[/] to see slash commands (like [dim]/help /status /reset[/]).\n"
             "\n"
             "  [dim]💬 Chat  │  🧠 Memory  │  🛡️ Approvals  │  📊 Admin  │  📋 Logs[/]\n"
         )
@@ -182,10 +197,41 @@ class SuperNovaApp(App):
 
     # ── Input Routing ──────────────────────────────────────────
 
+    def on_input_changed(self, event: Input.Changed) -> None:
+        """Show slash command suggestions when user types /."""
+        if event.input.id != "chat-input":
+            return
+        suggest = self.query_one("#slash-suggest", OptionList)
+        val = event.value
+        if val.startswith("/") and not val.startswith("//"):
+            prefix = val.lower()
+            suggest.clear_options()
+            for cmd, desc in SLASH_COMMANDS:
+                if prefix in cmd or prefix == "/":
+                    suggest.add_option(Option(f"{cmd}  [dim]{desc}[/]", id=cmd))
+            suggest.remove_class("hidden")
+        else:
+            suggest.add_class("hidden")
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        """Fill input with selected slash command."""
+        if event.option_list.id == "slash-suggest":
+            inp = self.query_one("#chat-input", Input)
+            cmd = str(event.option.id)
+            inp.value = cmd
+            inp.cursor_position = len(cmd)
+            event.option_list.add_class("hidden")
+            inp.focus()
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "chat-input" and event.value.strip():
-            self.send_chat_message(event.value.strip())
+            text = event.value.strip()
             event.input.value = ""
+            self.query_one("#slash-suggest", OptionList).add_class("hidden")
+            if text.startswith("/") and not text.startswith("//"):
+                self._handle_slash(text)
+            else:
+                self.send_chat_message(text)
         elif event.input.id == "memory-search":
             self.search_memories(event.value)
 
@@ -194,8 +240,13 @@ class SuperNovaApp(App):
         if bid == "send-btn":
             inp = self.query_one("#chat-input", Input)
             if inp.value.strip():
-                self.send_chat_message(inp.value.strip())
+                text = inp.value.strip()
                 inp.value = ""
+                self.query_one("#slash-suggest", OptionList).add_class("hidden")
+                if text.startswith("/") and not text.startswith("//"):
+                    self._handle_slash(text)
+                else:
+                    self.send_chat_message(text)
         elif bid == "approve-btn":
             self._resolve_selected(True)
         elif bid == "deny-btn":
@@ -216,6 +267,54 @@ class SuperNovaApp(App):
             self.load_admin_audit()
         elif bid == "admin-fleet-btn":
             self.load_admin_fleet()
+
+    # ── Slash Commands ─────────────────────────────────────────
+
+    def _handle_slash(self, text: str) -> None:
+        """Parse and dispatch slash commands."""
+        parts = text.split(None, 1)
+        cmd = parts[0].lower()
+        chat = self.query_one("#chat-log", RichLog)
+        chat.write(f"\n[dim]{_ts()}[/] [bold cyan]/{cmd[1:]}[/]")
+
+        if cmd in ("/help", "/commands"):
+            chat.write("[bold #FFB800]Available commands:[/]")
+            for c, desc in SLASH_COMMANDS:
+                chat.write(f"  [bold yellow]{c}[/]  [dim]{desc}[/]")
+        elif cmd == "/status":
+            dot = "[green]●[/] Connected" if self.connected else "[red]●[/] Disconnected"
+            sid = self.client.session_id
+            chat.write(
+                f"  {dot}\n"
+                f"  Session: [bold]{sid}[/]\n"
+                f"  API: [bold]{self.client.base_url}[/]"
+            )
+        elif cmd in ("/reset", "/new"):
+            new_sid = self.client.reset_session()
+            chat.clear()
+            chat.write(
+                f"[bold #FFB800]✦ Session reset[/]\n"
+                f"  New session: [bold]{new_sid}[/]\n"
+                f"  Chat cleared. Start fresh!"
+            )
+            self._update_status(self.connected)
+            self._log(f"Session reset → {new_sid}")
+        elif cmd == "/clear":
+            chat.clear()
+            chat.write("[dim]Chat cleared.[/]")
+        elif cmd == "/model":
+            chat.write("  [dim]Model info is shown in the status bar below.[/]")
+            self.check_connection()
+        elif cmd == "/export":
+            self.export_memories()
+        elif cmd == "/health":
+            self.action_tab("admin", auto_load=False)
+            self.load_admin_health()
+        elif cmd == "/costs":
+            self.action_tab("admin", auto_load=False)
+            self.load_admin_costs()
+        else:
+            chat.write(f"  [dim]Unknown command: {_escape(cmd)}. Type /help for a list.[/]")
 
     # ── Chat ───────────────────────────────────────────────────
 
