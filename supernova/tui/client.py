@@ -7,7 +7,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote, urlparse
 
 import httpx
 import websockets
@@ -56,8 +56,9 @@ class SuperNovaClient:
         return r.json()
 
     async def resolve_approval(self, approval_id: str, approved: bool) -> dict[str, Any]:
+        safe_id = quote(approval_id, safe="")
         r = await self._http.post(
-            f"/api/v1/dashboard/approvals/{approval_id}/resolve",
+            f"/api/v1/dashboard/approvals/{safe_id}/resolve",
             json={"approved": approved},
         )
         r.raise_for_status()
@@ -72,6 +73,11 @@ class SuperNovaClient:
 
     async def get_procedural_skills(self) -> Any:
         r = await self._http.get("/memory/procedural")
+        r.raise_for_status()
+        return r.json()
+
+    async def export_memories(self) -> Any:
+        r = await self._http.get("/memory/export")
         r.raise_for_status()
         return r.json()
 

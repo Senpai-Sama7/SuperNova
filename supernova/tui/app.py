@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -254,8 +253,10 @@ class SuperNovaApp(App):
 
     # ── Tab Switching ──────────────────────────────────────────
 
-    def action_tab(self, tab_id: str) -> None:
+    def action_tab(self, tab_id: str, auto_load: bool = True) -> None:
         self.query_one(TabbedContent).active = tab_id
+        if not auto_load:
+            return
         if tab_id == "approvals":
             self.refresh_approvals()
         elif tab_id == "memory":
@@ -397,9 +398,8 @@ class SuperNovaApp(App):
         export_path = export_dir / "memory_export.json"
         try:
             export_dir.mkdir(parents=True, exist_ok=True)
-            data = await self.client._http.get("/memory/export")
-            data.raise_for_status()
-            export_path.write_text(_json.dumps(data.json(), indent=2), encoding="utf-8")
+            data = await self.client.export_memories()
+            export_path.write_text(_json.dumps(data, indent=2), encoding="utf-8")
             self.notify(f"Exported to {export_path}", severity="information", timeout=5)
             self._log(f"Memories exported to {export_path}")
         except Exception as e:
@@ -464,25 +464,26 @@ class SuperNovaApp(App):
     def run_command(self, action: str) -> None:
         """Dispatch command palette actions."""
         if action.startswith("tab("):
-            tab_id = action.split("'")[1]
+            parts = action.split("'")
+            tab_id = parts[1] if len(parts) > 1 else "chat"
             self.action_tab(tab_id)
         elif action == "admin_health":
-            self.action_tab("admin")
+            self.action_tab("admin", auto_load=False)
             self.load_admin_health()
         elif action == "admin_costs":
-            self.action_tab("admin")
+            self.action_tab("admin", auto_load=False)
             self.load_admin_costs()
         elif action == "admin_audit":
-            self.action_tab("admin")
+            self.action_tab("admin", auto_load=False)
             self.load_admin_audit()
         elif action == "refresh_approvals":
-            self.action_tab("approvals")
+            self.action_tab("approvals", auto_load=False)
             self.refresh_approvals()
         elif action == "search_memories":
-            self.action_tab("memory")
+            self.action_tab("memory", auto_load=False)
             self.search_memories("")
         elif action == "load_skills":
-            self.action_tab("memory")
+            self.action_tab("memory", auto_load=False)
             self.load_skills()
         elif action == "export_memories":
             self.export_memories()
