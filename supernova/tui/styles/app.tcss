@@ -1,4 +1,4 @@
-/* SuperNova TUI Theme */
+/* SuperNova TUI Theme — Premium Dark + Gold */
 
 Screen {
     background: #1a1a2e;
@@ -27,6 +27,8 @@ TabPane {
     padding: 1 2;
 }
 
+/* ── Status Bar ── */
+
 #status-bar {
     dock: bottom;
     height: 1;
@@ -35,11 +37,15 @@ TabPane {
     padding: 0 2;
 }
 
+/* ── Chat ── */
+
 #chat-log {
     height: 1fr;
     border: round #B38200;
     background: #1a1a2e;
     padding: 0 1;
+    scrollbar-color: #B38200;
+    scrollbar-color-hover: #FFB800;
 }
 
 #chat-input-area {
@@ -47,6 +53,7 @@ TabPane {
     height: auto;
     max-height: 6;
     layout: horizontal;
+    padding: 0 0 0 0;
 }
 
 #chat-input {
@@ -66,19 +73,18 @@ TabPane {
     margin: 0 0 0 1;
 }
 
-.placeholder-content {
-    width: 100%;
-    height: 100%;
-    content-align: center middle;
-    color: #888;
-}
+/* ── Logs ── */
 
 #log-viewer {
     height: 1fr;
     border: round #B38200;
     background: #1a1a2e;
     padding: 0 1;
+    scrollbar-color: #B38200;
+    scrollbar-color-hover: #FFB800;
 }
+
+/* ── Memory ── */
 
 #memory-search {
     dock: top;
@@ -103,6 +109,12 @@ TabPane {
     padding: 0 1;
 }
 
+#memory-actions Button {
+    margin: 0 1 0 0;
+}
+
+/* ── Approvals ── */
+
 #approval-table {
     height: 1fr;
 }
@@ -114,11 +126,19 @@ TabPane {
     padding: 0 1;
 }
 
+#approval-actions Button {
+    margin: 0 1 0 0;
+}
+
+/* ── Admin ── */
+
 #admin-log {
     height: 1fr;
     border: round #B38200;
     background: #1a1a2e;
     padding: 0 1;
+    scrollbar-color: #B38200;
+    scrollbar-color-hover: #FFB800;
 }
 
 #admin-actions {
@@ -127,6 +147,12 @@ TabPane {
     layout: horizontal;
     padding: 0 1;
 }
+
+#admin-actions Button {
+    margin: 0 1 0 0;
+}
+
+/* ── DataTable theming ── */
 
 DataTable > .datatable--header {
     background: #16213e;
@@ -137,4 +163,14 @@ DataTable > .datatable--header {
 DataTable > .datatable--cursor {
     background: #B38200;
     color: #000;
+}
+
+DataTable > .datatable--even-row {
+    background: #1e1e38;
+}
+
+/* ── Scrollbar global ── */
+
+Scrollbar {
+    background: #16213e;
 }

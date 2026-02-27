@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,12 +26,23 @@ from textual import work
 
 from tui.client import SuperNovaClient
 
+MAX_MESSAGE_LEN = 4096
+
+
+def _escape(text: str) -> str:
+    """Escape Rich markup to prevent injection."""
+    return text.replace("[", "\\[")
+
+
+def _ts() -> str:
+    """Short local timestamp for chat messages."""
+    return datetime.now(timezone.utc).astimezone().strftime("%H:%M")
+
 
 class SuperNovaCommands(Provider):
     """Command palette provider for SuperNova."""
 
     async def search(self, query: str) -> Hits:
-        app = self.app
         commands: list[tuple[str, str, str]] = [
             ("Switch to Chat", "Open the chat tab", "tab('chat')"),
             ("Switch to Memory", "Open the memory browser", "tab('memory')"),
@@ -44,9 +57,13 @@ class SuperNovaCommands(Provider):
             ("Load Skills", "View procedural skills", "load_skills"),
             ("Export Memories", "Export memories to JSON", "export_memories"),
         ]
+        app = self.app
         for name, help_text, action in commands:
             if query.lower() in name.lower():
-                yield Hit(1.0, name, help=help_text, command=lambda a=action: app.run_command(a))
+                yield Hit(
+                    1.0, name, help=help_text,
+                    command=lambda a=action: app.run_command(a),
+                )
 
 
 class SuperNovaApp(App):
@@ -64,12 +81,13 @@ class SuperNovaApp(App):
         Binding("ctrl+3", "tab('approvals')", "Approvals", show=True),
         Binding("ctrl+4", "tab('admin')", "Admin", show=True),
         Binding("ctrl+5", "tab('logs')", "Logs", show=True),
-        Binding("ctrl+p", "command_palette", "palette", show=True),
+        Binding("ctrl+p", "command_palette", "⌘ Palette"),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, base_url: str | None = None) -> None:
         super().__init__()
-        self.client = SuperNovaClient()
+        url = base_url or os.environ.get("SUPERNOVA_API_URL", "http://localhost:8000")
+        self.client = SuperNovaClient(base_url=url)
         self.connected = False
         self._approvals: list[dict] = []
 
@@ -82,18 +100,18 @@ class SuperNovaApp(App):
                     yield Input(
                         placeholder="Send a message to SuperNova…",
                         id="chat-input",
+                        max_length=MAX_MESSAGE_LEN,
                     )
                     yield Button("Send", id="send-btn", variant="warning")
             with TabPane("🧠 Memory", id="memory"):
-                yield Input(placeholder="Search semantic memories…", id="memory-search")
-                yield DataTable(id="memory-table", cursor_type="row")
+                yield Input(placeholder="Search memories… (press Enter)", id="memory-search")
+                yield DataTable(id="memory-table", cursor_type="row", zebra_stripes=True)
                 with Container(id="memory-actions"):
                     yield Button("🔍 Search", id="memory-search-btn", variant="warning")
                     yield Button("📤 Export", id="memory-export-btn", variant="default")
-                    yield Button("📥 Import", id="memory-import-btn", variant="default")
                     yield Button("🛠 Skills", id="memory-skills-btn", variant="default")
             with TabPane("🛡️ Approvals", id="approvals"):
-                yield DataTable(id="approval-table", cursor_type="row")
+                yield DataTable(id="approval-table", cursor_type="row", zebra_stripes=True)
                 with Container(id="approval-actions"):
                     yield Button("✓ Approve", id="approve-btn", variant="success")
                     yield Button("✗ Deny", id="deny-btn", variant="error")
@@ -107,47 +125,63 @@ class SuperNovaApp(App):
                     yield Button("🚀 Fleet", id="admin-fleet-btn", variant="default")
             with TabPane("📋 Logs", id="logs"):
                 yield RichLog(id="log-viewer", highlight=True, markup=True, wrap=True)
-        yield Static(
-            " ● Disconnected  │  Model: —  │  Cost: $0.00 ",
-            id="status-bar",
-        )
+        yield Static("", id="status-bar")
         yield Footer()
+
+    # ── Lifecycle ──────────────────────────────────────────────
 
     def on_mount(self) -> None:
         chat = self.query_one("#chat-log", RichLog)
-        chat.write("[bold #FFB800]✦ SuperNova[/] ready. Type a message below.\n")
+        chat.write(
+            "[bold #FFB800]✦ Welcome to SuperNova[/]\n"
+            "\n"
+            "  Type a message below and press [bold]Enter[/] to chat.\n"
+            "  Use [bold]Ctrl+1‑5[/] to switch tabs, [bold]Ctrl+P[/] for commands.\n"
+            "\n"
+            "  [dim]💬 Chat  │  🧠 Memory  │  🛡️ Approvals  │  📊 Admin  │  📋 Logs[/]\n"
+        )
         self._log("TUI started")
+        self._update_status(False)
         self.check_connection()
-        # Set up approval table columns
-        table = self.query_one("#approval-table", DataTable)
-        table.add_columns("Risk", "Tool", "Agent", "Expires", "ID")
-        # Set up memory table columns
-        mem_table = self.query_one("#memory-table", DataTable)
-        mem_table.add_columns("Type", "Content", "Category")
+        # Table columns
+        self.query_one("#approval-table", DataTable).add_columns(
+            "Risk", "Tool", "Agent", "Expires", "ID",
+        )
+        self.query_one("#memory-table", DataTable).add_columns(
+            "Type", "Content", "Category",
+        )
+        # Periodic health poll every 30s
+        self.set_interval(30, self.check_connection)
+
+    # ── Helpers ────────────────────────────────────────────────
 
     def _log(self, msg: str) -> None:
         try:
-            viewer = self.query_one("#log-viewer", RichLog)
-            viewer.write(f"[dim]{msg}[/]")
+            ts = datetime.now(timezone.utc).astimezone().strftime("%H:%M:%S")
+            self.query_one("#log-viewer", RichLog).write(f"[dim]{ts}[/] {msg}")
         except Exception:
             pass
 
     def _update_status(self, connected: bool, model: str = "—", cost: str = "$0.00") -> None:
         self.connected = connected
         dot = "[green]●[/] Connected" if connected else "[red]●[/] Disconnected"
+        sid = self.client.session_id[:8]
         bar = self.query_one("#status-bar", Static)
-        bar.update(f" {dot}  │  Model: {model}  │  Cost: {cost}  │  Session: {self.client.session_id[:8]} ")
+        bar.update(f" {dot}  │  Model: {model}  │  Cost: {cost}  │  Session: {sid} ")
+
+    # ── Connection ─────────────────────────────────────────────
 
     @work(exclusive=True, group="health")
     async def check_connection(self) -> None:
         try:
             data = await self.client.health()
-            status = data.get("status", "unknown")
-            self._update_status(status == "ok")
-            self._log(f"Health check: {status}")
+            self._update_status(data.get("status") == "ok")
+            self._log(f"Health: {data.get('status', 'unknown')}")
         except Exception as e:
             self._update_status(False)
             self._log(f"Connection failed: {e}")
+
+    # ── Input Routing ──────────────────────────────────────────
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "chat-input" and event.value.strip():
@@ -157,79 +191,79 @@ class SuperNovaApp(App):
             self.search_memories(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "send-btn":
+        bid = event.button.id
+        if bid == "send-btn":
             inp = self.query_one("#chat-input", Input)
             if inp.value.strip():
                 self.send_chat_message(inp.value.strip())
                 inp.value = ""
-        elif event.button.id == "approve-btn":
+        elif bid == "approve-btn":
             self._resolve_selected(True)
-        elif event.button.id == "deny-btn":
+        elif bid == "deny-btn":
             self._resolve_selected(False)
-        elif event.button.id == "refresh-approvals-btn":
+        elif bid == "refresh-approvals-btn":
             self.refresh_approvals()
-        elif event.button.id == "memory-search-btn":
-            query = self.query_one("#memory-search", Input).value
-            self.search_memories(query)
-        elif event.button.id == "memory-skills-btn":
+        elif bid == "memory-search-btn":
+            self.search_memories(self.query_one("#memory-search", Input).value)
+        elif bid == "memory-skills-btn":
             self.load_skills()
-        elif event.button.id == "memory-export-btn":
+        elif bid == "memory-export-btn":
             self.export_memories()
-        elif event.button.id == "memory-import-btn":
-            self.notify("Import: place JSON file in workspace/ and use API", severity="information", timeout=5)
-        elif event.button.id == "admin-health-btn":
+        elif bid == "admin-health-btn":
             self.load_admin_health()
-        elif event.button.id == "admin-costs-btn":
+        elif bid == "admin-costs-btn":
             self.load_admin_costs()
-        elif event.button.id == "admin-audit-btn":
+        elif bid == "admin-audit-btn":
             self.load_admin_audit()
-        elif event.button.id == "admin-fleet-btn":
+        elif bid == "admin-fleet-btn":
             self.load_admin_fleet()
+
+    # ── Chat ───────────────────────────────────────────────────
 
     @work(exclusive=True, group="chat")
     async def send_chat_message(self, message: str) -> None:
         chat = self.query_one("#chat-log", RichLog)
-        chat.write(f"\n[bold cyan]You:[/] {message}")
+        safe = _escape(message)
+        chat.write(f"\n[dim]{_ts()}[/] [bold cyan]You:[/] {safe}")
         self._log(f"Sending: {message[:80]}")
 
         try:
-            chat.write("[dim]⏳ Streaming…[/]")
+            chat.write("[dim]⏳ Thinking…[/]")
             async for event in self.client.stream(message):
                 etype = event.get("type", "")
                 if etype == "token":
-                    # Streaming token — append to current line
                     chat.write(event.get("content", ""), shrink=False)
                 elif etype == "message":
-                    chat.write(f"[bold #FFB800]✦ Agent:[/] {event.get('content', '')}")
+                    content = _escape(str(event.get("content", "")))
+                    chat.write(f"[bold #FFB800]✦ SuperNova:[/] {content}")
                 elif etype == "tool_call":
-                    name = event.get("name", "unknown")
-                    chat.write(f"[dim]🔧 Calling tool: {name}[/]")
+                    chat.write(f"[dim]🔧 Calling: {_escape(event.get('name', '?'))}[/]")
                 elif etype == "tool_result":
-                    chat.write(f"[dim]✓ Tool result received[/]")
+                    chat.write("[dim]✓ Tool result received[/]")
                 elif etype == "approval_required":
-                    chat.write(f"[bold yellow]⚠ Approval needed:[/] {event.get('tool', '')}")
-                    self.notify("Approval required!", severity="warning", timeout=10)
+                    chat.write(f"[bold yellow]⚠ Approval needed:[/] {_escape(event.get('tool', ''))}")
+                    self.notify("🛡️ Approval required — switch to Approvals tab", severity="warning", timeout=10)
                 elif etype == "error":
-                    chat.write(f"[bold red]Error:[/] {event.get('message', '')}")
+                    chat.write(f"[bold red]Error:[/] {_escape(event.get('message', ''))}")
                 elif etype == "done":
                     self._log("Stream complete")
-                else:
-                    # Unknown event — log it
-                    self._log(f"Event: {etype} {event}")
         except Exception as e:
-            chat.write(f"[bold red]Error:[/] {e}")
+            chat.write(f"[bold red]Error:[/] {_escape(str(e))}")
             self._log(f"Stream failed: {e}")
             self.notify(f"Send failed: {e}", severity="error", timeout=5)
 
+    # ── Tab Switching ──────────────────────────────────────────
+
     def action_tab(self, tab_id: str) -> None:
-        tabs = self.query_one(TabbedContent)
-        tabs.active = tab_id
+        self.query_one(TabbedContent).active = tab_id
         if tab_id == "approvals":
             self.refresh_approvals()
         elif tab_id == "memory":
             self.search_memories("")
         elif tab_id == "admin":
             self.load_admin_health()
+
+    # ── Admin ──────────────────────────────────────────────────
 
     @work(exclusive=True, group="admin")
     async def load_admin_health(self) -> None:
@@ -251,6 +285,7 @@ class SuperNovaApp(App):
             self._update_status(True)
         except Exception as e:
             log.write(f"[bold red]Failed:[/] {e}")
+            log.write("[dim]  Tip: Is the API running? Try: uvicorn supernova.api.gateway:app[/]")
             self._update_status(False)
 
     @work(exclusive=True, group="admin")
@@ -268,6 +303,8 @@ class SuperNovaApp(App):
                     log.write(f"  {item}")
             else:
                 log.write(f"  {data}")
+            if not data:
+                log.write("  [dim]No cost data yet — send some messages first.[/]")
         except Exception as e:
             log.write(f"[bold red]Failed:[/] {e}")
 
@@ -286,7 +323,7 @@ class SuperNovaApp(App):
                     actor = entry.get("actor", "") if isinstance(entry, dict) else ""
                     log.write(f"  [dim]{ts}[/] {action} [dim]({actor})[/]")
             if not entries:
-                log.write("  [dim]No audit entries found[/]")
+                log.write("  [dim]No audit entries yet.[/]")
         except Exception as e:
             log.write(f"[bold red]Failed:[/] {e}")
 
@@ -307,8 +344,12 @@ class SuperNovaApp(App):
                         log.write(f"  [bold]{key}[/]: {val}")
             else:
                 log.write(f"  {data}")
+            if not data:
+                log.write("  [dim]No fleet data available.[/]")
         except Exception as e:
             log.write(f"[bold red]Failed:[/] {e}")
+
+    # ── Memory ─────────────────────────────────────────────────
 
     @work(exclusive=True, group="memory")
     async def search_memories(self, query: str) -> None:
@@ -321,7 +362,10 @@ class SuperNovaApp(App):
                     content = str(m.get("content", m.get("fact", "")))[:80]
                     category = str(m.get("category", ""))
                     table.add_row("🧠 Semantic", content, category)
-            self._log(f"Loaded {len(memories) if isinstance(memories, list) else 0} semantic memories")
+            count = len(memories) if isinstance(memories, list) else 0
+            self._log(f"Loaded {count} semantic memories")
+            if count == 0:
+                self.notify("No memories found — chat with SuperNova to build memory", severity="information", timeout=5)
         except Exception as e:
             self._log(f"Memory search failed: {e}")
             self.notify(f"Memory load failed: {e}", severity="error", timeout=5)
@@ -337,25 +381,32 @@ class SuperNovaApp(App):
                     name = str(s.get("name", s.get("skill_name", "")))[:80]
                     status = "✅" if s.get("is_active") else "❌"
                     table.add_row(f"🛠 Skill {status}", name, str(s.get("trigger", ""))[:40])
-            self._log(f"Loaded {len(skills) if isinstance(skills, list) else 0} skills")
+            count = len(skills) if isinstance(skills, list) else 0
+            self._log(f"Loaded {count} skills")
+            if count == 0:
+                self.notify("No skills yet — SuperNova learns skills over time", severity="information", timeout=5)
         except Exception as e:
             self._log(f"Skills load failed: {e}")
             self.notify(f"Skills load failed: {e}", severity="error", timeout=5)
 
     @work(exclusive=True, group="memory")
     async def export_memories(self) -> None:
+        import json as _json
+
+        export_dir = Path("workspace")
+        export_path = export_dir / "memory_export.json"
         try:
+            export_dir.mkdir(parents=True, exist_ok=True)
             data = await self.client._http.get("/memory/export")
             data.raise_for_status()
-            path = "workspace/memory_export.json"
-            import json
-            with open(path, "w") as f:
-                json.dump(data.json(), f, indent=2)
-            self.notify(f"Exported to {path}", severity="information", timeout=5)
-            self._log(f"Memories exported to {path}")
+            export_path.write_text(_json.dumps(data.json(), indent=2), encoding="utf-8")
+            self.notify(f"Exported to {export_path}", severity="information", timeout=5)
+            self._log(f"Memories exported to {export_path}")
         except Exception as e:
             self.notify(f"Export failed: {e}", severity="error", timeout=5)
             self._log(f"Export failed: {e}")
+
+    # ── Approvals ──────────────────────────────────────────────
 
     @work(exclusive=True, group="approvals")
     async def refresh_approvals(self) -> None:
@@ -373,10 +424,13 @@ class SuperNovaApp(App):
                 }.get(risk, f"⚪ {risk}")
                 expires = a.get("expires_seconds")
                 exp_str = f"{expires}s" if expires is not None else "—"
-                table.add_row(risk_display, a.get("tool", ""), a.get("agent", ""), exp_str, a.get("id", "")[:8])
+                table.add_row(
+                    risk_display, a.get("tool", ""), a.get("agent", ""),
+                    exp_str, a.get("id", "")[:8],
+                )
             self._log(f"Loaded {len(self._approvals)} pending approvals")
             if not self._approvals:
-                self.notify("No pending approvals", severity="information", timeout=3)
+                self.notify("No pending approvals ✓", severity="information", timeout=3)
         except Exception as e:
             self._log(f"Approval refresh failed: {e}")
             self.notify(f"Could not load approvals: {e}", severity="error", timeout=5)
@@ -390,8 +444,8 @@ class SuperNovaApp(App):
             row_idx = table.cursor_row
             approval = self._approvals[row_idx]
             self._do_resolve(approval["id"], approved)
-        except Exception:
-            self.notify("Select an approval first", severity="warning", timeout=3)
+        except (IndexError, KeyError):
+            self.notify("Select an approval row first", severity="warning", timeout=3)
 
     @work(exclusive=True, group="resolve")
     async def _do_resolve(self, approval_id: str, approved: bool) -> None:
@@ -404,6 +458,8 @@ class SuperNovaApp(App):
         except Exception as e:
             self.notify(f"Resolve failed: {e}", severity="error", timeout=5)
             self._log(f"Resolve failed: {e}")
+
+    # ── Command Palette Dispatch ───────────────────────────────
 
     def run_command(self, action: str) -> None:
         """Dispatch command palette actions."""
@@ -431,12 +487,15 @@ class SuperNovaApp(App):
         elif action == "export_memories":
             self.export_memories()
 
+    # ── Quit ───────────────────────────────────────────────────
+
     async def action_quit(self) -> None:
         await self.client.close()
         self.exit()
 
 
 def main() -> None:
+    """Launch the SuperNova TUI."""
     app = SuperNovaApp()
     app.run()
 
