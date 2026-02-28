@@ -86,15 +86,17 @@ class WeightedMemoryRetriever:
         composite = α × relevance_score
                   + β × recency_score
                   + γ × type_weight
+                  + δ × access_frequency
 
-    where ``α + β + γ == 1.0`` and ``type_weight`` is the per-store priority
+    where ``α + β + γ + δ == 1.0`` and ``type_weight`` is the per-store priority
     declared when the store is registered.
 
     Args:
         stores: ``{name: (MemoryStore, type_weight)}`` mapping.
-        alpha: Relevance weight. Default 0.6.
-        beta: Recency weight. Default 0.3.
-        gamma: Type-priority weight. Default 0.1.
+        alpha: Relevance weight. Default 0.5.
+        beta: Recency weight. Default 0.25.
+        gamma: Type-priority weight. Default 0.15.
+        delta: Access frequency weight. Default 0.1.
         recency_half_life_hours: Hours until recency score halves.
         dedup_threshold: Items with identical content fingerprints (first 200
             chars, lowercased) are deduplicated; highest-scoring copy is kept.
@@ -103,20 +105,25 @@ class WeightedMemoryRetriever:
     def __init__(
         self,
         stores: Dict[str, Tuple[MemoryStore, float]],
-        alpha: float = 0.6,
-        beta: float = 0.3,
-        gamma: float = 0.1,
+        alpha: float = 0.5,
+        beta: float = 0.25,
+        gamma: float = 0.15,
+        delta: float = 0.1,
         recency_half_life_hours: float = 24.0,
         dedup_threshold: float = 0.95,
     ) -> None:
-        if abs(alpha + beta + gamma - 1.0) > 1e-6:
-            raise ValueError(f"Weights must sum to 1.0, got {alpha + beta + gamma}")
+        if abs(alpha + beta + gamma + delta - 1.0) > 1e-6:
+            raise ValueError(f"Weights must sum to 1.0, got {alpha + beta + gamma + delta}")
         self._stores = stores
         self._alpha = alpha
         self._beta = beta
         self._gamma = gamma
+        self._delta = delta
         self._half_life_s = recency_half_life_hours * 3600.0
         self._dedup_threshold = dedup_threshold
+        self._access_counts: Dict[str, int] = {}
+        self._total_retrievals = 0
+        self._cache_hits = 0
 
     async def retrieve(
         self,
@@ -137,6 +144,7 @@ class WeightedMemoryRetriever:
             Ranked :class:`MemoryItem` list, length ≤ *top_k*.
         """
         start_time = time.monotonic()
+        self._total_retrievals += 1
         
         target = {
             k: v for k, v in self._stores.items()
@@ -149,6 +157,11 @@ class WeightedMemoryRetriever:
             ]
         )
         merged: List[MemoryItem] = [item for batch in results for item in batch]
+        
+        # Track access frequency for retrieved items
+        for item in merged:
+            self._access_counts[item.id] = self._access_counts.get(item.id, 0) + 1
+        
         merged = self._apply_weights(merged)
         merged = self._deduplicate(merged)
         merged.sort(key=lambda x: x.composite_score, reverse=True)
@@ -162,6 +175,10 @@ class WeightedMemoryRetriever:
         # Log p50/p95 every 10 retrievals
         if len(_retrieval_times) % 10 == 0:
             self._log_latency_metrics()
+        
+        # Log prefetch stats every 50 retrievals
+        if self._total_retrievals % 50 == 0:
+            self._log_prefetch_stats()
         
         logger.debug("memory_retrieval", elapsed_ms=elapsed*1000, items=len(merged[:top_k]))
         return merged[:top_k]
@@ -189,14 +206,35 @@ class WeightedMemoryRetriever:
             return []
 
     def _apply_weights(self, items: List[MemoryItem]) -> List[MemoryItem]:
+        max_access = max(self._access_counts.values()) if self._access_counts else 1
         for item in items:
             tw = item.metadata.get("_type_weight", 0.5)
+            access_freq = self._access_counts.get(item.id, 0) / max_access
             item.composite_score = (
                 self._alpha * item.relevance_score
                 + self._beta * item.recency_score
                 + self._gamma * tw
+                + self._delta * access_freq
             )
         return items
+
+    def get_access_frequency(self, memory_id: str) -> int:
+        """Get access count for a specific memory."""
+        return self._access_counts.get(memory_id, 0)
+    
+    def get_prefetch_stats(self) -> Dict[str, float]:
+        """Get prefetch hit rate statistics."""
+        hit_rate = self._cache_hits / self._total_retrievals if self._total_retrievals > 0 else 0.0
+        return {
+            "total_retrievals": self._total_retrievals,
+            "cache_hits": self._cache_hits,
+            "hit_rate": hit_rate
+        }
+    
+    def _log_prefetch_stats(self) -> None:
+        """Log prefetch statistics every 50 retrievals."""
+        stats = self.get_prefetch_stats()
+        logger.info("prefetch_stats", **stats)
 
     def _deduplicate(self, items: List[MemoryItem]) -> List[MemoryItem]:
         seen: Dict[str, float] = {}
@@ -445,6 +483,7 @@ class MemoryPrefetcher:
             ts, items = self._cache[key]
             if (time.time() - ts) < self._ttl:
                 logger.debug("prefetch_cache_hit", query=query[:60])
+                self._retriever._cache_hits += 1
                 return items
 
         # Cache miss — synchronous fallback

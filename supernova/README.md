@@ -12,6 +12,12 @@ Production-grade personal AI agent with persistent memory and autonomous cogniti
 
 ## Installation
 
+| Setup Type | Time | Requirements |
+|------------|------|-------------|
+| Minimal (local LLM only) | ~5 min | Python 3.12+, Ollama |
+| Standard (with memory) | ~15 min | + Neo4j, Redis |
+| Full (all features) | ~30 min | + API keys, Docker |
+
 ```bash
 pip install -e ".[dev]"
 ```
@@ -65,6 +71,37 @@ LOCAL_MODEL_PRIORITY=false   # set true to prefer local over cloud
 ```
 
 When `LOCAL_MODEL_PRIORITY=false` (default), local models are used only as a budget fallback. When `true`, the router prefers local models for all tasks.
+
+## Minimal Mode
+
+Run SuperNova with ONLY Ollama (no external services):
+
+```bash
+# Install and start Ollama
+ollama serve &
+ollama pull llama3.2:3b
+
+# Set minimal configuration
+export OLLAMA_ENABLED=true
+export LOCAL_MODEL_PRIORITY=true
+export MEMORY_BACKEND=none
+export CELERY_ENABLED=false
+
+# Install and run
+pip install -e .
+supernova
+```
+
+**Available Features:**
+- Basic agent functionality
+- Local LLM inference
+- Simple conversation
+
+**Unavailable Features:**
+- Persistent memory (Neo4j/PostgreSQL)
+- Background tasks (Celery)
+- Observability (Langfuse)
+- Multi-session state
 
 ## Backup & Recovery
 

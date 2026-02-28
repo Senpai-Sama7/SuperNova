@@ -1,11 +1,14 @@
 # Environment — never commit secrets
 .env
 .env.*
+.env.local
+.env.*.local
 !.env.example
 !.env.production
 
 # Build artifacts
 *.tar.gz
+*.zip
 proof_bundle/
 proof_bundle_*/
 dist/
@@ -34,6 +37,10 @@ __pycache__/
 .serena/
 .kiro/
 mcp_and_skills/
+
+# Virtual environments
+.venv/
+venv/
 
 # Node
 node_modules/

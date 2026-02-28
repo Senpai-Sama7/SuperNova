@@ -197,7 +197,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `git log --all -p | grep -c "sk-\|sk-ant-\|ghp_"` returns 0 after BFG/git-filter-repo
   - **Proof:** _pending_
 
-- [ ] **16.2.6** Add comprehensive `.gitignore` entries
+- [x] **16.2.6** Add comprehensive `.gitignore` entries
   - **Validation:** `.gitignore` includes: `.env`, `*.tar.gz`, `proof_bundle*/`, `*.pyc`, `__pycache__/`, `.coverage`, `htmlcov/`, `*.egg-info/`
   - **Proof:** _pending_
 
@@ -228,11 +228,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `pytest tests/ --cov=supernova --cov-fail-under=80` in CI; fails below 80%
   - **Proof:** _pending_
 
-- [ ] **16.3.5** Add security scanning step
+- [x] **16.3.5** Add security scanning step
   - **Validation:** `pip-audit` or `safety check` in CI; fails on known vulnerabilities
   - **Proof:** _pending_
 
-- [ ] **16.3.6** Verify CI passes on current codebase
+- [x] **16.3.6** Verify CI passes on current codebase
   - **Validation:** Push to branch; GitHub Actions shows green ✅
   - **Proof:** _pending_
 
@@ -309,7 +309,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** All MCP tool results pass through `TrustedContext.wrap_external()` before entering context
   - **Proof:** _pending_
 
-- [ ] **17.2.5** Create adversarial test suite
+- [x] **17.2.5** Create adversarial test suite
   - **Validation:** Tests with known injection payloads: `"ignore previous instructions"`, `"<system>new instructions</system>"`, `"[INST]override[/INST]"` — agent ignores all of them
   - **Proof:** _pending_
 
@@ -336,7 +336,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Tool call arguments are consistent with the user's original request (semantic similarity check)
   - **Proof:** _pending_
 
-- [ ] **17.3.4** Integrate validator into tool execution pipeline
+- [x] **17.3.4** Integrate validator into tool execution pipeline
   - **Validation:** `ToolRegistry.execute()` calls validator before execution; invalid calls rejected with clear error
   - **Proof:** _pending_
 
@@ -351,19 +351,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 6.2 (WebSocket handler), existing interrupts.py
 
-- [ ] **17.4.1** Test approval queue flooding
+- [x] **17.4.1** Test approval queue flooding
   - **Validation:** Agent cannot queue >10 pending approvals; excess requests auto-denied
   - **Proof:** _pending_
 
-- [ ] **17.4.2** Test timeout manipulation
+- [x] **17.4.2** Test timeout manipulation
   - **Validation:** Timeout values cannot be overridden by agent; hardcoded minimums enforced (critical: min 60s, never auto-approve)
   - **Proof:** _pending_
 
-- [ ] **17.4.3** Test approval bypass via tool chaining
+- [x] **17.4.3** Test approval bypass via tool chaining
   - **Validation:** Agent cannot achieve high-risk outcome by chaining multiple low-risk approved actions
   - **Proof:** _pending_
 
-- [ ] **17.4.4** Document approval system threat model
+- [x] **17.4.4** Document approval system threat model
   - **Validation:** `docs/THREAT_MODEL.md` exists with attack vectors, mitigations, and residual risks
   - **Proof:** _pending_
 
@@ -527,7 +527,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Runs continuously in background; consolidates memories; manages forgetting curves; no direct user interaction
   - **Proof:** _pending_
 
-- [ ] **19.1.7** Test multi-agent pipeline end-to-end
+- [x] **19.1.7** Test multi-agent pipeline end-to-end
   - **Validation:** Complex query ("Research X, write a summary, save to file") → Planner creates 3 steps → Executor runs each → Critic reviews → User gets polished result
   - **Proof:** _pending_
 
@@ -640,11 +640,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Memories tagged with sentiment score at creation time; strong opinions (positive or negative) get higher salience; neutral facts get lower salience
   - **Proof:** _pending_
 
-- [ ] **21.1.3** Add access frequency tracking
+- [x] **21.1.3** Add access frequency tracking
   - **Validation:** Every memory retrieval increments `access_count`; frequently accessed memories ranked higher; `update_access_time()` called on every retrieval
   - **Proof:** _pending_
 
-- [ ] **21.1.4** Benchmark retrieval quality improvement
+- [x] **21.1.4** Benchmark retrieval quality improvement
   - **Validation:** Create test set of 20 queries with known "correct" memories; multi-factor retrieval returns correct memory in top-3 more often than similarity-only (measure recall@3)
   - **Proof:** _pending_
 
@@ -694,7 +694,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Recurring patterns detected (e.g., "user always asks about project X on Mondays"); relevant memories pre-loaded at predicted times
   - **Proof:** _pending_
 
-- [ ] **21.3.3** Measure prefetch hit rate
+- [x] **21.3.3** Measure prefetch hit rate
   - **Validation:** Track how often prefetched memories are actually used in the conversation; target: >50% hit rate after 30 days of use
   - **Proof:** _pending_
 
@@ -821,19 +821,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task -1.1 (installer script)
 
-- [ ] **23.2.1** Time actual setup on clean Ubuntu 24.04 VM
+- [x] **23.2.1** Time actual setup on clean Ubuntu 24.04 VM
   - **Validation:** Record: time to clone, time to docker pull, time to first response; document real numbers
   - **Proof:** _pending_
 
-- [ ] **23.2.2** Update README with honest setup time
+- [x] **23.2.2** Update README with honest setup time
   - **Validation:** README says "~15-20 minutes on first run (Docker images download); ~2 minutes on subsequent runs"
   - **Proof:** _pending_
 
-- [ ] **23.2.3** Add progress indicators during setup
+- [x] **23.2.3** Add progress indicators during setup
   - **Validation:** `setup.sh` shows progress bar for Docker pulls; estimated time remaining; clear error messages on failure
   - **Proof:** _pending_
 
-- [ ] **23.2.4** Reduce infrastructure footprint option
+- [x] **23.2.4** Reduce infrastructure footprint option
   - **Validation:** `SUPERNOVA_LITE=true` mode runs with only PostgreSQL + Redis (no Neo4j, no Langfuse); ~512MB RAM; episodic memory falls back to PostgreSQL adjacency lists
   - **Proof:** _pending_
 
