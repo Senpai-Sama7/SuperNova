@@ -121,6 +121,8 @@ class TestAuth:
         assert payload["route"] == "/metrics"
         assert payload["request_id"] == "req-123"
         assert payload["outcome"] == "granted"
+        assert payload["disposition"] == "granted"
+        assert payload["severity"] == "info"
         assert payload["user_id"] == "user-789"
         assert payload["auth_method"] == "bearer"
 
@@ -166,6 +168,8 @@ class TestAuth:
         assert payload["route"] == "/admin/fleet"
         assert payload["request_id"] == "req-123"
         assert payload["reason"] == "missing_bearer_token"
+        assert payload["disposition"] == "blocked"
+        assert payload["severity"] == "warning"
         assert payload["auth_method"] == "bearer"
 
     @pytest.mark.asyncio
@@ -197,4 +201,6 @@ class TestAuth:
         assert payload["route"] == "/admin/costs"
         assert payload["request_id"] == "corr-123"
         assert payload["outcome"] == "denied"
+        assert payload["disposition"] == "blocked"
+        assert payload["severity"] == "warning"
         assert payload["auth_method"] == "bearer"
