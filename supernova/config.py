@@ -79,6 +79,13 @@ class LLMSettings(BaseSettings):
         """Parse comma-separated fallback models."""
         return [m.strip() for m in v.split(",") if m.strip()]
 
+    @property
+    def effective_default_model(self) -> str:
+        """Get effective default model with Ollama fallback when no API keys configured."""
+        if not self.openai_api_key and not self.anthropic_api_key:
+            return "ollama/llama3.1"
+        return self.litellm_default_model
+
 
 class LangfuseSettings(BaseSettings):
     """Langfuse observability configuration."""
@@ -138,8 +145,8 @@ class CostManagementSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="COST_")
 
-    daily_spending_limit: float = Field(default=10.0, ge=0.0)
-    monthly_spending_limit: float = Field(default=300.0, ge=0.0)
+    daily_spending_limit: float = Field(default=1.0, ge=0.0)
+    monthly_spending_limit: float = Field(default=10.0, ge=0.0)
     confirmation_threshold: float = Field(default=0.50, ge=0.0)
     tracking_enabled: bool = True
     alert_threshold_percent: float = Field(default=80.0, ge=0.0, le=100.0)
@@ -217,7 +224,7 @@ class UserPreferencesSettings(BaseSettings):
 
     risk_level: Literal["paranoid", "careful", "balanced", "fast"] = "balanced"
     speed_preference: Literal["instant", "balanced", "thorough"] = "balanced"
-    daily_budget_usd: float = 5.0
+    daily_budget_usd: float = 1.0
     auto_approve_timeout: int = 120
     max_tool_calls_per_turn: int = 10
     reflection_enabled: bool = True

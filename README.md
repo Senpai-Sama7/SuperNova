@@ -1,8 +1,59 @@
 # 🌟 SuperNova
 
-**Your personal AI assistant that actually remembers things.**
+**The AI assistant you can inspect and trust.**
 
-SuperNova runs on your own computer, keeps your data private, and gets better over time. It's like having a really smart assistant who remembers everything you've ever discussed with them.
+SuperNova runs entirely on your machine — your conversations, memories, and data never leave your computer. Every action requires your approval. Every decision is logged and auditable. Every piece of memory is inspectable through a 3D visualization. This isn't another cloud AI that you have to trust blindly; it's an AI you can verify, control, and truly own.
+
+## Architecture
+
+```mermaid
+graph TD
+    User[👤 User] --> Gateway[🚪 API Gateway]
+    Gateway --> Orchestrator[🎯 OrchestratorAgent]
+    
+    Orchestrator --> Planner[📋 PlannerAgent]
+    Orchestrator --> Executor1[⚡ ExecutorAgent]
+    Orchestrator --> Executor2[⚡ ExecutorAgent]
+    Orchestrator --> Critic[🔍 CriticAgent]
+    
+    Planner --> Memory[🧠 Memory Layer]
+    Executor1 --> Memory
+    Executor2 --> Memory
+    Critic --> Memory
+    
+    Memory --> LLM[🤖 LLM]
+    LLM --> Response[📤 Response]
+    Response --> Gateway
+    Gateway --> User
+    
+    MemoryAgent[🗄️ MemoryAgent] -.-> Memory
+    
+    style User fill:#e1f5fe
+    style Gateway fill:#f3e5f5
+    style Orchestrator fill:#fff3e0
+    style Memory fill:#e8f5e8
+    style LLM fill:#fce4ec
+    style MemoryAgent fill:#f1f8e9
+```
+
+---
+
+## How SuperNova Compares
+
+| Feature | SuperNova | MemGPT | Open Interpreter | ChatGPT |
+|---------|-----------|---------|------------------|---------|
+| **Privacy (Local-First)** | ✅ Fully local | ✅ Local option | ✅ Local option | ❌ Cloud only |
+| **Persistent Memory** | ✅ 4 memory types | ✅ Advanced memory | ❌ Session only | ❌ Session only |
+| **Approval System** | ✅ Granular control | ❌ No approval | ❌ No approval | ❌ No approval |
+| **Local Models** | ✅ Full support | ✅ Full support | ✅ Full support | ❌ OpenAI only |
+| **Cost** | 💰 Pay per use | 💰 Pay per use | 💰 Pay per use | 💰💰 Subscription |
+| **Open Source** | ✅ MIT License | ✅ Apache 2.0 | ✅ MIT License | ❌ Proprietary |
+| **Setup Complexity** | ⚠️ High (Docker + deps) | ⚠️ Medium | ✅ Low (pip install) | ✅ None (web) |
+| **Maturity** | ⚠️ Pre-alpha | ✅ Stable | ✅ Stable | ✅ Production |
+| **Memory Visualization** | ✅ 3D interactive | ❌ Text only | ❌ None | ❌ None |
+| **Multi-Agent System** | ✅ Orchestrated agents | ❌ Single agent | ❌ Single agent | ❌ Single model |
+
+**Honest assessment:** SuperNova is the most transparent and controllable, but requires significant setup and is still in early development. Choose MemGPT for mature local memory, Open Interpreter for simplicity, or ChatGPT for zero-setup convenience.
 
 ---
 

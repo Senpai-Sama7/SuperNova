@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import litellm
 
+from supernova.config import get_settings
+
 from .shared_state import SharedState
 
 
@@ -33,8 +35,9 @@ Example:
         """Generate execution plan for the user message."""
         prompt = f"Break down this task into steps:\n\n{state.user_message}"
         
+        settings = get_settings()
         response = await litellm.acompletion(
-            model="gpt-4o-mini",
+            model=settings.llm.effective_default_model,
             messages=[
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt}

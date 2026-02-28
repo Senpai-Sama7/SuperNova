@@ -28,8 +28,8 @@ class KeyValidationResponse(BaseModel):
 
 class SetupConfig(BaseModel):
     api_keys: dict[str, str] = Field(default_factory=dict)
-    default_model: str = "gpt-4o-mini"
-    privacy_mode: bool = False
+    default_model: str = "ollama/llama3.1"
+    privacy_mode: bool = True
     theme: str = "dark"
 
 
@@ -67,11 +67,12 @@ async def validate_api_key(body: KeyValidationRequest) -> KeyValidationResponse:
 async def cost_estimate() -> dict[str, list[dict[str, Any]]]:
     """Return estimated monthly costs for available models."""
     estimates = [
-        {"model": "gpt-4o", "estimated_monthly_usd": 30.0, "tokens_per_month": 1_000_000},
-        {"model": "gpt-4o-mini", "estimated_monthly_usd": 5.0, "tokens_per_month": 1_000_000},
-        {"model": "claude-3.5-sonnet", "estimated_monthly_usd": 25.0, "tokens_per_month": 1_000_000},
-        {"model": "claude-3-haiku", "estimated_monthly_usd": 3.0, "tokens_per_month": 1_000_000},
+        {"model": "ollama/llama3.1", "estimated_monthly_usd": 0.0, "tokens_per_month": 0, "recommended": True},
         {"model": "ollama/llama3", "estimated_monthly_usd": 0.0, "tokens_per_month": 0},
+        {"model": "gpt-4o-mini", "estimated_monthly_usd": 5.0, "tokens_per_month": 1_000_000},
+        {"model": "claude-3-haiku", "estimated_monthly_usd": 3.0, "tokens_per_month": 1_000_000},
+        {"model": "gpt-4o", "estimated_monthly_usd": 30.0, "tokens_per_month": 1_000_000},
+        {"model": "claude-3.5-sonnet", "estimated_monthly_usd": 25.0, "tokens_per_month": 1_000_000},
     ]
     return {"estimates": estimates}
 

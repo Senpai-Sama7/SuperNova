@@ -7,6 +7,7 @@ from typing import List
 
 import litellm
 
+from supernova.config import get_settings
 from .shared_state import SharedState
 
 
@@ -67,8 +68,9 @@ Results: {state.execution_results}
 
 Provide brief critique focusing on completeness and accuracy."""
         
+        settings = get_settings()
         response = await litellm.acompletion(
-            model="gpt-4o-mini",
+            model=settings.llm.effective_default_model,
             messages=[{"role": "user", "content": prompt}]
         )
         
