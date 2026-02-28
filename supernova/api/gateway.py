@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-import os
+import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
 from starlette.responses import Response
 
-from supernova.api.auth import create_access_token, get_current_user, verify_token
+from supernova.api.auth import TokenResponse, create_access_token, get_current_user, verify_token
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
 from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
@@ -37,6 +37,30 @@ class TokenResponse(BaseModel):
 validate_runtime_configuration()
 
 _state: dict[str, Any] = {}
+_RATE_LIMIT_WINDOW_SECONDS = 60.0
+_RATE_LIMIT_MAX_CALLS = 5
+_rate_limit_state: dict[str, list[float]] = {}
+
+
+def _audit_privileged_action(action: str, user_id: str | None, details: dict[str, Any] | None = None) -> None:
+    """Emit a structured audit-style log for privileged gateway actions."""
+    logger.info(
+        "audit_event action=%s user_id=%s details=%s",
+        action,
+        user_id or "anonymous",
+        details or {},
+    )
+
+
+def _enforce_rate_limit(bucket: str, *, now_ts: float | None = None) -> None:
+    """Apply a simple in-memory fixed-window rate limit."""
+    current = now_ts if now_ts is not None else time.monotonic()
+    window_start = current - _RATE_LIMIT_WINDOW_SECONDS
+    entries = [ts for ts in _rate_limit_state.get(bucket, []) if ts >= window_start]
+    if len(entries) >= _RATE_LIMIT_MAX_CALLS:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+    entries.append(current)
+    _rate_limit_state[bucket] = entries
 
 
 @asynccontextmanager
@@ -114,11 +138,13 @@ async def deep_health(user_id: str = Depends(get_current_user)) -> dict[str, Any
         status["services"]["redis"] = False
 
     status["ok"] = all(status["services"].values())
+    _audit_privileged_action("gateway.deep_health", user_id, {"services": status["services"]})
     return status
 
 
 @app.get("/metrics")
 async def prometheus_metrics(user_id: str = Depends(get_current_user)) -> Any:
+    _audit_privileged_action("gateway.metrics", user_id)
     registry = CollectorRegistry()
     payload = generate_latest(registry)
     return Response(payload, media_type=CONTENT_TYPE_LATEST)
@@ -141,7 +167,14 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
 
 
 @app.post("/auth/token", response_model=TokenResponse)
-async def issue_token() -> TokenResponse:
+async def issue_token(request: Request) -> TokenResponse:
+    if settings.is_production:
+        raise HTTPException(status_code=403, detail="Demo token issuance is disabled in production")
+
+    client_host = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(f"issue_token:{client_host}")
+    _audit_privileged_action("gateway.issue_token", None, {"client_host": client_host})
+
     token = create_access_token({"sub": "demo-user"})
     return TokenResponse(access_token=token, token_type="bearer")
 
@@ -173,21 +206,25 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
 async def get_semantic_memory(
     user_id: str = Depends(get_current_user),
 ) -> list[dict[str, Any]]:
+    _audit_privileged_action("gateway.memory.semantic", user_id)
     return []
 
 
 @app.get("/memory/procedural")
 async def get_procedural_skills(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
+    _audit_privileged_action("gateway.memory.procedural", user_id)
     return []
 
 
 @app.get("/admin/fleet")
 async def get_fleet_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    _audit_privileged_action("gateway.admin.fleet", user_id)
     return {"ok": True, "user_id": user_id}
 
 
 @app.get("/admin/costs")
 async def get_cost_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    _audit_privileged_action("gateway.admin.costs", user_id)
     return {"ok": True, "user_id": user_id}
 
 
@@ -198,6 +235,11 @@ async def get_audit_logs(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:
+    _audit_privileged_action(
+        "gateway.admin.audit_logs",
+        user_id,
+        {"action": action, "limit": limit, "offset": offset},
+    )
     return {"items": [], "action": action, "limit": limit, "offset": offset, "user_id": user_id}
 
 
@@ -207,6 +249,11 @@ async def export_memory(
     format: str = Query("json", pattern="^(json|markdown)$"),
     memory_type: str | None = Query(None, pattern="^(semantic|episodic|all)$"),
 ) -> dict[str, Any]:
+    _audit_privileged_action(
+        "gateway.memory.export",
+        user_id,
+        {"format": format, "memory_type": memory_type},
+    )
     return {"format": format, "memory_type": memory_type, "user_id": user_id}
 
 
@@ -214,4 +261,5 @@ async def export_memory(
 async def import_memory(
     user_id: str = Depends(get_current_user),
 ) -> dict[str, Any]:
+    _audit_privileged_action("gateway.memory.import", user_id)
     return {"ok": True, "user_id": user_id}
