@@ -16,6 +16,7 @@ from starlette.responses import Response
 from supernova.api.auth import create_access_token, get_current_user, verify_token
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
+from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
 from supernova.config import get_settings
 from supernova.infrastructure.storage import (
     close_postgres_pool,
@@ -24,7 +25,6 @@ from supernova.infrastructure.storage import (
     get_redis_client,
 )
 from supernova.runtime_config_guardrails import validate_runtime_configuration
-from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -77,6 +77,40 @@ app.include_router(dashboard_router, dependencies=[Depends(get_current_user)])
 app.include_router(agent_router)
 
 
+@app.get("/health")
+async def health() -> dict[str, Any]:
+    return {"ok": True, "timestamp": datetime.now(UTC).isoformat()}
+
+
+@app.get("/health/deep")
+async def deep_health(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    status: dict[str, Any] = {
+        "timestamp": datetime.now(UTC).isoformat(),
+        "services": {
+            "postgres": False,
+            "redis": False,
+        },
+        "user_id": user_id,
+    }
+
+    try:
+        pool = await get_postgres_pool()
+        value = await pool.fetchval("SELECT 1")
+        status["services"]["postgres"] = value == 1
+    except Exception:
+        status["services"]["postgres"] = False
+
+    try:
+        redis_client = await get_redis_client()
+        pong = await redis_client.get_client().ping()
+        status["services"]["redis"] = bool(pong)
+    except Exception:
+        status["services"]["redis"] = False
+
+    status["ok"] = all(status["services"].values())
+    return status
+
+
 @app.get("/metrics")
 async def prometheus_metrics(user_id: str = Depends(get_current_user)) -> Any:
     registry = CollectorRegistry()
@@ -98,6 +132,12 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
             await ws.receive_text()
     except WebSocketDisconnect:
         logger.info("Health websocket disconnected")
+
+
+@app.post("/auth/token", response_model=TokenResponse)
+async def issue_token() -> TokenResponse:
+    token = create_access_token({"sub": "demo-user"})
+    return TokenResponse(access_token=token, token_type="bearer")
 
 
 @app.websocket("/agent/stream/{session_id}")
@@ -123,11 +163,49 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
         logger.info("Agent websocket disconnected: %s", session_id)
 
 
-@app.get("/fleet/summary")
+@app.get("/memory/semantic")
+async def get_semantic_memory(
+    user_id: str = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    return []
+
+
+@app.get("/memory/procedural")
+async def get_procedural_skills(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
+    return []
+
+
+@app.get("/admin/fleet")
 async def get_fleet_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
     return {"ok": True, "user_id": user_id}
 
 
-@app.get("/costs/summary")
+@app.get("/admin/costs")
 async def get_cost_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    return {"ok": True, "user_id": user_id}
+
+
+@app.get("/admin/audit-logs")
+async def get_audit_logs(
+    user_id: str = Depends(get_current_user),
+    action: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    return {"items": [], "action": action, "limit": limit, "offset": offset, "user_id": user_id}
+
+
+@app.get("/memory/export")
+async def export_memory(
+    user_id: str = Depends(get_current_user),
+    format: str = Query("json", pattern="^(json|markdown)$"),
+    memory_type: str | None = Query(None, pattern="^(semantic|episodic|all)$"),
+) -> dict[str, Any]:
+    return {"format": format, "memory_type": memory_type, "user_id": user_id}
+
+
+@app.post("/memory/import")
+async def import_memory(
+    user_id: str = Depends(get_current_user),
+) -> dict[str, Any]:
     return {"ok": True, "user_id": user_id}
