@@ -351,7 +351,7 @@ async def health_deep() -> dict[str, Any]:
 
 
 @app.get("/metrics")
-async def prometheus_metrics() -> Any:
+async def prometheus_metrics(user_id: str = Depends(get_current_user)) -> Any:
     """Prometheus-compatible metrics endpoint."""
     from starlette.responses import Response
 
@@ -436,7 +436,7 @@ async def get_semantic_memories(
 
 
 @app.get("/memory/procedural")
-async def get_procedural_skills() -> list[dict[str, Any]]:
+async def get_procedural_skills(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
     """Return list of compiled procedural skills."""
     proc_store = _state.get("procedural_store")
     if not proc_store:
@@ -448,7 +448,7 @@ async def get_procedural_skills() -> list[dict[str, Any]]:
 
 
 @app.get("/admin/fleet")
-async def get_fleet_summary() -> dict[str, Any]:
+async def get_fleet_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
     """Return model fleet summary from DynamicModelRouter."""
     router = _state.get("model_router")
     if not router:
@@ -457,7 +457,7 @@ async def get_fleet_summary() -> dict[str, Any]:
 
 
 @app.get("/admin/costs")
-async def get_cost_summary() -> dict[str, Any]:
+async def get_cost_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
     """Return current spend, limits, and projections."""
     cc = _state.get("cost_controller")
     if not cc:
