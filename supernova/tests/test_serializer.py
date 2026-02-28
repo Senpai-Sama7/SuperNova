@@ -10,6 +10,8 @@ All tests are pure and require no network or external services.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
 import pickle
 
@@ -34,13 +36,16 @@ class TestSecureSerializer:
         out = secure_loads(blob, hmac_key="k")
         assert out == obj
 
-    def test_wire_format_has_hmac_prefix(self) -> None:
+    def test_wire_format_has_correct_hmac_prefix(self) -> None:
         obj = {"x": 1}
+        payload = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        expected_sig = hmac.new(b"k", payload, hashlib.sha256).digest()
+
         blob = secure_dumps(obj, hmac_key="k")
         assert isinstance(blob, (bytes, bytearray))
-        # SHA-256 digest length is 32 bytes (signature prefix)
-        assert len(blob) > 32
-        assert blob[:32] != b"" * 32
+        assert len(blob) == 32 + len(payload)
+        assert blob[:32] == expected_sig
+        assert blob[32:] == payload
 
     def test_too_short_blob_raises(self) -> None:
         with pytest.raises(SerializationError, match=r"too short"):
@@ -53,14 +58,12 @@ class TestSecureSerializer:
 
     def test_tampered_payload_fails_hmac(self) -> None:
         blob = bytearray(secure_dumps({"x": 1}, hmac_key="k"))
-        # Flip one bit in payload section
         blob[-1] ^= 0x01
         with pytest.raises(SerializationError, match=r"HMAC verification failed"):
             secure_loads(bytes(blob), hmac_key="k")
 
     def test_tampered_signature_fails_hmac(self) -> None:
         blob = bytearray(secure_dumps({"x": 1}, hmac_key="k"))
-        # Flip one bit in signature section
         blob[0] ^= 0x01
         with pytest.raises(SerializationError, match=r"HMAC verification failed"):
             secure_loads(bytes(blob), hmac_key="k")
@@ -72,15 +75,9 @@ class TestSecureSerializer:
             def __reduce__(self):
                 return (os.system, ("echo should_not_run",))
 
-        payload = pickle.dumps(Evil(), protocol=pickle.HIGHEST_PROTOCOL)
-        signed = secure_dumps(payload, hmac_key="k")
-
-        # secure_loads expects signed pickle of an object, not a pickle-bytes payload.
-        # So we instead sign the Evil() object directly, ensuring HMAC passes first.
-        signed2 = secure_dumps(Evil(), hmac_key="k")
-
+        signed = secure_dumps(Evil(), hmac_key="k")
         with pytest.raises(SerializationError, match=r"Blocked deserialization"):
-            secure_loads(signed2, hmac_key="k")
+            secure_loads(signed, hmac_key="k")
 
     def test_restricted_unpickler_error_mentions_module_and_name(self) -> None:
         class Evil:
@@ -91,5 +88,5 @@ class TestSecureSerializer:
         with pytest.raises(SerializationError) as ei:
             secure_loads(signed, hmac_key="k")
         msg = str(ei.value)
-        assert "os" in msg or "posix" in msg or "nt" in msg
+        assert ("os" in msg) or ("posix" in msg) or ("nt" in msg)
         assert "system" in msg
