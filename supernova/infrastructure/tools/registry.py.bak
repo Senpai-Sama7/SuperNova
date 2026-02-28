@@ -16,7 +16,6 @@ from enum import Flag, auto
 from typing import Any
 
 from supernova.core.security.sandbox import ExecutionSandbox
-from supernova.core.security.sanitizer import ContentSanitizer
 from supernova.infrastructure.storage.postgres import AsyncPostgresPool
 
 logger = logging.getLogger(__name__)
@@ -80,7 +79,6 @@ class ToolRegistry:
         self._tools: dict[str, Tool] = {}
         self._enabled_tools: set[str] = set(enabled_tools) if enabled_tools else set()
         self._sandbox = sandbox or ExecutionSandbox()
-        self._sanitizer = ContentSanitizer()
 
     @staticmethod
     def _coerce_capabilities(value: Capability | int | None) -> Capability:
@@ -124,14 +122,6 @@ class ToolRegistry:
         """
         missing = tool.required_capabilities & ~self._granted
         if missing:
-
-        # Validate tool arguments
-        for key, value in arguments.items():
-            if isinstance(value, str):
-                result = self._sanitizer.sanitize(value)
-                if not result.is_safe:
-                    raise ValueError(f"Unsafe input in argument {key}: {result.violations}")
-                arguments[key] = result.content
             raise PermissionError(
                 f"Tool '{tool.name}' requires capabilities not granted: {missing}"
             )
@@ -172,14 +162,6 @@ class ToolRegistry:
         )
         missing = tool.required_capabilities & ~effective_caps
         if missing:
-
-        # Validate tool arguments
-        for key, value in arguments.items():
-            if isinstance(value, str):
-                result = self._sanitizer.sanitize(value)
-                if not result.is_safe:
-                    raise ValueError(f"Unsafe input in argument {key}: {result.violations}")
-                arguments[key] = result.content
             raise PermissionError(f"Tool '{name}' requires capabilities not granted: {missing}")
 
         # Execute tool in sandbox
