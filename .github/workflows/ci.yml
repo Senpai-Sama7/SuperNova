@@ -4,33 +4,32 @@ on:
   push:
     branches:
       - main
-      - 'feat/**'
-      - 'fix/**'
-      - 'hardening/**'
+      - "feat/**"
+      - "fix/**"
+      - "hardening/**"
   pull_request:
     branches:
       - main
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ── Python: lint + type-check ──────────────────────────────────────────────
-  python-quality:
-    name: Python Quality (Ruff + MyPy)
+  lint-and-typecheck:
+    name: Lint & Type Check (Python)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: pip
 
       - name: Install dev dependencies
         working-directory: supernova
-        run: pip install -e '.[dev]'
+        run: pip install -e ".[dev]"
 
       - name: Ruff lint
         working-directory: supernova
@@ -40,24 +39,21 @@ jobs:
         working-directory: supernova
         run: ruff format --check .
 
-      - name: MyPy type check
+      - name: MyPy
         working-directory: supernova
         run: mypy . --ignore-missing-imports
 
-  # ── Python: unit tests with coverage gate ──────────────────────────────────
-  python-test:
-    name: Python Tests (Pytest ≥80% coverage)
+  test-python:
+    name: Python Unit Tests
     runs-on: ubuntu-latest
-    needs: python-quality
-
     services:
       postgres:
         image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: testpass
-          POSTGRES_USER: supernova
           POSTGRES_DB: supernova_test
-        ports: ['5432:5432']
+          POSTGRES_USER: supernova
+        ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -66,39 +62,38 @@ jobs:
 
       redis:
         image: redis:7-alpine
-        ports: ['6379:6379']
+        ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
-    env:
-      DATABASE_URL: postgresql+asyncpg://supernova:testpass@localhost:5432/supernova_test
-      REDIS_URL: redis://localhost:6379/0
-      OPENAI_API_KEY: sk-test-placeholder
-      ENVIRONMENT: test
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: pip
 
       - name: Install dev dependencies
         working-directory: supernova
-        run: pip install -e '.[dev]'
+        run: pip install -e ".[dev]"
 
-      - name: Run unit tests
+      - name: Run unit tests (no integration)
         working-directory: supernova
+        env:
+          DATABASE_URL: postgresql+asyncpg://supernova:testpass@localhost:5432/supernova_test
+          REDIS_URL: redis://localhost:6379/0
+          OPENAI_API_KEY: sk-test-placeholder
+          SUPERNOVA_SECRET_KEY: test-secret-key-32chars-minimum!!
         run: |
           pytest tests/ \
             -m "not integration and not slow" \
             --cov=. \
             --cov-report=term-missing \
-            --cov-report=xml:coverage.xml \
+            --cov-report=xml \
             --cov-fail-under=80 \
             -v
 
@@ -109,31 +104,28 @@ jobs:
           name: coverage-report
           path: supernova/coverage.xml
 
-  # ── Frontend: type-check + lint + unit tests ───────────────────────────────
-  frontend:
-    name: Frontend (tsc + ESLint + Vitest)
+  test-frontend:
+    name: Frontend (TypeScript + Vitest)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: dashboard
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: npm
           cache-dependency-path: dashboard/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: TypeScript type check
+      - name: Type check
         run: npm run type-check
 
-      - name: ESLint
+      - name: Lint
         run: npm run lint
 
-      - name: Vitest unit tests
-        run: npm run test:unit -- --reporter=verbose
+      - name: Unit tests
+        run: npm run test:unit

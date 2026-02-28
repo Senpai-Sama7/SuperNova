@@ -1,15 +1,15 @@
 """supernova/core/security/middleware.py
 
-InputSanitizationMiddleware: Starlette ASGI middleware that intercepts all
-inbound HTTP request bodies and applies ContentSanitizer before the request
-reaches any FastAPI route handler.  Returns HTTP 400 on injection detection.
+ASGI middleware that applies ContentSanitizer to every inbound request body
+and query parameter before reaching FastAPI route handlers. JSON string
+fields are sanitised recursively; binary and non-text payloads are passed
+through unchanged.
 """
-
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -20,117 +20,97 @@ from supernova.core.security.sanitizer import ContentSanitizer
 
 logger = logging.getLogger(__name__)
 
-_JSON_CONTENT_TYPES = frozenset(
-    {
-        "application/json",
-        "application/json; charset=utf-8",
-    }
-)
-_TEXT_CONTENT_TYPES = frozenset(
-    {
-        "text/plain",
-        "text/plain; charset=utf-8",
-        "application/x-www-form-urlencoded",
-    }
-)
+_TEXT_CONTENT_TYPES = frozenset({
+    "application/json",
+    "text/plain",
+    "application/x-www-form-urlencoded",
+})
+
+# Paths exempt from sanitisation (health probes, static OpenAPI docs)
+_DEFAULT_SKIP_PATHS = ["/healthz", "/health", "/metrics", "/docs", "/openapi.json", "/redoc"]
 
 
 class InputSanitizationMiddleware(BaseHTTPMiddleware):
-    """ASGI middleware that sanitises inbound request bodies.
+    """ASGI middleware: sanitise inbound text payloads, reject prompt injection.
 
-    - JSON bodies: recursively sanitises every string field.
-    - Text / form bodies: sanitises the raw string.
-    - Other content types: passed through unchanged.
-    - Configured skip_paths bypass sanitisation entirely (health, metrics).
-
-    Returns HTTP 400 ``{"error": "SANITIZATION_REJECTED", "detail": "..."}``
-    when prompt injection is detected in a JSON or text body.
+    Wraps the application so that every request with a text content-type is
+    passed through :class:`ContentSanitizer` before route handlers execute.
+    Requests flagged as injections receive an HTTP 400 response immediately.
 
     Args:
         app: Wrapped ASGI application.
-        sanitizer: ContentSanitizer instance.  Defaults to standard config
-            with ``block_on_injection=True``.
-        skip_paths: URL path prefixes to skip (default: health / docs / metrics).
+        sanitizer: Pre-configured :class:`ContentSanitizer`. If omitted a
+            default instance is created with ``block_on_injection=True``.
+        skip_paths: Path prefixes to bypass sanitisation entirely.
     """
 
     def __init__(
         self,
         app: ASGIApp,
-        sanitizer: Optional[ContentSanitizer] = None,
-        skip_paths: Optional[List[str]] = None,
+        sanitizer: ContentSanitizer | None = None,
+        skip_paths: list[str] | None = None,
     ) -> None:
         super().__init__(app)
         self._sanitizer = sanitizer or ContentSanitizer(block_on_injection=True)
-        self._skip_paths: List[str] = skip_paths or [
-            "/health",
-            "/healthz",
-            "/metrics",
-            "/docs",
-            "/redoc",
-            "/openapi.json",
-        ]
+        self._skip_paths: list[str] = skip_paths if skip_paths is not None else _DEFAULT_SKIP_PATHS
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Bypass sanitisation for excluded paths
+        """Intercept, sanitise, and forward the request."""
         if any(request.url.path.startswith(p) for p in self._skip_paths):
             return await call_next(request)
 
-        raw_ct = request.headers.get("content-type", "").split(";")[0].strip().lower()
+        content_type = request.headers.get("content-type", "").split(";")[0].strip()
+        if content_type not in _TEXT_CONTENT_TYPES:
+            return await call_next(request)
 
-        if raw_ct in _JSON_CONTENT_TYPES or raw_ct in _TEXT_CONTENT_TYPES:
-            body = await request.body()
-            if body:
-                try:
-                    sanitized_body = self._sanitize_body(body, raw_ct, request.url.path)
-                except ValueError as exc:
-                    logger.warning(
-                        "Sanitization rejection",
-                        path=request.url.path,
-                        reason=str(exc),
-                    )
-                    return JSONResponse(
-                        status_code=400,
-                        content={
-                            "error": "SANITIZATION_REJECTED",
-                            "detail": str(exc),
-                        },
-                    )
+        raw_body = await request.body()
+        if not raw_body:
+            return await call_next(request)
 
-                async def receive() -> dict:
-                    return {
-                        "type": "http.request",
-                        "body": sanitized_body,
-                        "more_body": False,
-                    }
+        try:
+            sanitised_body = self._sanitise_body(raw_body, content_type, request.url.path)
+        except ValueError as exc:
+            logger.warning("Sanitisation rejection path=%s reason=%s", request.url.path, exc)
+            return JSONResponse(
+                status_code=400,
+                content={"detail": str(exc), "error": "INPUT_REJECTED"},
+            )
 
-                request = Request(request.scope, receive)
+        async def _receive() -> dict:
+            return {"type": "http.request", "body": sanitised_body, "more_body": False}
 
-        return await call_next(request)
+        patched_request = Request(request.scope, _receive)
+        return await call_next(patched_request)
 
-    def _sanitize_body(self, body: bytes, content_type: str, path: str) -> bytes:
-        """Dispatch sanitisation by content type and return cleaned bytes."""
-        if content_type in _JSON_CONTENT_TYPES:
+    def _sanitise_body(self, body: bytes, content_type: str, path: str) -> bytes:
+        """Sanitise *body* bytes according to their content type.
+
+        Raises:
+            ValueError: When prompt injection is detected and blocking is enabled.
+        """
+        if content_type == "application/json":
             try:
                 data = json.loads(body)
             except json.JSONDecodeError:
-                return body  # Malformed JSON — let the route handler return 422
-            cleaned = self._sanitize_json_value(data, path)
-            return json.dumps(cleaned, ensure_ascii=False).encode("utf-8")
-        else:
-            text = body.decode("utf-8", errors="replace")
-            result = self._sanitizer.sanitize(text, context_label=path)
-            # block_on_injection is set on the sanitizer; ValueError propagates up
-            return result.text.encode("utf-8")
+                return body
+            sanitised_data = self._sanitise_json(data, path)
+            return json.dumps(sanitised_data).encode()
 
-    def _sanitize_json_value(self, value: Any, path: str) -> Any:
-        """Recursively sanitise all string values within a JSON structure."""
+        text = body.decode("utf-8", errors="replace")
+        result = self._sanitizer.sanitize(text, context_label=path)
+        if result.injection_detected:
+            raise ValueError(f"Prompt injection detected in request to {path}")
+        return result.text.encode("utf-8")
+
+    def _sanitise_json(self, value: Any, path: str) -> Any:
+        """Recursively sanitise string fields within a JSON structure."""
         if isinstance(value, str):
             result = self._sanitizer.sanitize(value, context_label=path)
-            return result.text  # ValueError already raised by sanitizer if injected
+            if result.injection_detected:
+                raise ValueError(f"Prompt injection in JSON field at {path}")
+            return result.text
         if isinstance(value, dict):
-            return {
-                k: self._sanitize_json_value(v, f"{path}.{k}") for k, v in value.items()
-            }
+            return {k: self._sanitise_json(v, f"{path}.{k}") for k, v in value.items()}
         if isinstance(value, list):
-            return [self._sanitize_json_value(item, path) for item in value]
+            return [self._sanitise_json(item, path) for item in value]
         return value

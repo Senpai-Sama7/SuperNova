@@ -1,8 +1,8 @@
 """Security subsystem for SuperNova.
 
-Provides TrustedContext for immutable request identity, ContentSanitizer
-for prompt-injection and PII defence, and InputSanitizationMiddleware
-for automatic ASGI-layer sanitization of all inbound request bodies.
+Provides TrustedContext for request-scoped identity/permission snapshots,
+ContentSanitizer for prompt-injection and PII detection, and
+InputSanitizationMiddleware for ASGI-layer enforcement.
 """
 
 from supernova.core.security.middleware import InputSanitizationMiddleware
