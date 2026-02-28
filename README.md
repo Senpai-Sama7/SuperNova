@@ -1,10 +1,76 @@
-# 🌟 SuperNova
+<div align="center">
 
-**The AI assistant you can inspect and trust.**
+<!-- Animated header banner -->
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:7c3aed,100:06b6d4&height=220&section=header&text=SuperNova&fontSize=80&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=The%20AI%20assistant%20you%20can%20inspect%20and%20trust&descSize=18&descAlignY=55&descAlign=50" width="100%"/>
 
-SuperNova runs entirely on your machine — your conversations, memories, and data never leave your computer. Every action requires your approval. Every decision is logged and auditable. Every piece of memory is inspectable through a 3D visualization. This isn't another cloud AI that you have to trust blindly; it's an AI you can verify, control, and truly own.
+<br/>
 
-## Architecture
+<!-- Badges row 1 -->
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-7c3aed?style=for-the-badge)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#-quick-start-5-minutes)
+[![Privacy](https://img.shields.io/badge/privacy-100%25_local-00c853?style=for-the-badge&logo=gnuprivacyguard&logoColor=white)](#)
+
+<!-- Badges row 2 -->
+[![Agents](https://img.shields.io/badge/agents-multi--agent_system-06b6d4?style=for-the-badge&logo=probot&logoColor=white)](#-architecture)
+[![Memory](https://img.shields.io/badge/memory-4_types_persistent-06b6d4?style=for-the-badge&logo=databricks&logoColor=white)](#-how-it-remembers)
+[![Interfaces](https://img.shields.io/badge/interfaces-web_+_TUI_+_API-06b6d4?style=for-the-badge&logo=windowsterminal&logoColor=white)](#-interfaces)
+
+<br/>
+
+> **Your AI runs on your machine. Your data stays on your machine. Period.**
+> While other assistants ship your conversations to the cloud and pinky-promise they won't peek, SuperNova keeps everything local — encrypted, inspectable, and under your control.
+> No telemetry. No "anonymous" analytics. No "we may use your data to improve our models."
+> Just an AI that works *for* you, not *on* you.
+
+<br/>
+
+```
+  ╔══════════════════════════════════════════════════════════════╗
+  ║                                                              ║
+  ║   🧠  4-type persistent memory (semantic · episodic · more) ║
+  ║   🤖  Multi-agent orchestration (plan · execute · critique) ║
+  ║   🛡️  Granular approval system (you control everything)     ║
+  ║   🔮  3D memory visualization (see what it knows)           ║
+  ║   💰  Real-time cost tracking (never a surprise bill)       ║
+  ║   🏠  100% local-first (your data never leaves)             ║
+  ║                                                              ║
+  ╚══════════════════════════════════════════════════════════════╝
+```
+
+</div>
+
+---
+
+## ⚡ Quick Start (5 Minutes)
+
+```bash
+git clone https://github.com/Senpai-Sama7/SuperNova-.git
+cd SuperNova
+./setup.sh              # installs everything
+docker compose up -d    # starts databases
+```
+
+Add your API key to `.env`:
+```
+OPENAI_API_KEY=sk-your-key-here
+```
+
+Launch:
+```bash
+cd supernova && uvicorn api.gateway:app --reload    # API
+cd dashboard && npm install && npm run dev           # Dashboard → http://localhost:5173
+```
+
+That's it. Type a message and press Enter.
+
+> 💡 *Some AI assistants require a PhD in YAML to configure. We respect your time.*
+
+---
+
+## 🏗️ Architecture
+
+<div align="center">
 
 ```mermaid
 graph TD
@@ -36,341 +102,125 @@ graph TD
     style MemoryAgent fill:#f1f8e9
 ```
 
----
+</div>
 
-## How SuperNova Compares
-
-| Feature | SuperNova | MemGPT | Open Interpreter | ChatGPT |
-|---------|-----------|---------|------------------|---------|
-| **Privacy (Local-First)** | ✅ Fully local | ✅ Local option | ✅ Local option | ❌ Cloud only |
-| **Persistent Memory** | ✅ 4 memory types | ✅ Advanced memory | ❌ Session only | ❌ Session only |
-| **Approval System** | ✅ Granular control | ❌ No approval | ❌ No approval | ❌ No approval |
-| **Local Models** | ✅ Full support | ✅ Full support | ✅ Full support | ❌ OpenAI only |
-| **Cost** | 💰 Pay per use | 💰 Pay per use | 💰 Pay per use | 💰💰 Subscription |
-| **Open Source** | ✅ MIT License | ✅ Apache 2.0 | ✅ MIT License | ❌ Proprietary |
-| **Setup Complexity** | ⚠️ High (Docker + deps) | ⚠️ Medium | ✅ Low (pip install) | ✅ None (web) |
-| **Maturity** | ⚠️ Pre-alpha | ✅ Stable | ✅ Stable | ✅ Production |
-| **Memory Visualization** | ✅ 3D interactive | ❌ Text only | ❌ None | ❌ None |
-| **Multi-Agent System** | ✅ Orchestrated agents | ❌ Single agent | ❌ Single agent | ❌ Single model |
-
-**Honest assessment:** SuperNova is the most transparent and controllable, but requires significant setup and is still in early development. Choose MemGPT for mature local memory, Open Interpreter for simplicity, or ChatGPT for zero-setup convenience.
+> *Other AI tools use a single model and call it "intelligence." We use an orchestrated team of specialized agents — a planner, executors, and a critic — that collaborate, self-correct, and actually think before they act. Novel concept.*
 
 ---
 
-## What Does It Do?
+## 🧠 How It Remembers
 
-| Feature | What It Means For You |
-|---------|----------------------|
-| 🧠 **Remembers Everything** | Tell it something once, and it remembers it for next time |
-| 💬 **Natural Chat** | Just type and press Enter — like texting a friend |
-| 🔍 **Searches the Web** | It can look up information when you need it |
-| 📁 **Handles Files** | Read, write, and organize your files — with your permission |
-| 🛡️ **Safe by Default** | It asks before doing anything risky |
-| 📊 **See What It Knows** | Beautiful 3D view of everything it remembers about you |
-| 💰 **Tracks Costs** | You see exactly how much you're spending on AI |
+SuperNova has four types of memory — inspired by how human brains actually work:
+
+<div align="center">
+
+| Memory Type | What It Stores | Example |
+|:-----------:|:---------------|:--------|
+| 🔄 **Working** | Current conversation context | "User is asking about vacation ideas right now" |
+| 📚 **Semantic** | Facts about you | "User prefers dark mode, uses VS Code, allergic to nuts" |
+| 📖 **Episodic** | Past conversations | "Last Tuesday we planned a birthday party for Sarah" |
+| ⚙️ **Procedural** | Learned skills & workflows | "When user asks to deploy, first check git status, then run tests..." |
+
+</div>
+
+> *ChatGPT forgets you exist between sessions. MemGPT has memory but you can't see it. SuperNova lets you explore your memories in a 3D interactive visualization — click, drag, zoom. Verify what it knows. Delete what it shouldn't. Radical transparency.*
 
 ---
 
-## What Does It Look Like?
+## 🛡️ The Approval System
 
-When you open SuperNova, you'll see:
+When SuperNova wants to do something potentially risky, it stops and asks:
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │  ⚠️ Approval Request                                       │
+  │                                                             │
+  │  Tool: send_email                                          │
+  │  To: boss@company.com                                       │
+  │  Subject: Project Update                                    │
+  │                                                             │
+  │  Risk Level: ██████████ HIGH                               │
+  │                                                             │
+  │  ┌─────────────────┐    ┌─────────────────┐                │
+  │  │   ✓ APPROVE    │    │   ✗ DENY       │                │
+  │  └─────────────────┘    └─────────────────┘                │
+  │                                                             │
+  │  Auto-resolves in: 4:32                                    │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+<div align="center">
+
+| Risk Level | Examples | Auto-Resolution |
+|:----------:|:---------|:---------------:|
+| 🟢 Safe | Search web, read files | ✅ Auto-approves (30s) |
+| 🟡 Moderate | Write files, run code | ❌ Denies after 2min |
+| 🔴 Risky | Send email, call APIs | ❌ Denies after 5min |
+| ⛔ Critical | Delete data, payments | ❌ Denies after 10min |
+
+</div>
+
+> *Open Interpreter runs code without asking. ChatGPT can't run code at all. We found the middle ground — it does things, but only when you say so.*
+
+---
+
+## 🖥️ Interfaces
+
+<div align="center">
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│   Web ──── http://localhost:5173       (React dashboard)    │
+│   TUI ──── python -m tui              (rich terminal)       │
+│   API ──── http://localhost:8000       (REST + WebSocket)   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+</div>
+
+### 🌐 Web Dashboard
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  🌟 SuperNova                              [Agent: Active]  │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────┐ │
-│  │Overview│ │ Agents  │ │ Memory  │ │Decisions│ │  MCP  │ │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └───────┘ │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────┐│
+│  │Overview │ │ Agents  │ │ Memory  │ │Decisions│ │  MCP  ││
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └───────┘│
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │     ┌─────────────────────────────────────────────────┐     │
-│     │         [3D Memory Visualization]              │     │
-│     │                                                  │     │
-│     │         ✦ ───── ✦                              │     │
+│     │         [3D Memory Visualization]               │     │
+│     │                                                 │     │
+│     │         ✦ ───── ✦                               │     │
 │     │        /         \                              │     │
-│     │       ✦  Facts   ✦ ─── ✦ Skills               │     │
+│     │       ✦  Facts   ✦ ─── ✦ Skills                │     │
 │     │        \         /                              │     │
-│     │         ✦ ───── ✦                              │     │
+│     │         ✦ ───── ✦                               │     │
 │     │              │                                  │     │
-│     │         ✦ Episodes                             │     │
-│     │                                                  │     │
+│     │         ✦ Episodes                              │     │
 │     └─────────────────────────────────────────────────┘     │
 │                                                             │
 │     ┌─────────────────────────────────────────────────┐     │
 │     │  💬 Chat                                        │     │
-│     │  ─────────────────────────────────────────────  │     │
+│     │  You: What's my favorite color?                 │     │
 │     │                                                 │     │
-│     │  You: What's my favorite color?                │     │
+│     │  SuperNova: From our conversations, you         │     │
+│     │  mentioned you love blue — especially deep      │     │
+│     │  ocean blue. You said it reminds you of your    │     │
+│     │  trips to Hawaii.                               │     │
 │     │                                                 │     │
-│     │  SuperNova: From our conversations, you       │     │
-│     │  mentioned you love blue — especially         │     │
-│     │  deep ocean blue. You said it reminds         │     │
-│     │  you of your trips to Hawaii.                 │     │
-│     │                                                 │     │
-│     │  ─────────────────────────────────────────────  │     │
-│     │  [ Type your message...                    ]  │     │
+│     │  [ Type your message...                    ]    │     │
 │     └─────────────────────────────────────────────────┘     │
-│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**The main things you'll do:**
-1. **Type messages** in the chat box at the bottom
-2. **Click Approve or Deny** when the agent wants to do something
-3. **Explore** the pretty memory visualization (optional)
-
----
-
-## How It Works
-
-### The Approval System
-
-When SuperNova wants to do something potentially risky, it stops and asks:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ⚠️ Approval Request                                       │
-│                                                             │
-│  Tool: send_email                                          │
-│  To: boss@company.com                                       │
-│  Subject: Project Update                                    │
-│                                                             │
-│  Risk Level: HIGH                                          │
-│                                                             │
-│  ┌─────────────────┐    ┌─────────────────┐                │
-│  │   ✓ APPROVE    │    │   ✗ DENY       │                │
-│  └─────────────────┘    └─────────────────┘                │
-│                                                             │
-│  Auto-resolves in: 4:32                                    │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**What happens if you don't respond?**
-
-| Action Type | Examples | What Happens |
-|-------------|----------|--------------|
-| 🟢 Safe | Search web, read files | Auto-approves after 30 seconds |
-| 🟡 Moderate | Write files, run code | Waits 2 minutes, then denies |
-| 🔴 Risky | Send email, call APIs | Waits 5 minutes, then denies |
-| ⛔ Critical | Delete data, payments | Waits 10 minutes, then denies |
-
----
-
-### How It Remembers
-
-SuperNova has four types of memory (inspired by how human brains work):
-
-1. **Working Memory** — What you're currently discussing
-   > "The user is asking about vacation ideas right now"
-
-2. **Semantic Memory** — Facts about you
-   > "User prefers dark mode, uses VS Code, allergic to nuts"
-
-3. **Episodic Memory** — Past conversations
-   > "Last Tuesday we planned a birthday party for Sarah"
-
-4. **Procedural Memory** — Learned skills
-   > "When user asks to deploy, first check git status, then run tests..."
-
-**You can actually see this!** Click the **Memory** tab to see a 3D visualization of everything SuperNova knows about you.
-
----
-
-## Quick Start (5 Minutes)
-
-### 1. Install
-
-Download and run the setup:
+### 💻 Terminal UI
 
 ```bash
-git clone <repository-url>
-cd SuperNova
-./setup.sh
-```
-
-> **Windows?** Double-click `setup.bat` instead of running the shell script.
-
-### 2. Add Your AI Key
-
-Open the `.env` file and add one API key:
-
-```
-OPENAI_API_KEY=sk-your-key-here
-```
-
-[Get a free key from OpenAI](https://platform.openai.com/api-keys)
-
-### 3. Start It Up
-
-```bash
-docker compose up -d
-cd supernova
-uvicorn api.gateway:app --reload
-```
-
-### 4. Open the Dashboard
-
-```bash
-cd dashboard
-npm install
-npm run dev
-```
-
-Then open **http://localhost:5173** in your browser.
-
-### 5. Start Chatting!
-
-That's it! Type in the chat box and press Enter.
-
----
-
-## Daily Use
-
-### Talking to SuperNova
-
-Just open the dashboard and type:
-
-```
-You: What's my favorite programming language?
-```
-
-It will search its memory and respond with something like:
-
-```
-SuperNova: From our chats, you mentioned Python is your favorite.
-You called it "the perfect blend of power and readability."
-```
-
-### Approving Requests
-
-When SuperNova needs to do something, a card pops up:
-
-```
-┌──────────────────────────────────────────┐
-│ 🔧 Wants to write a file                  │
-│                                           │
-│   workspace/notes.txt                     │
-│                                           │
-│   Preview: "Meeting notes for today..."   │
-│                                           │
-│   [✓ Approve]  [✗ Deny]                   │
-└──────────────────────────────────────────┘
-```
-
-Click **Approve** or **Deny**. That's it.
-
-### Viewing Memory
-
-Click the **Memory** tab to see a 3D visualization:
-
-- **Floating nodes** = memories
-- **Colors** = different types (facts, conversations, skills)
-- **Lines** = connections between related memories
-- **Click** any node to see details
-- **Drag** to rotate the view
-- **Scroll** to zoom in/out
-
-It's actually useful — you can verify what SuperNova knows about you and spot any misunderstandings.
-
----
-
-## Checking Costs
-
-Click the **Overview** tab. You'll see a **Cost Widget** showing:
-
-- Today's spending
-- Monthly budget vs. actual
-- Which AI model is being used
-
-SuperNova automatically picks cheaper AI models for simple tasks to save you money.
-
----
-
-## Troubleshooting
-
-### "I can't connect"
-
-Make sure Docker is running:
-```bash
-docker compose ps
-```
-
-You should see all services as "healthy". If not:
-```bash
-docker compose restart
-```
-
-### "The dashboard won't open"
-
-Make sure you're using the right URL: **http://localhost:5173** (not http://127.0.0.1)
-
-### "It's not responding to my messages"
-
-Check the API is running:
-```bash
-curl http://localhost:8000/health
-```
-
-Should return `{"status": "ok"}`
-
-### "It forgot everything I told it"
-
-Check the database services are running:
-```bash
-docker compose ps
-```
-
-If PostgreSQL or Redis stopped, restart them:
-```bash
-docker compose restart
-```
-
----
-
-## Settings You'll Want to Change
-
-Open the `.env` file in any text editor:
-
-| Setting | What It Does | Default |
-|---------|-------------|---------|
-| `OPENAI_API_KEY` | Your AI API key | (required) |
-| `COST_BUDGET_DAILY_USD` | Max to spend per day | $10.00 |
-| `COST_BUDGET_MONTHLY_USD` | Max to spend per month | $100.00 |
-| `LITELLM_DEFAULT_MODEL` | Which AI to use | gpt-4o-mini |
-
-That's it! The defaults work fine for most people.
-
-### Control Panel (Dashboard Settings)
-
-SuperNova includes a visual **Settings** tab in the dashboard where you can control:
-
-| Setting | What It Does |
-|---------|-------------|
-| **Risk Control** | Choose when SuperNova asks for approval (Always, Risky only, Never) |
-| **Speed Control** | Balance between fast responses and thorough reasoning |
-| **Budget** | Set your daily spending limit |
-| **Tool Access** | Enable/disable specific capabilities (web search, file operations, code execution) |
-| **Self-Reflection** | Enable agent to evaluate its own responses |
-| **Query Caching** | Skip AI for repeated queries |
-
-**Quick Presets:**
-- 🔒 **Maximum** — Approves everything, full control
-- ⚠️ **Careful** — Approve risky actions only
-- ⚖️ **Balanced** — Recommended default
-- 🚀 **Fast** — Let it run autonomously
-
-Access Settings at: **http://localhost:5173** → Click Settings tab
-
----
-
-## Terminal UI
-
-Prefer working in the terminal? SuperNova has a full-featured TUI:
-
-```bash
-cd supernova
-python -m tui
+cd supernova && python -m tui
 ```
 
 ```
@@ -381,7 +231,6 @@ python -m tui
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ✦ Welcome to SuperNova                                     │
-│                                                              │
 │    Type a message below and press Enter to chat.            │
 │    Use Ctrl+1‑5 to switch tabs, Ctrl+P for commands.        │
 │                                                              │
@@ -392,105 +241,172 @@ python -m tui
 └──────────────────────────────────────────────────────────────┘
 ```
 
-**Keyboard shortcuts:**
-
 | Key | Action |
-|-----|--------|
-| `Ctrl+1‑5` | Switch tabs (Chat, Memory, Approvals, Admin, Logs) |
-| `Ctrl+P` | Open command palette |
+|:---:|:-------|
+| `Ctrl+1‑5` | Switch tabs |
+| `Ctrl+P` | Command palette |
 | `Ctrl+Q` | Quit |
-| `Enter` | Send message / Search |
-
-**What each tab does:**
-
-| Tab | What You'll Find |
-|-----|-------------------|
-| 💬 Chat | Talk to SuperNova, see streaming responses |
-| 🧠 Memory | Search what SuperNova remembers, view learned skills |
-| 🛡️ Approvals | Approve or deny pending actions |
-| 📊 Admin | Health checks, cost tracking, audit logs |
-| 📋 Logs | Live TUI event log for troubleshooting |
-
-**Custom API URL:**
-
-```bash
-SUPERNOVA_API_URL=http://myserver:8000 python -m tui
-```
 
 ---
 
-## For Developers
+## 🏆 How SuperNova Compares
 
-If you're technical and want to use the API directly:
+<div align="center">
 
-### Send a Message
+| | SuperNova | MemGPT | Open Interpreter | ChatGPT |
+|:--|:---:|:---:|:---:|:---:|
+| 100% local | ✅ always | ✅ option | ✅ option | ❌ cloud only |
+| Persistent memory | ✅ 4 types | ✅ advanced | ❌ session only | ❌ session only |
+| Approval system | ✅ granular | ❌ | ❌ | ❌ |
+| Memory visualization | ✅ 3D interactive | ❌ text only | ❌ none | ❌ none |
+| Multi-agent system | ✅ orchestrated | ❌ single | ❌ single | ❌ single |
+| Local model support | ✅ full | ✅ full | ✅ full | ❌ OpenAI only |
+| Cost tracking | ✅ real-time | ❌ | ❌ | ❌ |
+| Open source | ✅ MIT | ✅ Apache 2.0 | ✅ MIT | ❌ proprietary |
+| Self-reflection | ✅ critic agent | ❌ | ❌ | ❌ |
 
-```bash
-curl -X POST http://localhost:8000/api/v1/agent/message \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Hello!"}'
-```
+</div>
 
-### WebSocket (Real-Time)
-
-```
-ws://localhost:8000/agent/stream/{session_id}?token=YOUR_TOKEN
-```
-
-### API Reference
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Is it running? |
-| `POST /api/v1/agent/message` | Send a message |
-| `WS /agent/stream/{id}` | Real-time chat |
-| `GET /memory/semantic` | Browse memories |
-| `GET /admin/costs` | View spending |
-| `GET /api/v1/preferences` | Get user preferences |
-| `POST /api/v1/preferences` | Set user preferences |
-| `POST /api/v1/preferences/preset/{name}` | Apply a preset (paranoid, careful, balanced, fast) |
+> *We're not saying other tools are bad. We're saying we built the one we wanted to use — where you can actually see what the AI knows about you, control what it does, and never worry about your data leaving your machine. If that's not your priority, ChatGPT is one tab away.* 🫖
 
 ---
 
-## What's Running Under the Hood
+## 📊 Cost Tracking
 
-SuperNova uses four database services (started via Docker):
+Never get a surprise AI bill again.
 
-| Service | What It Does |
-|---------|-------------|
-| **PostgreSQL** | Stores memories and learned skills |
-| **Redis** | Fast temporary storage |
-| **Neo4j** | Timeline of past conversations |
-| **Langfuse** | Tracks AI performance (optional) |
+<div align="center">
 
-You don't need to interact with these — SuperNova handles it all.
+| Feature | What It Does |
+|:--------|:-------------|
+| 💰 **Daily budget** | Hard cap on daily spending (default: $10) |
+| 📅 **Monthly budget** | Hard cap on monthly spending (default: $100) |
+| 🧠 **Smart routing** | Auto-picks cheaper models for simple tasks |
+| 📈 **Real-time dashboard** | See spending in the Overview tab |
+| 🔔 **Budget alerts** | Warns before you hit limits |
+
+</div>
 
 ---
 
-## Project Structure
+## ⚙️ Settings
+
+SuperNova includes a visual settings panel in the dashboard:
+
+<div align="center">
+
+| Preset | Approval | Speed | Best For |
+|:------:|:--------:|:-----:|:---------|
+| 🔒 **Maximum** | Everything | Slow | Sensitive work |
+| ⚠️ **Careful** | Risky only | Medium | Daily use |
+| ⚖️ **Balanced** | Smart defaults | Medium | Recommended |
+| 🚀 **Fast** | Nothing | Fast | Trusted tasks |
+
+</div>
+
+Fine-grained controls: risk thresholds, tool access toggles, self-reflection, query caching, model selection.
+
+---
+
+## 📡 API Reference
+
+| Method | Endpoint | Description |
+|:------:|:---------|:------------|
+| `GET` | `/health` | Server status |
+| `POST` | `/api/v1/agent/message` | Send a message |
+| `WS` | `/agent/stream/{id}` | Real-time chat |
+| `GET` | `/memory/semantic` | Browse memories |
+| `GET` | `/admin/costs` | View spending |
+| `GET` | `/api/v1/preferences` | Get settings |
+| `POST` | `/api/v1/preferences` | Update settings |
+| `POST` | `/api/v1/preferences/preset/{name}` | Apply preset |
+
+---
+
+## 🔧 What's Under the Hood
+
+<div align="center">
+
+| Service | Purpose | Why |
+|:-------:|:--------|:----|
+| ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | Memories & skills | Durable, queryable storage |
+| ![Redis](https://img.shields.io/badge/-Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | Fast cache | Sub-millisecond lookups |
+| ![Neo4j](https://img.shields.io/badge/-Neo4j-4581C3?style=flat-square&logo=neo4j&logoColor=white) | Conversation timeline | Graph-based episode linking |
+| ![Langfuse](https://img.shields.io/badge/-Langfuse-000000?style=flat-square) | AI observability | Performance tracking (optional) |
+
+</div>
+
+You don't need to touch any of these — `docker compose up -d` handles everything.
+
+---
+
+## 🧪 Self-Healing & Error Handling
+
+<details>
+<summary><b>💪 What auto-recovers</b> (click to expand)</summary>
+
+| Scenario | What Happens |
+|:---------|:-------------|
+| Database service down | Auto-reconnects on next request |
+| Corrupt memory entry | Skipped gracefully — others unaffected |
+| API key expired | Clear error + falls back to cheaper model |
+| Budget exceeded | Blocks requests with friendly message |
+| Docker not running | Setup script detects and guides you |
+
+</details>
+
+<details>
+<summary><b>🚫 What doesn't recover (by design)</b> (click to expand)</summary>
+
+- **Deleted database volumes** = memories gone. Back up your Docker volumes.
+- **Lost API key** = can't call cloud models. Get a new key.
+- **Corrupted Neo4j graph** = episode links lost. Semantic memory survives.
+
+</details>
+
+---
+
+## 📁 Project Structure
 
 ```
 SuperNova/
-├── dashboard/          # The web interface you see
-├── supernova/          # The main AI system
-├── loop.py            # How the agent thinks
-├── context_assembly.py # How it builds context
-├── interrupts.py      # How approval requests work
+├── dashboard/          # React web interface + 3D memory viz
+├── supernova/          # Core AI system
+│   ├── api/            # FastAPI gateway
+│   ├── agents/         # Orchestrator, Planner, Executor, Critic
+│   ├── memory/         # 4-type memory system
+│   ├── loop.py         # Agent thinking loop
+│   ├── context_assembly.py  # Context building
+│   └── interrupts.py   # Approval system
 ├── docker-compose.yml  # Database services
-├── .env               # Your settings
-└── README.md          # ← You're here
+├── setup.sh            # One-command install
+└── .env                # Your settings
 ```
 
 ---
 
-## Need Help?
+## 🤝 Contributing
 
-- **It's not working** → Check the Troubleshooting section above
-- **Want to know more** → See README sections below
-- **Found a bug** → Open an issue on GitHub
+```bash
+git clone https://github.com/Senpai-Sama7/SuperNova-.git
+cd SuperNova
+./setup.sh
+# Make changes, then:
+python -m pytest tests/ -v
+```
 
 ---
 
-## License
+<div align="center">
 
-MIT — free to use and modify.
+## 📜 License
+
+MIT — free to use, modify, and distribute.
+
+*Your AI. Your data. Your rules.*
+
+<br/>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:7c3aed,100:06b6d4&height=120&section=footer&animation=fadeIn" width="100%"/>
+
+</div>
