@@ -11,10 +11,17 @@ from typing import Any
 from fastapi import Depends, FastAPI, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
 from starlette.responses import Response
 
-from supernova.api.auth import TokenResponse, create_access_token, get_current_user, verify_token
+
+class TokenResponse(BaseModel):
+    """Response model for token endpoint."""
+    access_token: str
+    token_type: str
+
+from supernova.api.auth import create_access_token, get_current_user, verify_token
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
 from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream

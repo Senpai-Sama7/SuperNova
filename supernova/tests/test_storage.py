@@ -18,7 +18,7 @@ class TestRedisClient:
     """Cover connect, disconnect, get_client, serialize, deserialize, and CRUD."""
 
     def _make_client(self) -> AsyncRedisClient:
-        with patch("infrastructure.storage.redis.get_settings") as m:
+        with patch("supernova.infrastructure.storage.redis.get_settings") as m:
             m.return_value.redis.url = "redis://localhost:6379"
             return AsyncRedisClient(url="redis://fake:6379")
 
@@ -26,7 +26,7 @@ class TestRedisClient:
     async def test_connect_and_disconnect(self):
         client = self._make_client()
         mock_redis = AsyncMock()
-        with patch("infrastructure.storage.redis.Redis") as cls:
+        with patch("supernova.infrastructure.storage.redis.Redis") as cls:
             cls.from_url.return_value = mock_redis
             await client.connect()
             assert client._client is mock_redis
@@ -135,7 +135,7 @@ class TestPostgresPool:
     """Cover connect, disconnect, get_pool, query helpers."""
 
     def _make_pool(self) -> AsyncPostgresPool:
-        with patch("infrastructure.storage.postgres.get_settings") as m:
+        with patch("supernova.infrastructure.storage.postgres.get_settings") as m:
             m.return_value.database_url = "postgresql://localhost/test"
             return AsyncPostgresPool(dsn="postgresql://localhost/test")
 
@@ -143,7 +143,7 @@ class TestPostgresPool:
     async def test_connect_and_disconnect(self):
         pool = self._make_pool()
         mock_pg_pool = AsyncMock()
-        with patch("infrastructure.storage.postgres.asyncpg") as apg:
+        with patch("supernova.infrastructure.storage.postgres.asyncpg") as apg:
             apg.create_pool = AsyncMock(return_value=mock_pg_pool)
             await pool.connect()
             assert pool._pool is mock_pg_pool

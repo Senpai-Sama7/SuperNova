@@ -174,8 +174,14 @@ class ToolRegistry:
                     raise ValueError(f"Unsafe input in argument {key}: {result.warnings}")
                 arguments[key] = result.text
 
-        # Execute tool in sandbox
-        sandbox_result = await self._sandbox.run(tool.fn, **arguments)
+        # Execute tool in sandbox with timeout
+        try:
+            sandbox_result = await asyncio.wait_for(
+                self._sandbox.run(tool.fn, **arguments), 
+                timeout=timeout
+            )
+        except asyncio.TimeoutError:
+            raise asyncio.TimeoutError(f"Tool execution exceeded {timeout}s timeout")
         
         # Log execution
         await self._log_execution(
