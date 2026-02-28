@@ -1,6 +1,8 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, AsyncGenerator
 import logging
+import time
+import litellm
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +14,27 @@ class ReasoningDepth(str, Enum):
 class ReasoningPipeline:
     def __init__(self, llm_router):
         self.llm = llm_router
+    
+    async def stream_reason(self, query: str, context: str = "", depth: ReasoningDepth = ReasoningDepth.FAST) -> AsyncGenerator[str, None]:
+        """Stream reasoning tokens as they arrive."""
+        start_time = time.monotonic()
+        first_token_time = None
+        
+        messages = [{"role": "user", "content": f"{context}\n\nUser: {query}"}]
+        
+        stream = await litellm.acompletion(
+            model=self.llm.model,
+            messages=messages,
+            stream=True
+        )
+        
+        async for chunk in stream:
+            if chunk.choices[0].delta.content:
+                if first_token_time is None:
+                    first_token_time = time.monotonic()
+                    ttft = first_token_time - start_time
+                    logger.info(f"Time to first token: {ttft:.3f}s")
+                yield chunk.choices[0].delta.content
     
     async def reason(self, query: str, context: str = "", depth: ReasoningDepth = ReasoningDepth.FAST) -> dict:
         if depth == ReasoningDepth.FAST:
