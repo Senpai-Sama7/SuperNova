@@ -6,7 +6,7 @@ from supernova.core.reasoning.context_assembly import (
     assemble_context_window,
     estimate_context_stats,
 )
-from supernova.core.reasoning.dynamic_router import DynamicModelRouter
+from supernova.infrastructure.llm.dynamic_router import DynamicModelRouter
 
 __all__ = [
     "ContextBudget",

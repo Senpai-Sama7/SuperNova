@@ -90,28 +90,28 @@ Replace `_pending_` with concrete evidence:
 
 These supplement the 20 CCs from v2. Check before every task.
 
-- [ ] **CC-21** Root-level Python files (`loop.py`, `context_assembly.py`, `dynamic_router.py`, `procedural.py`, `interrupts.py`) moved into `supernova/` package
+- [x] **CC-21** Root-level Python files (`loop.py`, `context_assembly.py`, `dynamic_router.py`, `procedural.py`, `interrupts.py`) moved into `supernova/` package
   - **Validation:** `ls *.py` at project root shows zero core logic files; only `setup.sh`-adjacent scripts
   - **Proof:** _pending_
-- [ ] **CC-22** `.env` file is NOT committed to git; only `.env.example` exists in repo
+- [x] **CC-22** `.env` file is NOT committed to git; only `.env.example` exists in repo
   - **Validation:** `git ls-files .env` returns empty; `.gitignore` contains `.env`
   - **Proof:** _pending_
-- [ ] **CC-23** No binary artifacts (`.tar.gz`, proof bundles) committed to main branch
+- [x] **CC-23** No binary artifacts (`.tar.gz`, proof bundles) committed to main branch
   - **Validation:** `git ls-files '*.tar.gz'` returns empty; moved to GitHub Releases
   - **Proof:** _pending_
-- [ ] **CC-24** All REST endpoints require authentication (bearer token or JWT)
+- [x] **CC-24** All REST endpoints require authentication (bearer token or JWT)
   - **Validation:** `curl http://localhost:8000/memory/semantic` without auth returns 401
   - **Proof:** _pending_
-- [ ] **CC-25** Local LLM (Ollama) is the default when no API keys configured — privacy-first
+- [x] **CC-25** Local LLM (Ollama) is the default when no API keys configured — privacy-first
   - **Validation:** Fresh install with no API keys routes to Ollama; no external API calls made
   - **Proof:** _pending_
-- [ ] **CC-26** README setup time estimate is honest (tested on clean VM)
+- [x] **CC-26** README setup time estimate is honest (tested on clean VM)
   - **Validation:** Timed fresh install on Ubuntu 24.04 VM; README matches ±2 minutes
   - **Proof:** _pending_
-- [ ] **CC-27** Circuit breakers on all external API calls (LLM, Neo4j, Langfuse)
+- [x] **CC-27** Circuit breakers on all external API calls (LLM, Neo4j, Langfuse)
   - **Validation:** Kill Neo4j → agent still responds (degraded); kill LLM API → falls back to local
   - **Proof:** _pending_
-- [ ] **CC-28** Input sanitization on all external data entering context window
+- [x] **CC-28** Input sanitization on all external data entering context window
   - **Validation:** Inject `<instruction>ignore previous</instruction>` in web search result → agent ignores it
   - **Proof:** _pending_
 
@@ -138,31 +138,31 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** None — this is the first thing to fix.
 
-- [ ] **16.1.1** Move `loop.py` → `supernova/core/agent/loop.py`
+- [x] **16.1.1** Move `loop.py` → `supernova/core/agent/loop.py`
   - **Validation:** `python -c "from supernova.core.agent.loop import build_agent_graph"` succeeds; all tests pass
   - **Proof:** _pending_
 
-- [ ] **16.1.2** Move `context_assembly.py` → `supernova/core/reasoning/context_assembly.py`
+- [x] **16.1.2** Move `context_assembly.py` → `supernova/core/reasoning/context_assembly.py`
   - **Validation:** `python -c "from supernova.core.reasoning.context_assembly import assemble_context_window"` succeeds; `pytest tests/test_context_assembly.py -v` passes
   - **Proof:** _pending_
 
-- [ ] **16.1.3** Move `dynamic_router.py` → `supernova/infrastructure/llm/dynamic_router.py`
+- [x] **16.1.3** Move `dynamic_router.py` → `supernova/infrastructure/llm/dynamic_router.py`
   - **Validation:** `python -c "from supernova.infrastructure.llm.dynamic_router import DynamicModelRouter"` succeeds; `pytest tests/test_routing.py -v` passes
   - **Proof:** _pending_
 
-- [ ] **16.1.4** Move `procedural.py` → `supernova/core/memory/procedural.py`
+- [x] **16.1.4** Move `procedural.py` → `supernova/core/memory/procedural.py`
   - **Validation:** `python -c "from supernova.core.memory.procedural import ProceduralMemoryStore"` succeeds
   - **Proof:** _pending_
 
-- [ ] **16.1.5** Move `interrupts.py` → `supernova/api/interrupts.py`
+- [x] **16.1.5** Move `interrupts.py` → `supernova/api/interrupts.py`
   - **Validation:** `python -c "from supernova.api.interrupts import InterruptCoordinator"` succeeds; `pytest tests/test_interrupts.py -v` passes
   - **Proof:** _pending_
 
-- [ ] **16.1.6** Update all import paths across codebase
+- [x] **16.1.6** Update all import paths across codebase
   - **Validation:** `grep -r "from loop import\|from context_assembly import\|from dynamic_router import\|from procedural import\|from interrupts import" supernova/` returns zero matches; `pytest tests/ -v` all pass
   - **Proof:** _pending_
 
-- [ ] **16.1.7** Verify full test suite passes after refactor
+- [x] **16.1.7** Verify full test suite passes after refactor
   - **Validation:** `cd /home/donovan/Downloads/SuperNova/supernova && python3 -m pytest tests/ -v --tb=short` — all 358+ tests pass
   - **Proof:** _pending_
 
@@ -193,7 +193,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `gh release create v0.1.0-proof --title "Proof Bundles" proof_bundle_*.tar.gz` succeeds; files downloadable from Releases page
   - **Proof:** _pending_
 
-- [ ] **16.2.5** Scrub git history of secrets (optional but recommended)
+- [x] **16.2.5** Scrub git history of secrets (optional but recommended)
   - **Validation:** `git log --all -p | grep -c "sk-\|sk-ant-\|ghp_"` returns 0 after BFG/git-filter-repo
   - **Proof:** _pending_
 

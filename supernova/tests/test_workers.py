@@ -175,7 +175,7 @@ class TestConsolidationWorker:
     @pytest.mark.asyncio
     async def test_do_crystallization_handles_missing_module(self):
         import supernova.workers.consolidation as cmod
-        with patch("importlib.import_module", side_effect=ModuleNotFoundError("no procedural")):
+        with patch("importlib.import_module", side_effect=ModuleNotFoundError("no supernova.core.memory.procedural")):
             result = await cmod._do_crystallization()
         assert result["errors"] >= 1
 

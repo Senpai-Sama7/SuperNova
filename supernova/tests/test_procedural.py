@@ -33,8 +33,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# procedural.py lives at the repository root; pytest adds rootdir to sys.path
-from procedural import (
+from supernova.core.memory.procedural import (
     ProceduralMemoryStore,
     SkillCrystallizationWorker,
     SkillMatch,
@@ -176,7 +175,7 @@ class TestSkillRecord:
         assert result is fake_graph
 
     def test_compiled_graph_raises_on_tampered_bytes(self, dummy_skill: SkillRecord) -> None:
-        from procedural import SerializationError  # noqa: PLC0415
+        from supernova.core.memory.procedural import SerializationError  # noqa: PLC0415
         with patch("procedural.secure_loads", side_effect=SerializationError("tampered")):
             with pytest.raises(SerializationError):
                 _ = dummy_skill.compiled_graph

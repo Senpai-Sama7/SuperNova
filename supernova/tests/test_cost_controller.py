@@ -196,7 +196,7 @@ class TestBudgetAwareRouting:
 
     @pytest.fixture
     def router(self, mock_llm, cost_controller):
-        from supernova.core.reasoning.dynamic_router import DynamicModelRouter
+        from supernova.infrastructure.llm.dynamic_router import DynamicModelRouter
         return DynamicModelRouter(
             litellm_router=mock_llm,
             cost_controller=cost_controller,

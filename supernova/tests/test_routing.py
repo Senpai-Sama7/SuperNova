@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from supernova.core.reasoning.dynamic_router import (
+from supernova.infrastructure.llm.dynamic_router import (
     CAPABILITY_PRIORS,
     TASK_REQUIREMENTS,
     DynamicModelRouter,
