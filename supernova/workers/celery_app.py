@@ -7,6 +7,10 @@ import os
 from celery import Celery
 from celery.schedules import crontab
 
+from supernova.runtime_config_guardrails import validate_runtime_configuration
+
+validate_runtime_configuration()
+
 REDIS_BROKER = os.getenv("REDIS_CELERY_URL", "redis://localhost:6379/1")
 REDIS_BACKEND = REDIS_BROKER
 
