@@ -19,8 +19,10 @@ from supernova.infrastructure.storage import (
     get_postgres_pool,
     get_redis_client,
 )
+from supernova.runtime_config_guardrails import validate_runtime_configuration
 
 settings = get_settings()
+validate_runtime_configuration()
 
 
 @asynccontextmanager
