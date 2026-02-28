@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from infrastructure.security.audit import (
+from supernova.infrastructure.security.audit import (
     _audit_buffer,
     flush_audit_buffer,
     query_audit_logs,

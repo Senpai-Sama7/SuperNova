@@ -75,7 +75,7 @@ async def _do_crystallization() -> dict:
     try:
         # Late import to avoid circular deps and missing infra
         import importlib
-        proc_mod = importlib.import_module("procedural")
+        proc_mod = importlib.import_module("supernova.core.memory.procedural")
         worker_cls = getattr(proc_mod, "SkillCrystallizationWorker")
 
         # These would be injected from app state in production

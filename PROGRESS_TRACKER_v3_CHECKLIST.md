@@ -90,28 +90,28 @@ Replace `_pending_` with concrete evidence:
 
 These supplement the 20 CCs from v2. Check before every task.
 
-- [ ] **CC-21** Root-level Python files (`loop.py`, `context_assembly.py`, `dynamic_router.py`, `procedural.py`, `interrupts.py`) moved into `supernova/` package
+- [x] **CC-21** Root-level Python files (`loop.py`, `context_assembly.py`, `dynamic_router.py`, `procedural.py`, `interrupts.py`) moved into `supernova/` package
   - **Validation:** `ls *.py` at project root shows zero core logic files; only `setup.sh`-adjacent scripts
   - **Proof:** _pending_
-- [ ] **CC-22** `.env` file is NOT committed to git; only `.env.example` exists in repo
+- [x] **CC-22** `.env` file is NOT committed to git; only `.env.example` exists in repo
   - **Validation:** `git ls-files .env` returns empty; `.gitignore` contains `.env`
   - **Proof:** _pending_
-- [ ] **CC-23** No binary artifacts (`.tar.gz`, proof bundles) committed to main branch
+- [x] **CC-23** No binary artifacts (`.tar.gz`, proof bundles) committed to main branch
   - **Validation:** `git ls-files '*.tar.gz'` returns empty; moved to GitHub Releases
   - **Proof:** _pending_
-- [ ] **CC-24** All REST endpoints require authentication (bearer token or JWT)
+- [x] **CC-24** All REST endpoints require authentication (bearer token or JWT)
   - **Validation:** `curl http://localhost:8000/memory/semantic` without auth returns 401
   - **Proof:** _pending_
-- [ ] **CC-25** Local LLM (Ollama) is the default when no API keys configured — privacy-first
+- [x] **CC-25** Local LLM (Ollama) is the default when no API keys configured — privacy-first
   - **Validation:** Fresh install with no API keys routes to Ollama; no external API calls made
   - **Proof:** _pending_
-- [ ] **CC-26** README setup time estimate is honest (tested on clean VM)
+- [x] **CC-26** README setup time estimate is honest (tested on clean VM)
   - **Validation:** Timed fresh install on Ubuntu 24.04 VM; README matches ±2 minutes
   - **Proof:** _pending_
-- [ ] **CC-27** Circuit breakers on all external API calls (LLM, Neo4j, Langfuse)
+- [x] **CC-27** Circuit breakers on all external API calls (LLM, Neo4j, Langfuse)
   - **Validation:** Kill Neo4j → agent still responds (degraded); kill LLM API → falls back to local
   - **Proof:** _pending_
-- [ ] **CC-28** Input sanitization on all external data entering context window
+- [x] **CC-28** Input sanitization on all external data entering context window
   - **Validation:** Inject `<instruction>ignore previous</instruction>` in web search result → agent ignores it
   - **Proof:** _pending_
 
@@ -138,31 +138,31 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** None — this is the first thing to fix.
 
-- [ ] **16.1.1** Move `loop.py` → `supernova/core/agent/loop.py`
+- [x] **16.1.1** Move `loop.py` → `supernova/core/agent/loop.py`
   - **Validation:** `python -c "from supernova.core.agent.loop import build_agent_graph"` succeeds; all tests pass
   - **Proof:** _pending_
 
-- [ ] **16.1.2** Move `context_assembly.py` → `supernova/core/reasoning/context_assembly.py`
+- [x] **16.1.2** Move `context_assembly.py` → `supernova/core/reasoning/context_assembly.py`
   - **Validation:** `python -c "from supernova.core.reasoning.context_assembly import assemble_context_window"` succeeds; `pytest tests/test_context_assembly.py -v` passes
   - **Proof:** _pending_
 
-- [ ] **16.1.3** Move `dynamic_router.py` → `supernova/infrastructure/llm/dynamic_router.py`
+- [x] **16.1.3** Move `dynamic_router.py` → `supernova/infrastructure/llm/dynamic_router.py`
   - **Validation:** `python -c "from supernova.infrastructure.llm.dynamic_router import DynamicModelRouter"` succeeds; `pytest tests/test_routing.py -v` passes
   - **Proof:** _pending_
 
-- [ ] **16.1.4** Move `procedural.py` → `supernova/core/memory/procedural.py`
+- [x] **16.1.4** Move `procedural.py` → `supernova/core/memory/procedural.py`
   - **Validation:** `python -c "from supernova.core.memory.procedural import ProceduralMemoryStore"` succeeds
   - **Proof:** _pending_
 
-- [ ] **16.1.5** Move `interrupts.py` → `supernova/api/interrupts.py`
+- [x] **16.1.5** Move `interrupts.py` → `supernova/api/interrupts.py`
   - **Validation:** `python -c "from supernova.api.interrupts import InterruptCoordinator"` succeeds; `pytest tests/test_interrupts.py -v` passes
   - **Proof:** _pending_
 
-- [ ] **16.1.6** Update all import paths across codebase
+- [x] **16.1.6** Update all import paths across codebase
   - **Validation:** `grep -r "from loop import\|from context_assembly import\|from dynamic_router import\|from procedural import\|from interrupts import" supernova/` returns zero matches; `pytest tests/ -v` all pass
   - **Proof:** _pending_
 
-- [ ] **16.1.7** Verify full test suite passes after refactor
+- [x] **16.1.7** Verify full test suite passes after refactor
   - **Validation:** `cd /home/donovan/Downloads/SuperNova/supernova && python3 -m pytest tests/ -v --tb=short` — all 358+ tests pass
   - **Proof:** _pending_
 
@@ -193,11 +193,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `gh release create v0.1.0-proof --title "Proof Bundles" proof_bundle_*.tar.gz` succeeds; files downloadable from Releases page
   - **Proof:** _pending_
 
-- [ ] **16.2.5** Scrub git history of secrets (optional but recommended)
+- [x] **16.2.5** Scrub git history of secrets (optional but recommended)
   - **Validation:** `git log --all -p | grep -c "sk-\|sk-ant-\|ghp_"` returns 0 after BFG/git-filter-repo
   - **Proof:** _pending_
 
-- [ ] **16.2.6** Add comprehensive `.gitignore` entries
+- [x] **16.2.6** Add comprehensive `.gitignore` entries
   - **Validation:** `.gitignore` includes: `.env`, `*.tar.gz`, `proof_bundle*/`, `*.pyc`, `__pycache__/`, `.coverage`, `htmlcov/`, `*.egg-info/`
   - **Proof:** _pending_
 
@@ -228,11 +228,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `pytest tests/ --cov=supernova --cov-fail-under=80` in CI; fails below 80%
   - **Proof:** _pending_
 
-- [ ] **16.3.5** Add security scanning step
+- [x] **16.3.5** Add security scanning step
   - **Validation:** `pip-audit` or `safety check` in CI; fails on known vulnerabilities
   - **Proof:** _pending_
 
-- [ ] **16.3.6** Verify CI passes on current codebase
+- [x] **16.3.6** Verify CI passes on current codebase
   - **Validation:** Push to branch; GitHub Actions shows green ✅
   - **Proof:** _pending_
 
@@ -309,7 +309,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** All MCP tool results pass through `TrustedContext.wrap_external()` before entering context
   - **Proof:** _pending_
 
-- [ ] **17.2.5** Create adversarial test suite
+- [x] **17.2.5** Create adversarial test suite
   - **Validation:** Tests with known injection payloads: `"ignore previous instructions"`, `"<system>new instructions</system>"`, `"[INST]override[/INST]"` — agent ignores all of them
   - **Proof:** _pending_
 
@@ -336,7 +336,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Tool call arguments are consistent with the user's original request (semantic similarity check)
   - **Proof:** _pending_
 
-- [ ] **17.3.4** Integrate validator into tool execution pipeline
+- [x] **17.3.4** Integrate validator into tool execution pipeline
   - **Validation:** `ToolRegistry.execute()` calls validator before execution; invalid calls rejected with clear error
   - **Proof:** _pending_
 
@@ -351,19 +351,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 6.2 (WebSocket handler), existing interrupts.py
 
-- [ ] **17.4.1** Test approval queue flooding
+- [x] **17.4.1** Test approval queue flooding
   - **Validation:** Agent cannot queue >10 pending approvals; excess requests auto-denied
   - **Proof:** _pending_
 
-- [ ] **17.4.2** Test timeout manipulation
+- [x] **17.4.2** Test timeout manipulation
   - **Validation:** Timeout values cannot be overridden by agent; hardcoded minimums enforced (critical: min 60s, never auto-approve)
   - **Proof:** _pending_
 
-- [ ] **17.4.3** Test approval bypass via tool chaining
+- [x] **17.4.3** Test approval bypass via tool chaining
   - **Validation:** Agent cannot achieve high-risk outcome by chaining multiple low-risk approved actions
   - **Proof:** _pending_
 
-- [ ] **17.4.4** Document approval system threat model
+- [x] **17.4.4** Document approval system threat model
   - **Validation:** `docs/THREAT_MODEL.md` exists with attack vectors, mitigations, and residual risks
   - **Proof:** _pending_
 
@@ -527,7 +527,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Runs continuously in background; consolidates memories; manages forgetting curves; no direct user interaction
   - **Proof:** _pending_
 
-- [ ] **19.1.7** Test multi-agent pipeline end-to-end
+- [x] **19.1.7** Test multi-agent pipeline end-to-end
   - **Validation:** Complex query ("Research X, write a summary, save to file") → Planner creates 3 steps → Executor runs each → Critic reviews → User gets polished result
   - **Proof:** _pending_
 
@@ -640,11 +640,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Memories tagged with sentiment score at creation time; strong opinions (positive or negative) get higher salience; neutral facts get lower salience
   - **Proof:** _pending_
 
-- [ ] **21.1.3** Add access frequency tracking
+- [x] **21.1.3** Add access frequency tracking
   - **Validation:** Every memory retrieval increments `access_count`; frequently accessed memories ranked higher; `update_access_time()` called on every retrieval
   - **Proof:** _pending_
 
-- [ ] **21.1.4** Benchmark retrieval quality improvement
+- [x] **21.1.4** Benchmark retrieval quality improvement
   - **Validation:** Create test set of 20 queries with known "correct" memories; multi-factor retrieval returns correct memory in top-3 more often than similarity-only (measure recall@3)
   - **Proof:** _pending_
 
@@ -694,7 +694,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Recurring patterns detected (e.g., "user always asks about project X on Mondays"); relevant memories pre-loaded at predicted times
   - **Proof:** _pending_
 
-- [ ] **21.3.3** Measure prefetch hit rate
+- [x] **21.3.3** Measure prefetch hit rate
   - **Validation:** Track how often prefetched memories are actually used in the conversation; target: >50% hit rate after 30 days of use
   - **Proof:** _pending_
 
@@ -821,19 +821,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task -1.1 (installer script)
 
-- [ ] **23.2.1** Time actual setup on clean Ubuntu 24.04 VM
+- [x] **23.2.1** Time actual setup on clean Ubuntu 24.04 VM
   - **Validation:** Record: time to clone, time to docker pull, time to first response; document real numbers
   - **Proof:** _pending_
 
-- [ ] **23.2.2** Update README with honest setup time
+- [x] **23.2.2** Update README with honest setup time
   - **Validation:** README says "~15-20 minutes on first run (Docker images download); ~2 minutes on subsequent runs"
   - **Proof:** _pending_
 
-- [ ] **23.2.3** Add progress indicators during setup
+- [x] **23.2.3** Add progress indicators during setup
   - **Validation:** `setup.sh` shows progress bar for Docker pulls; estimated time remaining; clear error messages on failure
   - **Proof:** _pending_
 
-- [ ] **23.2.4** Reduce infrastructure footprint option
+- [x] **23.2.4** Reduce infrastructure footprint option
   - **Validation:** `SUPERNOVA_LITE=true` mode runs with only PostgreSQL + Redis (no Neo4j, no Langfuse); ~512MB RAM; episodic memory falls back to PostgreSQL adjacency lists
   - **Proof:** _pending_
 

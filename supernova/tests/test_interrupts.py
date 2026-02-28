@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from supernova.core.agent.interrupts import InterruptCoordinator, RiskLevel
+from supernova.api.interrupts import InterruptCoordinator, RiskLevel
 
 
 def _make_coordinator(timeout_override=None):

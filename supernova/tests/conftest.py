@@ -64,7 +64,7 @@ def tool_registry():
 @pytest.fixture
 def interrupt_coordinator():
     """Fresh InterruptCoordinator with mock broadcaster."""
-    from supernova.core.agent.interrupts import InterruptCoordinator
+    from supernova.api.interrupts import InterruptCoordinator
 
     broadcaster = AsyncMock()
     broadcaster.send = AsyncMock()
