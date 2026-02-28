@@ -1,9 +1,0 @@
-{
-  "redirect_uris": [
-    "http://localhost:26646/oauth/callback"
-  ],
-  "token_endpoint_auth_method": "none",
-  "client_name": "MCP CLI Proxy",
-  "client_id": "LarkOAMs",
-  "client_secret": "jFFDSjrKYXcWVZijxnBZkH0RYuXMQuSL"
-}
