@@ -6,10 +6,11 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import AsyncGraphDatabase
 
+from supernova.api.auth import get_current_user
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
 from supernova.config import get_settings
@@ -59,7 +60,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(dashboard_router)
+app.include_router(dashboard_router, dependencies=[Depends(get_current_user)])
 app.include_router(agent_router)
 
 
