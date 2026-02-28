@@ -60,6 +60,7 @@ def _build_audit_payload(
     *,
     action: str,
     route: str,
+    route_intent: str,
     outcome: str,
     user_id: str | None,
     client_host: str | None = None,
@@ -78,6 +79,7 @@ def _build_audit_payload(
         "request_id": request_id or f"req-{uuid4().hex}",
         "action": action,
         "route": route,
+        "route_intent": route_intent,
         "outcome": outcome,
         "user_id": normalized_user,
         "actor_type": actor_type or ("user" if user_id else "anonymous"),
@@ -92,6 +94,7 @@ def _audit_privileged_action(
     *,
     action: str,
     route: str,
+    route_intent: str,
     outcome: str,
     user_id: str | None,
     client_host: str | None = None,
@@ -104,6 +107,7 @@ def _audit_privileged_action(
     payload = _build_audit_payload(
         action=action,
         route=route,
+        route_intent=route_intent,
         outcome=outcome,
         user_id=user_id,
         client_host=client_host,
@@ -207,6 +211,7 @@ async def deep_health(request: Request, user_id: str = Depends(get_current_user)
     _audit_privileged_action(
         action="gateway.deep_health",
         route="/health/deep",
+        route_intent="admin",
         outcome="success",
         user_id=user_id,
         client_host=client_host,
@@ -225,6 +230,7 @@ async def prometheus_metrics(request: Request, user_id: str = Depends(get_curren
     _audit_privileged_action(
         action="gateway.metrics",
         route="/metrics",
+        route_intent="admin",
         outcome="success",
         user_id=user_id,
         client_host=client_host,
@@ -249,6 +255,7 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
             _audit_privileged_action(
                 action="gateway.health_ws.rate_limited",
                 route="/health/ws",
+                route_intent="stream",
                 outcome="rate_limited",
                 user_id=None,
                 client_host=client_host,
@@ -262,6 +269,7 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
         _audit_privileged_action(
             action="gateway.health_ws.invalid_token",
             route="/health/ws",
+            route_intent="stream",
             outcome="blocked",
             user_id=None,
             client_host=client_host,
@@ -289,6 +297,7 @@ async def issue_token(request: Request) -> TokenResponse:
         _audit_privileged_action(
             action="gateway.issue_token.blocked_production",
             route="/auth/token",
+            route_intent="auth",
             outcome="blocked",
             user_id=None,
             client_host=client_host,
@@ -304,6 +313,7 @@ async def issue_token(request: Request) -> TokenResponse:
         _audit_privileged_action(
             action="gateway.issue_token.rate_limited",
             route="/auth/token",
+            route_intent="auth",
             outcome="rate_limited",
             user_id=None,
             client_host=client_host,
@@ -316,6 +326,7 @@ async def issue_token(request: Request) -> TokenResponse:
     _audit_privileged_action(
         action="gateway.issue_token",
         route="/auth/token",
+        route_intent="auth",
         outcome="issued",
         user_id=None,
         client_host=client_host,
@@ -340,6 +351,7 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
             _audit_privileged_action(
                 action="gateway.agent_stream.rate_limited",
                 route="/agent/stream/{session_id}",
+                route_intent="stream",
                 outcome="rate_limited",
                 user_id=None,
                 client_host=client_host,
@@ -354,6 +366,7 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
         _audit_privileged_action(
             action="gateway.agent_stream.invalid_token",
             route="/agent/stream/{session_id}",
+            route_intent="stream",
             outcome="blocked",
             user_id=None,
             client_host=client_host,
@@ -389,6 +402,7 @@ async def get_semantic_memory(
     _audit_privileged_action(
         action="gateway.memory.semantic",
         route="/memory/semantic",
+        route_intent="read",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
@@ -404,6 +418,7 @@ async def get_procedural_skills(request: Request, user_id: str = Depends(get_cur
     _audit_privileged_action(
         action="gateway.memory.procedural",
         route="/memory/procedural",
+        route_intent="read",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
@@ -419,6 +434,7 @@ async def get_fleet_summary(request: Request, user_id: str = Depends(get_current
     _audit_privileged_action(
         action="gateway.admin.fleet",
         route="/admin/fleet",
+        route_intent="admin",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
@@ -434,6 +450,7 @@ async def get_cost_summary(request: Request, user_id: str = Depends(get_current_
     _audit_privileged_action(
         action="gateway.admin.costs",
         route="/admin/costs",
+        route_intent="admin",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
@@ -455,6 +472,7 @@ async def get_audit_logs(
     _audit_privileged_action(
         action="gateway.admin.audit_logs",
         route="/admin/audit-logs",
+        route_intent="admin",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
@@ -476,6 +494,7 @@ async def export_memory(
     _audit_privileged_action(
         action="gateway.memory.export",
         route="/memory/export",
+        route_intent="write",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
@@ -495,6 +514,7 @@ async def import_memory(
     _audit_privileged_action(
         action="gateway.memory.import",
         route="/memory/import",
+        route_intent="write",
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),

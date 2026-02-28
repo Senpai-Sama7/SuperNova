@@ -72,6 +72,7 @@ def test_build_audit_payload_has_standard_shape() -> None:
     payload = gateway._build_audit_payload(
         action="gateway.memory.export",
         route="/memory/export",
+        route_intent="write",
         outcome="success",
         user_id="user-123",
         client_host="127.0.0.1",
@@ -84,6 +85,7 @@ def test_build_audit_payload_has_standard_shape() -> None:
     assert payload["event_type"] == "gateway_audit"
     assert payload["event_category"] == "privileged_action"
     assert payload["audit_layer"] == "route"
+    assert payload["route_intent"] == "write"
     assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.memory.export"
     assert payload["route"] == "/memory/export"
@@ -107,6 +109,7 @@ def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) ->
     gateway._audit_privileged_action(
         action="gateway.memory.export",
         route="/memory/export",
+        route_intent="write",
         outcome="success",
         user_id="user-123",
         client_host="127.0.0.1",
@@ -121,6 +124,7 @@ def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) ->
     assert payload["event_type"] == "gateway_audit"
     assert payload["event_category"] == "privileged_action"
     assert payload["audit_layer"] == "route"
+    assert payload["route_intent"] == "write"
     assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.memory.export"
     assert payload["route"] == "/memory/export"
@@ -172,6 +176,7 @@ async def test_issue_token_blocked_in_production_is_audited(monkeypatch: pytest.
     payload = calls[0][0][1]
     assert payload["event_category"] == "privileged_action"
     assert payload["audit_layer"] == "route"
+    assert payload["route_intent"] == "auth"
     assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.issue_token.blocked_production"
     assert payload["route"] == "/auth/token"
