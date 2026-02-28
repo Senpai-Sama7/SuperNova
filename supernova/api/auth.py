@@ -66,6 +66,30 @@ def _emit_auth_failure(
 
 
 
+def _emit_auth_success(
+    *,
+    request: Request,
+    route: str,
+    user_id: str,
+    auth_method: str,
+) -> None:
+    payload = {
+        "event_type": "auth_success",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "request_id": _request_id_from_headers(request.headers),
+        "route": route,
+        "outcome": "granted",
+        "reason": "validated_bearer_token",
+        "user_id": user_id,
+        "actor_type": "user",
+        "auth_method": auth_method,
+        "client_host": _client_host(request),
+        "details": {},
+    }
+    logger.info("auth_success %s", payload)
+
+
+
 def create_access_token(user_id: str, *, expires_delta_hours: float = 24.0) -> str:
     """Create a JWT access token for the given user_id."""
     payload = {
@@ -114,7 +138,7 @@ async def get_current_user(
         )
 
     try:
-        return verify_token(credentials.credentials)
+        user_id = verify_token(credentials.credentials)
     except HTTPException as exc:
         _emit_auth_failure(
             request=request,
@@ -123,3 +147,11 @@ async def get_current_user(
             auth_method="bearer",
         )
         raise
+
+    _emit_auth_success(
+        request=request,
+        route=route,
+        user_id=user_id,
+        auth_method="bearer",
+    )
+    return user_id
