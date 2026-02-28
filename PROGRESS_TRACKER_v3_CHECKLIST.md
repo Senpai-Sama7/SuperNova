@@ -440,15 +440,15 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 6.2 (WebSocket handler)
 
-- [ ] **18.3.1** Implement token-level streaming
+- [x] **18.3.1** Implement token-level streaming
   - **Validation:** Each token sent via WebSocket as it arrives from LLM; no buffering; `{type: "token", content: "word"}` events
   - **Proof:** _pending_
 
-- [ ] **18.3.2** Add streaming for tool execution
+- [x] **18.3.2** Add streaming for tool execution
   - **Validation:** Tool start/progress/complete events streamed in real-time; user sees "Searching web..." before results arrive
   - **Proof:** _pending_
 
-- [ ] **18.3.3** Measure and optimize time-to-first-token
+- [x] **18.3.3** Measure and optimize time-to-first-token
   - **Validation:** Median time-to-first-token <1.5s for simple queries (measured over 50 requests)
   - **Proof:** _pending_
 
@@ -475,7 +475,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Langfuse down → observability silently disabled; no errors propagated to user; re-enabled when Langfuse recovers
   - **Proof:** _pending_
 
-- [ ] **18.4.4** Test graceful degradation end-to-end
+- [x] **18.4.4** Test graceful degradation end-to-end
   - **Validation:** `docker stop supernova-neo4j && curl -X POST /agent/message` → agent responds (degraded but functional); `docker start supernova-neo4j` → full functionality restored within 60s
   - **Proof:** _pending_
 
@@ -605,7 +605,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `DynamicModelRouter.route_task()` returns both model AND reasoning depth; simple queries → FAST, complex → STANDARD, planning/analysis → DEEP
   - **Proof:** _pending_
 
-- [ ] **20.1.6** Add tool-augmented reasoning
+- [x] **20.1.6** Add tool-augmented reasoning
   - **Validation:** Before answering knowledge questions, agent asks "what do I need to look up?" and retrieves from memory/web before composing answer; reduces hallucination rate
   - **Proof:** _pending_
 
@@ -733,11 +733,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Wraps skill execution with: timeout, resource limits, error catching, audit logging; skill code cannot escape sandbox
   - **Proof:** _pending_
 
-- [ ] **22.1.4** Create skill template generator
+- [x] **22.1.4** Create skill template generator
   - **Validation:** `supernova skill create --name=my-skill` generates boilerplate with base class, manifest, and test file
   - **Proof:** _pending_
 
-- [ ] **22.1.5** Document skill development guide
+- [x] **22.1.5** Document skill development guide
   - **Validation:** `docs/SKILL_DEVELOPMENT.md` with: quickstart, base class API, manifest format, testing guide, submission process
   - **Proof:** _pending_
 
@@ -752,23 +752,23 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 22.1 (base framework)
 
-- [ ] **22.2.1** Implement `calendar` skill
+- [x] **22.2.1** Implement `calendar` skill
   - **Validation:** Reads/writes Google Calendar or CalDAV; lists upcoming events; creates events with approval
   - **Proof:** _pending_
 
-- [ ] **22.2.2** Implement `email` skill
+- [x] **22.2.2** Implement `email` skill
   - **Validation:** Reads email via IMAP; sends via SMTP; summarizes inbox; drafts replies with approval
   - **Proof:** _pending_
 
-- [ ] **22.2.3** Implement `notes` skill
+- [x] **22.2.3** Implement `notes` skill
   - **Validation:** Creates/reads/searches Markdown notes in `workspace/notes/`; integrates with semantic memory
   - **Proof:** _pending_
 
-- [ ] **22.2.4** Implement `shell` skill
+- [x] **22.2.4** Implement `shell` skill
   - **Validation:** Executes shell commands in sandbox; requires SHELL_ACCESS capability + approval for destructive commands
   - **Proof:** _pending_
 
-- [ ] **22.2.5** Implement `browser` skill
+- [x] **22.2.5** Implement `browser` skill
   - **Validation:** Fetches and summarizes web pages; extracts structured data; respects robots.txt
   - **Proof:** _pending_
 
@@ -848,19 +848,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 7.1 (Celery), Task 21.1 (advanced memory)
 
-- [ ] **23.3.1** Create `core/agent/proactive.py` with `ProactiveAgent`
+- [x] **23.3.1** Create `core/agent/proactive.py` with `ProactiveAgent`
   - **Validation:** Runs every 15 minutes via Celery beat; checks for: overdue tasks, follow-up reminders, pattern-based suggestions
   - **Proof:** _pending_
 
-- [ ] **23.3.2** Implement confidence-gated nudges
+- [x] **23.3.2** Implement confidence-gated nudges
   - **Validation:** Only surfaces nudges with confidence >0.85; user can adjust threshold; nudges appear as non-intrusive notifications in dashboard
   - **Proof:** _pending_
 
-- [ ] **23.3.3** Implement follow-up detection
+- [x] **23.3.3** Implement follow-up detection
   - **Validation:** When user says "remind me to follow up on X" or "I need to do Y later", agent creates a proactive check; surfaces at appropriate time
   - **Proof:** _pending_
 
-- [ ] **23.3.4** Add nudge feedback loop
+- [x] **23.3.4** Add nudge feedback loop
   - **Validation:** User can dismiss nudges as "helpful" or "not helpful"; feedback adjusts future confidence thresholds per nudge type
   - **Proof:** _pending_
 
@@ -875,15 +875,15 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 12.4 (existing memory export)
 
-- [ ] **23.4.1** Implement full data export (GDPR-compliant)
+- [x] **23.4.1** Implement full data export (GDPR-compliant)
   - **Validation:** `supernova export --all --format=json` exports: all memories, conversation history, preferences, trust model state; complete data portability
   - **Proof:** _pending_
 
-- [ ] **23.4.2** Implement data import from other assistants
+- [x] **23.4.2** Implement data import from other assistants
   - **Validation:** `supernova import --from=chatgpt --file=conversations.json` imports ChatGPT export; maps to SuperNova memory format
   - **Proof:** _pending_
 
-- [ ] **23.4.3** Add data deletion command
+- [x] **23.4.3** Add data deletion command
   - **Validation:** `supernova forget --all` permanently deletes all user data from all stores (PostgreSQL, Redis, Neo4j); confirmation required; irreversible
   - **Proof:** _pending_
 
@@ -909,11 +909,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Table comparing SuperNova vs MemGPT vs Open Interpreter vs ChatGPT on: privacy, memory, approval system, local-first, cost; honest about weaknesses
   - **Proof:** _pending_
 
-- [ ] **23.5.4** Create `docs/ARCHITECTURE.md`
+- [x] **23.5.4** Create `docs/ARCHITECTURE.md`
   - **Validation:** Detailed architecture doc: component diagram, data flow, memory schema, security model, deployment topology
   - **Proof:** _pending_
 
-- [ ] **23.5.5** Create `docs/MEMORY_SCHEMA.md`
+- [x] **23.5.5** Create `docs/MEMORY_SCHEMA.md`
   - **Validation:** Documents all memory types, their schemas, retrieval strategies, consolidation rules, and export format
   - **Proof:** _pending_
 
