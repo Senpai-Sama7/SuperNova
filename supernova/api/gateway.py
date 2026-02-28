@@ -8,7 +8,8 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Query, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
 from starlette.responses import Response
@@ -28,6 +29,11 @@ from supernova.runtime_config_guardrails import validate_runtime_configuration
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 validate_runtime_configuration()
 
 _state: dict[str, Any] = {}

@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import msgpack
 import pytest
 
-from infrastructure.storage.postgres import AsyncPostgresPool
-from infrastructure.storage.redis import AsyncRedisClient
+from supernova.infrastructure.storage.postgres import AsyncPostgresPool
+from supernova.infrastructure.storage.redis import AsyncRedisClient
 
 # ── AsyncRedisClient ───────────────────────────────────────────────
 
