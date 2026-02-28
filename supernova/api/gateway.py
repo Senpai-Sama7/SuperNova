@@ -72,6 +72,8 @@ def _build_audit_payload(
     normalized_user = user_id or "anonymous"
     return {
         "event_type": "gateway_audit",
+        "event_category": "privileged_action",
+        "audit_layer": "route",
         "timestamp": datetime.now(UTC).isoformat(),
         "request_id": request_id or f"req-{uuid4().hex}",
         "action": action,

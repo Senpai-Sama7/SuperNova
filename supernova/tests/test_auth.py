@@ -115,6 +115,8 @@ class TestAuth:
         assert user_id == "user-789"
         payload = calls[0][0][1]
         assert payload["event_type"] == "auth_success"
+        assert payload["event_category"] == "authentication"
+        assert payload["audit_layer"] == "dependency"
         assert payload["route"] == "/metrics"
         assert payload["request_id"] == "req-123"
         assert payload["outcome"] == "granted"
@@ -157,6 +159,8 @@ class TestAuth:
 
         payload = calls[0][0][1]
         assert payload["event_type"] == "auth_failure"
+        assert payload["event_category"] == "authentication"
+        assert payload["audit_layer"] == "dependency"
         assert payload["route"] == "/admin/fleet"
         assert payload["request_id"] == "req-123"
         assert payload["reason"] == "missing_bearer_token"
@@ -185,6 +189,8 @@ class TestAuth:
 
         payload = calls[0][0][1]
         assert payload["event_type"] == "auth_failure"
+        assert payload["event_category"] == "authentication"
+        assert payload["audit_layer"] == "dependency"
         assert payload["route"] == "/admin/costs"
         assert payload["request_id"] == "corr-123"
         assert payload["outcome"] == "denied"

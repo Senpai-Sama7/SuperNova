@@ -51,6 +51,8 @@ def _emit_auth_failure(
 ) -> None:
     payload = {
         "event_type": "auth_failure",
+        "event_category": "authentication",
+        "audit_layer": "dependency",
         "timestamp": datetime.now(UTC).isoformat(),
         "request_id": _request_id_from_headers(request.headers if request is not None else None),
         "route": route,
@@ -75,6 +77,8 @@ def _emit_auth_success(
 ) -> None:
     payload = {
         "event_type": "auth_success",
+        "event_category": "authentication",
+        "audit_layer": "dependency",
         "timestamp": datetime.now(UTC).isoformat(),
         "request_id": _request_id_from_headers(request.headers),
         "route": route,
