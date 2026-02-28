@@ -46,6 +46,7 @@ def _audit_privileged_action(action: str, user_id: str | None, details: dict[str
     )
 
 
+
 def _enforce_rate_limit(bucket: str, *, now_ts: float | None = None) -> None:
     """Apply a simple in-memory fixed-window rate limit."""
     current = now_ts if now_ts is not None else time.monotonic()
@@ -55,6 +56,15 @@ def _enforce_rate_limit(bucket: str, *, now_ts: float | None = None) -> None:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
     entries.append(current)
     _rate_limit_state[bucket] = entries
+
+
+
+def _client_host(client: Any) -> str:
+    """Return a normalized client host string for audit and abuse-control buckets."""
+    if client is None:
+        return "unknown"
+    host = getattr(client, "host", None)
+    return host or "unknown"
 
 
 @asynccontextmanager
@@ -147,7 +157,24 @@ async def prometheus_metrics(user_id: str = Depends(get_current_user)) -> Any:
 @app.websocket("/health/ws")
 async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
     """WebSocket for real-time health alerts. Requires JWT in query param."""
+    client_host = _client_host(ws.client)
     if not verify_token(token):
+        try:
+            _enforce_rate_limit(f"invalid_token:{client_host}")
+        except HTTPException:
+            _audit_privileged_action(
+                "gateway.health_ws.rate_limited",
+                None,
+                {"client_host": client_host},
+            )
+            await ws.close(code=4008, reason="Rate limit exceeded")
+            return
+
+        _audit_privileged_action(
+            "gateway.health_ws.invalid_token",
+            None,
+            {"client_host": client_host},
+        )
         await ws.close(code=4001, reason="Invalid token")
         return
 
@@ -162,11 +189,25 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
 
 @app.post("/auth/token", response_model=TokenResponse)
 async def issue_token(request: Request) -> TokenResponse:
+    client_host = _client_host(request.client)
     if settings.is_production:
+        _audit_privileged_action(
+            "gateway.issue_token.blocked_production",
+            None,
+            {"client_host": client_host},
+        )
         raise HTTPException(status_code=403, detail="Demo token issuance is disabled in production")
 
-    client_host = request.client.host if request.client else "unknown"
-    _enforce_rate_limit(f"issue_token:{client_host}")
+    try:
+        _enforce_rate_limit(f"issue_token:{client_host}")
+    except HTTPException:
+        _audit_privileged_action(
+            "gateway.issue_token.rate_limited",
+            None,
+            {"client_host": client_host},
+        )
+        raise
+
     _audit_privileged_action("gateway.issue_token", None, {"client_host": client_host})
 
     token = create_access_token({"sub": "demo-user"})
@@ -176,7 +217,24 @@ async def issue_token(request: Request) -> TokenResponse:
 @app.websocket("/agent/stream/{session_id}")
 async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query(...)):
     """WebSocket endpoint for streaming agent events. Requires JWT in query param."""
+    client_host = _client_host(websocket.client)
     if not verify_token(token):
+        try:
+            _enforce_rate_limit(f"invalid_token:{client_host}")
+        except HTTPException:
+            _audit_privileged_action(
+                "gateway.agent_stream.rate_limited",
+                None,
+                {"client_host": client_host, "session_id": session_id},
+            )
+            await websocket.close(code=4008, reason="Rate limit exceeded")
+            return
+
+        _audit_privileged_action(
+            "gateway.agent_stream.invalid_token",
+            None,
+            {"client_host": client_host, "session_id": session_id},
+        )
         await websocket.close(code=4001, reason="Invalid token")
         return
 
