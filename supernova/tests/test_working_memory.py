@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from core.memory.working import WorkingMemory, WorkingMemoryStore
+from supernova.core.memory.working import WorkingMemory, WorkingMemoryStore
 
 
 # ---------------------------------------------------------------------------

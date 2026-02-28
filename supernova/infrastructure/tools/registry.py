@@ -124,14 +124,6 @@ class ToolRegistry:
         """
         missing = tool.required_capabilities & ~self._granted
         if missing:
-
-        # Validate tool arguments
-        for key, value in arguments.items():
-            if isinstance(value, str):
-                result = self._sanitizer.sanitize(value)
-                if not result.is_safe:
-                    raise ValueError(f"Unsafe input in argument {key}: {result.violations}")
-                arguments[key] = result.content
             raise PermissionError(
                 f"Tool '{tool.name}' requires capabilities not granted: {missing}"
             )
@@ -172,15 +164,15 @@ class ToolRegistry:
         )
         missing = tool.required_capabilities & ~effective_caps
         if missing:
+            raise PermissionError(f"Tool '{name}' requires capabilities not granted: {missing}")
 
         # Validate tool arguments
         for key, value in arguments.items():
             if isinstance(value, str):
                 result = self._sanitizer.sanitize(value)
-                if not result.is_safe:
-                    raise ValueError(f"Unsafe input in argument {key}: {result.violations}")
-                arguments[key] = result.content
-            raise PermissionError(f"Tool '{name}' requires capabilities not granted: {missing}")
+                if not result.is_clean:
+                    raise ValueError(f"Unsafe input in argument {key}: {result.warnings}")
+                arguments[key] = result.text
 
         # Execute tool in sandbox
         sandbox_result = await self._sandbox.run(tool.fn, **arguments)
