@@ -76,6 +76,8 @@ def test_build_audit_payload_has_standard_shape() -> None:
         outcome="success",
         disposition="observed",
         severity="info",
+        policy_id="POL-GW-MEMORY-EXPORT-IMPORT-001",
+        control_id="CTRL-GW-MEMORY-EXPORT-AUDIT",
         user_id="user-123",
         client_host="127.0.0.1",
         request_id="req-123",
@@ -90,6 +92,8 @@ def test_build_audit_payload_has_standard_shape() -> None:
     assert payload["route_intent"] == "write"
     assert payload["disposition"] == "observed"
     assert payload["severity"] == "info"
+    assert payload["policy_id"] == "POL-GW-MEMORY-EXPORT-IMPORT-001"
+    assert payload["control_id"] == "CTRL-GW-MEMORY-EXPORT-AUDIT"
     assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.memory.export"
     assert payload["route"] == "/memory/export"
@@ -117,6 +121,8 @@ def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) ->
         outcome="success",
         disposition="observed",
         severity="info",
+        policy_id="POL-GW-MEMORY-EXPORT-IMPORT-001",
+        control_id="CTRL-GW-MEMORY-EXPORT-AUDIT",
         user_id="user-123",
         client_host="127.0.0.1",
         request_id="req-123",
@@ -133,6 +139,8 @@ def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) ->
     assert payload["route_intent"] == "write"
     assert payload["disposition"] == "observed"
     assert payload["severity"] == "info"
+    assert payload["policy_id"] == "POL-GW-MEMORY-EXPORT-IMPORT-001"
+    assert payload["control_id"] == "CTRL-GW-MEMORY-EXPORT-AUDIT"
     assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.memory.export"
     assert payload["route"] == "/memory/export"
@@ -187,6 +195,8 @@ async def test_issue_token_blocked_in_production_is_audited(monkeypatch: pytest.
     assert payload["route_intent"] == "auth"
     assert payload["disposition"] == "blocked"
     assert payload["severity"] == "warning"
+    assert payload["policy_id"] == "POL-GW-DEMO-AUTH-001"
+    assert payload["control_id"] == "CTRL-GW-DEMO-TOKEN-PRODUCTION-BLOCK"
     assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.issue_token.blocked_production"
     assert payload["route"] == "/auth/token"

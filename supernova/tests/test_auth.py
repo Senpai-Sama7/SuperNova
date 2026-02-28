@@ -123,6 +123,8 @@ class TestAuth:
         assert payload["outcome"] == "granted"
         assert payload["disposition"] == "granted"
         assert payload["severity"] == "info"
+        assert payload["policy_id"] == "POL-AUTH-BEARER-JWT-001"
+        assert payload["control_id"] == "CTRL-AUTH-BEARER-JWT-ENFORCEMENT"
         assert payload["user_id"] == "user-789"
         assert payload["auth_method"] == "bearer"
 
@@ -170,6 +172,8 @@ class TestAuth:
         assert payload["reason"] == "missing_bearer_token"
         assert payload["disposition"] == "blocked"
         assert payload["severity"] == "warning"
+        assert payload["policy_id"] == "POL-AUTH-BEARER-JWT-001"
+        assert payload["control_id"] == "CTRL-AUTH-BEARER-JWT-ENFORCEMENT"
         assert payload["auth_method"] == "bearer"
 
     @pytest.mark.asyncio
@@ -203,4 +207,6 @@ class TestAuth:
         assert payload["outcome"] == "denied"
         assert payload["disposition"] == "blocked"
         assert payload["severity"] == "warning"
+        assert payload["policy_id"] == "POL-AUTH-BEARER-JWT-001"
+        assert payload["control_id"] == "CTRL-AUTH-BEARER-JWT-ENFORCEMENT"
         assert payload["auth_method"] == "bearer"
