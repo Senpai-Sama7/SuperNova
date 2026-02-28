@@ -55,17 +55,49 @@ def test_rate_limit_resets_after_window() -> None:
 
 
 
-def test_audit_helper_emits_log(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_audit_payload_has_standard_shape() -> None:
+    payload = gateway._build_audit_payload(
+        action="gateway.memory.export",
+        route="/memory/export",
+        outcome="success",
+        user_id="user-123",
+        client_host="127.0.0.1",
+        details={"format": "json"},
+    )
+
+    assert payload["event_type"] == "gateway_audit"
+    assert payload["action"] == "gateway.memory.export"
+    assert payload["route"] == "/memory/export"
+    assert payload["outcome"] == "success"
+    assert payload["user_id"] == "user-123"
+    assert payload["client_host"] == "127.0.0.1"
+    assert payload["details"] == {"format": "json"}
+    assert "timestamp" in payload
+
+
+
+def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple] = []
 
     def fake_info(*args, **kwargs):
         calls.append((args, kwargs))
 
     monkeypatch.setattr(gateway.logger, "info", fake_info)
-    gateway._audit_privileged_action("gateway.memory.export", "user-123", {"format": "json"})
+    gateway._audit_privileged_action(
+        action="gateway.memory.export",
+        route="/memory/export",
+        outcome="success",
+        user_id="user-123",
+        client_host="127.0.0.1",
+        details={"format": "json"},
+    )
 
     assert calls
-    assert "gateway.memory.export" in str(calls[0][0])
+    payload = calls[0][0][1]
+    assert payload["event_type"] == "gateway_audit"
+    assert payload["action"] == "gateway.memory.export"
+    assert payload["route"] == "/memory/export"
+    assert payload["outcome"] == "success"
 
 
 @pytest.mark.asyncio
@@ -105,4 +137,7 @@ async def test_issue_token_blocked_in_production_is_audited(monkeypatch: pytest.
     with pytest.raises(HTTPException, match="disabled in production"):
         await gateway.issue_token(request)
 
-    assert any("gateway.issue_token.blocked_production" in str(args) for args, _ in calls)
+    payload = calls[0][0][1]
+    assert payload["action"] == "gateway.issue_token.blocked_production"
+    assert payload["route"] == "/auth/token"
+    assert payload["outcome"] == "blocked"

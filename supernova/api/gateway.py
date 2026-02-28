@@ -36,14 +36,57 @@ _RATE_LIMIT_MAX_CALLS = 5
 _rate_limit_state: dict[str, list[float]] = {}
 
 
-def _audit_privileged_action(action: str, user_id: str | None, details: dict[str, Any] | None = None) -> None:
+def _client_host(client: Any) -> str:
+    """Return a normalized client host string for audit and abuse-control buckets."""
+    if client is None:
+        return "unknown"
+    host = getattr(client, "host", None)
+    return host or "unknown"
+
+
+
+def _build_audit_payload(
+    *,
+    action: str,
+    route: str,
+    outcome: str,
+    user_id: str | None,
+    client_host: str | None = None,
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a normalized audit-event payload for privileged gateway activity."""
+    return {
+        "event_type": "gateway_audit",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "action": action,
+        "route": route,
+        "outcome": outcome,
+        "user_id": user_id or "anonymous",
+        "client_host": client_host or "unknown",
+        "details": details or {},
+    }
+
+
+
+def _audit_privileged_action(
+    *,
+    action: str,
+    route: str,
+    outcome: str,
+    user_id: str | None,
+    client_host: str | None = None,
+    details: dict[str, Any] | None = None,
+) -> None:
     """Emit a structured audit-style log for privileged gateway actions."""
-    logger.info(
-        "audit_event action=%s user_id=%s details=%s",
-        action,
-        user_id or "anonymous",
-        details or {},
+    payload = _build_audit_payload(
+        action=action,
+        route=route,
+        outcome=outcome,
+        user_id=user_id,
+        client_host=client_host,
+        details=details,
     )
+    logger.info("audit_event %s", payload)
 
 
 
@@ -56,15 +99,6 @@ def _enforce_rate_limit(bucket: str, *, now_ts: float | None = None) -> None:
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
     entries.append(current)
     _rate_limit_state[bucket] = entries
-
-
-
-def _client_host(client: Any) -> str:
-    """Return a normalized client host string for audit and abuse-control buckets."""
-    if client is None:
-        return "unknown"
-    host = getattr(client, "host", None)
-    return host or "unknown"
 
 
 @asynccontextmanager
@@ -117,7 +151,8 @@ async def health() -> dict[str, Any]:
 
 
 @app.get("/health/deep")
-async def deep_health(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+async def deep_health(request: Request, user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    client_host = _client_host(request.client)
     status: dict[str, Any] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "services": {
@@ -142,13 +177,27 @@ async def deep_health(user_id: str = Depends(get_current_user)) -> dict[str, Any
         status["services"]["redis"] = False
 
     status["ok"] = all(status["services"].values())
-    _audit_privileged_action("gateway.deep_health", user_id, {"services": status["services"]})
+    _audit_privileged_action(
+        action="gateway.deep_health",
+        route="/health/deep",
+        outcome="success",
+        user_id=user_id,
+        client_host=client_host,
+        details={"services": status["services"]},
+    )
     return status
 
 
 @app.get("/metrics")
-async def prometheus_metrics(user_id: str = Depends(get_current_user)) -> Any:
-    _audit_privileged_action("gateway.metrics", user_id)
+async def prometheus_metrics(request: Request, user_id: str = Depends(get_current_user)) -> Any:
+    client_host = _client_host(request.client)
+    _audit_privileged_action(
+        action="gateway.metrics",
+        route="/metrics",
+        outcome="success",
+        user_id=user_id,
+        client_host=client_host,
+    )
     registry = CollectorRegistry()
     payload = generate_latest(registry)
     return Response(payload, media_type=CONTENT_TYPE_LATEST)
@@ -163,17 +212,21 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
             _enforce_rate_limit(f"invalid_token:{client_host}")
         except HTTPException:
             _audit_privileged_action(
-                "gateway.health_ws.rate_limited",
-                None,
-                {"client_host": client_host},
+                action="gateway.health_ws.rate_limited",
+                route="/health/ws",
+                outcome="rate_limited",
+                user_id=None,
+                client_host=client_host,
             )
             await ws.close(code=4008, reason="Rate limit exceeded")
             return
 
         _audit_privileged_action(
-            "gateway.health_ws.invalid_token",
-            None,
-            {"client_host": client_host},
+            action="gateway.health_ws.invalid_token",
+            route="/health/ws",
+            outcome="blocked",
+            user_id=None,
+            client_host=client_host,
         )
         await ws.close(code=4001, reason="Invalid token")
         return
@@ -192,9 +245,11 @@ async def issue_token(request: Request) -> TokenResponse:
     client_host = _client_host(request.client)
     if settings.is_production:
         _audit_privileged_action(
-            "gateway.issue_token.blocked_production",
-            None,
-            {"client_host": client_host},
+            action="gateway.issue_token.blocked_production",
+            route="/auth/token",
+            outcome="blocked",
+            user_id=None,
+            client_host=client_host,
         )
         raise HTTPException(status_code=403, detail="Demo token issuance is disabled in production")
 
@@ -202,13 +257,21 @@ async def issue_token(request: Request) -> TokenResponse:
         _enforce_rate_limit(f"issue_token:{client_host}")
     except HTTPException:
         _audit_privileged_action(
-            "gateway.issue_token.rate_limited",
-            None,
-            {"client_host": client_host},
+            action="gateway.issue_token.rate_limited",
+            route="/auth/token",
+            outcome="rate_limited",
+            user_id=None,
+            client_host=client_host,
         )
         raise
 
-    _audit_privileged_action("gateway.issue_token", None, {"client_host": client_host})
+    _audit_privileged_action(
+        action="gateway.issue_token",
+        route="/auth/token",
+        outcome="issued",
+        user_id=None,
+        client_host=client_host,
+    )
 
     token = create_access_token({"sub": "demo-user"})
     return TokenResponse(access_token=token, token_type="bearer")
@@ -223,17 +286,23 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
             _enforce_rate_limit(f"invalid_token:{client_host}")
         except HTTPException:
             _audit_privileged_action(
-                "gateway.agent_stream.rate_limited",
-                None,
-                {"client_host": client_host, "session_id": session_id},
+                action="gateway.agent_stream.rate_limited",
+                route="/agent/stream/{session_id}",
+                outcome="rate_limited",
+                user_id=None,
+                client_host=client_host,
+                details={"session_id": session_id},
             )
             await websocket.close(code=4008, reason="Rate limit exceeded")
             return
 
         _audit_privileged_action(
-            "gateway.agent_stream.invalid_token",
-            None,
-            {"client_host": client_host, "session_id": session_id},
+            action="gateway.agent_stream.invalid_token",
+            route="/agent/stream/{session_id}",
+            outcome="blocked",
+            user_id=None,
+            client_host=client_host,
+            details={"session_id": session_id},
         )
         await websocket.close(code=4001, reason="Invalid token")
         return
@@ -256,62 +325,102 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
 
 @app.get("/memory/semantic")
 async def get_semantic_memory(
+    request: Request,
     user_id: str = Depends(get_current_user),
 ) -> list[dict[str, Any]]:
-    _audit_privileged_action("gateway.memory.semantic", user_id)
+    _audit_privileged_action(
+        action="gateway.memory.semantic",
+        route="/memory/semantic",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+    )
     return []
 
 
 @app.get("/memory/procedural")
-async def get_procedural_skills(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
-    _audit_privileged_action("gateway.memory.procedural", user_id)
+async def get_procedural_skills(request: Request, user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
+    _audit_privileged_action(
+        action="gateway.memory.procedural",
+        route="/memory/procedural",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+    )
     return []
 
 
 @app.get("/admin/fleet")
-async def get_fleet_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
-    _audit_privileged_action("gateway.admin.fleet", user_id)
+async def get_fleet_summary(request: Request, user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    _audit_privileged_action(
+        action="gateway.admin.fleet",
+        route="/admin/fleet",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+    )
     return {"ok": True, "user_id": user_id}
 
 
 @app.get("/admin/costs")
-async def get_cost_summary(user_id: str = Depends(get_current_user)) -> dict[str, Any]:
-    _audit_privileged_action("gateway.admin.costs", user_id)
+async def get_cost_summary(request: Request, user_id: str = Depends(get_current_user)) -> dict[str, Any]:
+    _audit_privileged_action(
+        action="gateway.admin.costs",
+        route="/admin/costs",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+    )
     return {"ok": True, "user_id": user_id}
 
 
 @app.get("/admin/audit-logs")
 async def get_audit_logs(
+    request: Request,
     user_id: str = Depends(get_current_user),
     action: str | None = Query(None),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:
     _audit_privileged_action(
-        "gateway.admin.audit_logs",
-        user_id,
-        {"action": action, "limit": limit, "offset": offset},
+        action="gateway.admin.audit_logs",
+        route="/admin/audit-logs",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+        details={"action": action, "limit": limit, "offset": offset},
     )
     return {"items": [], "action": action, "limit": limit, "offset": offset, "user_id": user_id}
 
 
 @app.get("/memory/export")
 async def export_memory(
+    request: Request,
     user_id: str = Depends(get_current_user),
     format: str = Query("json", pattern="^(json|markdown)$"),
     memory_type: str | None = Query(None, pattern="^(semantic|episodic|all)$"),
 ) -> dict[str, Any]:
     _audit_privileged_action(
-        "gateway.memory.export",
-        user_id,
-        {"format": format, "memory_type": memory_type},
+        action="gateway.memory.export",
+        route="/memory/export",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+        details={"format": format, "memory_type": memory_type},
     )
     return {"format": format, "memory_type": memory_type, "user_id": user_id}
 
 
 @app.post("/memory/import")
 async def import_memory(
+    request: Request,
     user_id: str = Depends(get_current_user),
 ) -> dict[str, Any]:
-    _audit_privileged_action("gateway.memory.import", user_id)
+    _audit_privileged_action(
+        action="gateway.memory.import",
+        route="/memory/import",
+        outcome="success",
+        user_id=user_id,
+        client_host=_client_host(request.client),
+    )
     return {"ok": True, "user_id": user_id}
