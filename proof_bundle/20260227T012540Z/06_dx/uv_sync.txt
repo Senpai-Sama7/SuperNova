@@ -1,7 +1,0 @@
-Resolved 206 packages in 585ms
-   Building supernova @ file:///home/donovan/Downloads/SuperNova/supernova
-      Built supernova @ file:///home/donovan/Downloads/SuperNova/supernova
-Prepared 1 package in 414ms
-Uninstalled 1 package in 0.64ms
-Installed 1 package in 1ms
- ~ supernova==2.0.0 (from file:///home/donovan/Downloads/SuperNova/supernova)
