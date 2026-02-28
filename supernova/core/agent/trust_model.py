@@ -18,6 +18,7 @@ Auto-approved when adjusted < approval_threshold (default 0.35).
 from __future__ import annotations
 
 import math
+import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -135,11 +136,11 @@ class DynamicTrustModel:
 
     def __init__(
         self,
-        approval_threshold: float = 0.35,
+        approval_threshold: Optional[float] = None,
         history_window_seconds: float = 86_400.0,
         max_history_discount: float = 0.25,
     ) -> None:
-        self._threshold = approval_threshold
+        self._threshold = approval_threshold or float(os.environ.get('AUTONOMY_THRESHOLD', '0.35'))
         self._history_window = history_window_seconds
         self._max_history_discount = max_history_discount
 

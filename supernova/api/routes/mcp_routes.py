@@ -32,7 +32,7 @@ def set_skill_loader(loader: Any) -> None:
 # ── MCP Server endpoints ─────────────────────────────────────────────────────
 
 @router.get("/mcp/servers")
-async def list_mcp_servers() -> list[dict[str, Any]]:
+async def list_mcp_servers(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
     """Return list of configured MCP servers with health status."""
     if not _mcp_client:
         return []
@@ -40,7 +40,7 @@ async def list_mcp_servers() -> list[dict[str, Any]]:
 
 
 @router.get("/mcp/tools")
-async def list_mcp_tools() -> list[dict[str, Any]]:
+async def list_mcp_tools(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
     """Return aggregated tools from all healthy MCP servers."""
     if not _mcp_client:
         return []
@@ -78,7 +78,7 @@ async def call_mcp_tool(
 # ── Skills endpoints ──────────────────────────────────────────────────────────
 
 @router.get("/skills")
-async def list_skills() -> list[dict[str, Any]]:
+async def list_skills(user_id: str = Depends(get_current_user)) -> list[dict[str, Any]]:
     """Return list of available skills."""
     if not _skill_loader:
         return []

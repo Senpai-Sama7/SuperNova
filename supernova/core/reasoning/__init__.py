@@ -15,3 +15,10 @@ __all__ = [
     "estimate_context_stats",
     "DynamicModelRouter",
 ]
+
+
+# New reasoning pipeline (Phase 20)
+from supernova.core.reasoning.pipeline import ReasoningPipeline, ReasoningDepth
+from supernova.core.reasoning.router import select_depth
+
+__all__ += ["ReasoningPipeline", "ReasoningDepth", "select_depth"]
