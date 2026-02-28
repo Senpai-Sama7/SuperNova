@@ -1,0 +1,2 @@
+timestamp_utc=20260227T000926Z
+root=/home/donovan/Downloads/SuperNova

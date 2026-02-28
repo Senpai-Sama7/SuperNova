@@ -20,21 +20,12 @@ class TestCostController:
     def mock_redis(self):
         """Mock Redis client with pipeline support."""
         redis = MagicMock()
-        async def _get(_: str):
-            return None
-
-        async def _set(*args, **kwargs):
-            return True
-
-        redis.get = _get
-        redis.set = _set
+        redis.get = AsyncMock(return_value=None)
+        redis.set = AsyncMock(return_value=True)
         pipe = MagicMock()
         pipe.incrbyfloat = MagicMock()
         pipe.expire = MagicMock()
-        async def _execute():
-            return [1.50, True, 12.00, True]
-
-        pipe.execute = _execute
+        pipe.execute = AsyncMock(return_value=[1.50, True, 12.00, True])
         redis.pipeline = MagicMock(return_value=pipe)
         return redis
 
@@ -52,18 +43,14 @@ class TestCostController:
     @pytest.mark.asyncio
     async def test_check_budget_within_limit(self, controller, mock_redis):
         """check_budget returns True when spend is within limits."""
-        async def _get(_: str):
-            return b"5.00"
-        mock_redis.get = _get
+        mock_redis.get = AsyncMock(return_value=b"5.00")
         result = await controller.check_budget(estimated_cost=1.0)
         assert result is True
 
     @pytest.mark.asyncio
     async def test_check_budget_exceeds_daily(self, controller, mock_redis):
         """check_budget returns False when daily limit would be exceeded."""
-        async def _get(_: str):
-            return b"9.50"
-        mock_redis.get = _get
+        mock_redis.get = AsyncMock(return_value=b"9.50")
         result = await controller.check_budget(estimated_cost=1.0)
         assert result is False
 
@@ -71,14 +58,7 @@ class TestCostController:
     async def test_check_budget_exceeds_monthly(self, controller, mock_redis):
         """check_budget returns False when monthly limit would be exceeded."""
         # Daily is fine, monthly is not
-        call_count = 0
-        async def side_effect(key):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return b"1.00"  # daily
-            return b"99.50"  # monthly
-        mock_redis.get = side_effect
+        mock_redis.get = AsyncMock(side_effect=[b"1.00", b"99.50"])  # daily, monthly
         result = await controller.check_budget(estimated_cost=1.0)
         assert result is False
 
@@ -136,9 +116,7 @@ class TestCostController:
     @pytest.mark.asyncio
     async def test_get_spend_summary(self, controller, mock_redis):
         """get_spend_summary returns structured cost data."""
-        async def _get(_: str):
-            return b"3.50"
-        mock_redis.get = _get
+        mock_redis.get = AsyncMock(return_value=b"3.50")
         summary = await controller.get_spend_summary()
         assert "daily_spend" in summary
         assert "monthly_spend" in summary
@@ -149,9 +127,7 @@ class TestCostController:
     @pytest.mark.asyncio
     async def test_alert_thresholds(self, controller, mock_redis):
         """_check_alerts triggers at 50/80/100% levels."""
-        async def _get(_: str):
-            return None
-        mock_redis.get = _get  # no prior alert
+        mock_redis.get = AsyncMock(return_value=None)  # no prior alert
         alerts = await controller._check_alerts(8.5)  # 85% of $10
         assert 50 in alerts
         assert 80 in alerts

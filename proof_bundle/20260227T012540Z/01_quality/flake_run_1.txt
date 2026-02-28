@@ -1,0 +1,48 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/donovan/Downloads/SuperNova/supernova
+configfile: pyproject.toml
+plugins: anyio-4.11.0, asyncio-0.24.0, langsmith-0.4.34, cov-7.0.0, typeguard-4.4.2
+asyncio: mode=Mode.AUTO, default_loop_scope=function
+collected 414 items / 2 errors
+
+==================================== ERRORS ====================================
+__________________ ERROR collecting tests/test_preferences.py __________________
+ImportError while importing test module '/home/donovan/Downloads/SuperNova/supernova/tests/test_preferences.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_preferences.py:8: in <module>
+    from supernova.api.routes.preferences import (
+api/routes/preferences.py:17: in <module>
+    from supernova.services.agent_config import update_agent_from_preferences
+services/agent_config.py:12: in <module>
+    from supernova.api.routes.preferences import UserPreferences
+E   ImportError: cannot import name 'UserPreferences' from partially initialized module 'supernova.api.routes.preferences' (most likely due to a circular import) (/home/donovan/Downloads/SuperNova/supernova/api/routes/preferences.py)
+______________ ERROR collecting tests/test_preferences_service.py ______________
+ImportError while importing test module '/home/donovan/Downloads/SuperNova/supernova/tests/test_preferences_service.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_preferences_service.py:8: in <module>
+    from supernova.api.routes.preferences import UserPreferences, HitlMode
+api/routes/preferences.py:17: in <module>
+    from supernova.services.agent_config import update_agent_from_preferences
+services/agent_config.py:12: in <module>
+    from supernova.api.routes.preferences import UserPreferences
+E   ImportError: cannot import name 'UserPreferences' from partially initialized module 'supernova.api.routes.preferences' (most likely due to a circular import) (/home/donovan/Downloads/SuperNova/supernova/api/routes/preferences.py)
+=============================== warnings summary ===============================
+../../../.local/lib/python3.13/site-packages/graphiti_core/driver/search_interface/search_interface.py:22
+  /home/donovan/.local/lib/python3.13/site-packages/graphiti_core/driver/search_interface/search_interface.py:22: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class SearchInterface(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/test_preferences.py
+ERROR tests/test_preferences_service.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+========================= 1 warning, 2 errors in 2.97s =========================

@@ -1,0 +1,4 @@
+Linux donovan 6.17.0-14-generic #14-Ubuntu SMP PREEMPT_DYNAMIC Fri Jan  9 17:01:16 UTC 2026 x86_64 GNU/Linux
+Python 3.13.7
+v22.22.0
+Docker version 29.2.1, build a5c7197

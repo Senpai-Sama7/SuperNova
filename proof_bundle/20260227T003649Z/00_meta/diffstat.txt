@@ -1,0 +1,6 @@
+ AGENTS.md                                      | 679 ++++++-------------------
+ dashboard/src/NovaDashboard.tsx                |   3 +
+ mcp_and_skills/custom-mcp-servers/Titanium-MCP |   0
+ supernova/api/gateway.py                       |  22 +-
+ supernova/config.py                            |  17 +
+ 5 files changed, 188 insertions(+), 533 deletions(-)

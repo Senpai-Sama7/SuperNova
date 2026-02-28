@@ -1,0 +1,2 @@
+perf/cost/reliability checks skipped because API did not become reachable at 127.0.0.1:8000
+see proof_bundle/20260227T012540Z/04_reliability/uvicorn.log

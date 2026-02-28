@@ -1,0 +1,22 @@
+ M AGENTS.md
+ M dashboard/src/NovaDashboard.tsx
+ M dashboard/src/components/cards/HealthPanel.tsx
+ M dashboard/src/components/onboarding/Tutorial.tsx
+ m mcp_and_skills/custom-mcp-servers/Titanium-MCP
+ M supernova/api/gateway.py
+ M supernova/config.py
+ M supernova/infrastructure/tools/registry.py
+ M supernova/pyproject.toml
+ M supernova/tests/test_cost_controller.py
+?? dashboard/settings-screenshot.png
+?? dashboard/src/components/tabs/
+?? production_ready_testing.md
+?? proof_bundle/
+?? proof_bundle_20260227T004752Z.tar.gz
+?? scripts/
+?? supernova/api/routes/preferences.py
+?? supernova/services/
+?? supernova/tests/test_preferences.py
+?? supernova/tests/test_preferences_service.py
+?? supernova/tests/test_tool_registry.py
+?? supernova/uv.lock

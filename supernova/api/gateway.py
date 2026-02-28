@@ -11,10 +11,15 @@ import litellm
 from fastapi import Depends, FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from starlette.responses import JSONResponse
 
 from supernova.api.auth import create_access_token, get_current_user, verify_token
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
+from supernova.api.routes.preferences import router as preferences_router
 from supernova.api.routes.mcp_routes import (
     router as mcp_router,
     set_mcp_client,
@@ -89,6 +94,7 @@ async def _initialize_runtime_state() -> None:
             logger.warning("Semantic store initialization failed: %s", exc)
 
         try:
+
             async def _embedder(text: str) -> list[float]:
                 semantic = _state.get("semantic_store")
                 if semantic is None:
@@ -265,6 +271,25 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Rate limiting setup
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+
+def rate_limit_exceeded_handler(request: Any, exc: RateLimitExceeded) -> JSONResponse:
+    """Custom rate limit error handler."""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": "Rate limit exceeded",
+            "detail": str(exc),
+            "retry_after": getattr(exc, "retry_after", 60),
+        },
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
 # CORS middleware
 _allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
@@ -280,6 +305,7 @@ app.include_router(mcp_router)
 app.include_router(dashboard_router)
 app.include_router(agent_router)
 app.include_router(onboarding_router)
+app.include_router(preferences_router)
 
 _health_alerts = HealthAlertManager()
 
@@ -298,6 +324,7 @@ async def observability_middleware(request: Any, call_next: Any) -> Any:
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "version": "2.0.0"}
@@ -307,12 +334,16 @@ async def health() -> dict[str, str]:
 async def health_deep() -> dict[str, Any]:
     """Deep health check — probes all backend services."""
     from supernova.infrastructure.observability.health import ServiceCheck as _SC
+
     result = await deep_health_check(
         pool=_state.get("pool"),
         redis=_state.get("redis"),
         neo4j_driver=_state.get("episodic_store"),
     )
-    svc_checks = [_SC(s["name"], s["status"], s["latency_ms"], s["detail"]) for s in result.get("services", [])]
+    svc_checks = [
+        _SC(s["name"], s["status"], s["latency_ms"], s["detail"])
+        for s in result.get("services", [])
+    ]
     alerts = await _health_alerts.evaluate(svc_checks)
     if alerts:
         result["alerts"] = alerts
@@ -323,6 +354,7 @@ async def health_deep() -> dict[str, Any]:
 async def prometheus_metrics() -> Any:
     """Prometheus-compatible metrics endpoint."""
     from starlette.responses import Response
+
     return Response(content=metrics.render_prometheus(), media_type="text/plain; charset=utf-8")
 
 
@@ -340,6 +372,7 @@ async def health_ws(ws: WebSocket) -> None:
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
+
 class TokenRequest(BaseModel):
     user_id: str
 
@@ -355,6 +388,7 @@ async def issue_token(body: TokenRequest) -> TokenResponse:
 
 
 # ── WebSocket ─────────────────────────────────────────────────────────────────
+
 
 @app.websocket("/agent/stream/{session_id}")
 async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query(...)):
@@ -386,6 +420,7 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
 
 # ── Memory endpoints ──────────────────────────────────────────────────────────
 
+
 @app.get("/memory/semantic")
 async def get_semantic_memories(
     user_id: str = Depends(get_current_user),
@@ -410,6 +445,7 @@ async def get_procedural_skills() -> list[dict[str, Any]]:
 
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
+
 
 @app.get("/admin/fleet")
 async def get_fleet_summary() -> dict[str, Any]:
@@ -438,14 +474,18 @@ async def get_audit_logs(
 ) -> dict[str, Any]:
     """Return paginated audit log entries."""
     from supernova.infrastructure.security.audit import query_audit_logs
+
     pool = _state.get("db_pool")
     if not pool:
         return {"entries": [], "note": "Database not initialized"}
-    entries = await query_audit_logs(pool, user_id=user_id, action=action, limit=limit, offset=offset)
+    entries = await query_audit_logs(
+        pool, user_id=user_id, action=action, limit=limit, offset=offset
+    )
     return {"entries": entries, "total_returned": len(entries)}
 
 
 # ── Memory Export/Import ──────────────────────────────────────────────────────
+
 
 @app.get("/memory/export")
 async def export_memories(
@@ -510,6 +550,7 @@ async def import_memories(
 
 
 # ── HITL interrupt router ─────────────────────────────────────────────────────
+
 
 def mount_interrupt_router(coordinator: Any) -> None:
     """Mount the HITL interrupt router at /hitl."""

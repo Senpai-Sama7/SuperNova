@@ -23,6 +23,7 @@ import {
   MCPServersPanel, MCPToolExplorer, SkillPanel, MCPExecutionLog, CostWidget, ExportButton,
   AnimatedAgentCard, AnimatedApprovalCard, AnimatedConfidenceMeter, AnimatedMiniBar,
 } from './components';
+import { SettingsTab } from './components/tabs/SettingsTab';
 
 // ============================================================================
 // CONSTANTS
@@ -34,6 +35,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'memory', label: 'Memory', icon: '◎' },
   { id: 'decisions', label: 'Decisions', icon: '⬡' },
   { id: 'mcp', label: 'MCP', icon: '⚙' },
+  { id: 'settings', label: 'Settings', icon: '⚡' },
 ];
 
 // ============================================================================
@@ -557,6 +559,7 @@ export default function NovaDashboard(): React.ReactElement {
       case 'memory': return <MemoryTab {...tabContentProps} />;
       case 'decisions': return <DecisionsTab {...tabContentProps} />;
       case 'mcp': return <MCPTab />;
+      case 'settings': return <SettingsTab />;
       default: return <OverviewTab {...tabContentProps} />;
     }
   };

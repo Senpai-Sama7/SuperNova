@@ -11,7 +11,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Flag, auto
 from typing import Any
 
@@ -33,6 +33,18 @@ class Capability(Flag):
     EXTERNAL_API = auto()
 
 
+TOOL_RISK_LEVELS: dict[str, str] = {
+    "web_search": "low",
+    "file_read": "low",
+    "file_write": "medium",
+    "code_exec": "high",
+    "web_browse": "low",
+    "send_email": "high",
+    "external_api": "medium",
+    "shell_access": "critical",
+}
+
+
 @dataclass
 class Tool:
     """A registered tool with capability requirements and OpenAI schema."""
@@ -43,6 +55,7 @@ class Tool:
     parameters: dict[str, Any]  # JSON Schema for parameters
     fn: Callable[..., Awaitable[Any]]
     is_safe_parallel: bool = True
+    risk_level: str = "low"
 
 
 class ToolRegistry:
@@ -57,10 +70,12 @@ class ToolRegistry:
         self,
         granted_capabilities: Capability,
         pool: AsyncPostgresPool | None = None,
+        enabled_tools: list[str] | None = None,
     ) -> None:
         self._granted = granted_capabilities
         self._pool = pool
         self._tools: dict[str, Tool] = {}
+        self._enabled_tools: set[str] = set(enabled_tools) if enabled_tools else set()
 
     @staticmethod
     def _coerce_capabilities(value: Capability | int | None) -> Capability:
@@ -70,6 +85,31 @@ class ToolRegistry:
         if isinstance(value, Capability):
             return value
         return Capability(value)
+
+    def set_enabled_tools(self, enabled_tools: list[str]) -> None:
+        """Set the list of enabled tools for this registry.
+
+        If empty, all registered tools are allowed.
+        If non-empty, only tools in this list are allowed.
+
+        Args:
+            enabled_tools: List of tool names to enable
+        """
+        self._enabled_tools = set(enabled_tools)
+        logger.info(f"Tool registry updated: {len(self._enabled_tools)} tools enabled")
+
+    def is_tool_enabled(self, tool_name: str) -> bool:
+        """Check if a tool is enabled for this user.
+
+        Args:
+            tool_name: Name of the tool to check
+
+        Returns:
+            bool: True if tool is enabled (or no restrictions configured)
+        """
+        if not self._enabled_tools:
+            return True
+        return tool_name in self._enabled_tools
 
     def register(self, tool: Tool) -> None:
         """Register a tool, validating its capabilities are permitted.
@@ -108,6 +148,9 @@ class ToolRegistry:
         if tool is None:
             raise KeyError(f"Tool '{name}' not registered")
 
+        if not self.is_tool_enabled(name):
+            raise PermissionError(f"Tool '{name}' is not enabled for this user")
+
         # Runtime re-validation
         effective_caps = (
             self._coerce_capabilities(granted_capabilities)
@@ -116,9 +159,7 @@ class ToolRegistry:
         )
         missing = tool.required_capabilities & ~effective_caps
         if missing:
-            raise PermissionError(
-                f"Tool '{name}' requires capabilities not granted: {missing}"
-            )
+            raise PermissionError(f"Tool '{name}' requires capabilities not granted: {missing}")
 
         start = time.monotonic()
         error_msg = None
@@ -133,13 +174,17 @@ class ToolRegistry:
             await self._log_execution(name, elapsed, error_msg)
 
     async def _log_execution(
-        self, tool_name: str, elapsed: float, error: str | None,
+        self,
+        tool_name: str,
+        elapsed: float,
+        error: str | None,
     ) -> None:
         """Log tool execution to audit_log."""
         if self._pool is None:
             return
         try:
             import json
+
             details = json.dumps({"elapsed_ms": round(elapsed * 1000, 1), "error": error})
             await self._pool.execute(
                 """INSERT INTO audit_log (action, resource_type, resource_id, details)
@@ -172,6 +217,7 @@ class ToolRegistry:
             }
             for tool in self._tools.values()
             if not (tool.required_capabilities & ~effective_caps)
+            and self.is_tool_enabled(tool.name)
         ]
 
     def get_tool(self, name: str) -> Tool | None:

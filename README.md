@@ -290,6 +290,27 @@ Open the `.env` file in any text editor:
 
 That's it! The defaults work fine for most people.
 
+### Control Panel (Dashboard Settings)
+
+SuperNova includes a visual **Settings** tab in the dashboard where you can control:
+
+| Setting | What It Does |
+|---------|-------------|
+| **Risk Control** | Choose when SuperNova asks for approval (Always, Risky only, Never) |
+| **Speed Control** | Balance between fast responses and thorough reasoning |
+| **Budget** | Set your daily spending limit |
+| **Tool Access** | Enable/disable specific capabilities (web search, file operations, code execution) |
+| **Self-Reflection** | Enable agent to evaluate its own responses |
+| **Query Caching** | Skip AI for repeated queries |
+
+**Quick Presets:**
+- 🔒 **Maximum** — Approves everything, full control
+- ⚠️ **Careful** — Approve risky actions only
+- ⚖️ **Balanced** — Recommended default
+- 🚀 **Fast** — Let it run autonomously
+
+Access Settings at: **http://localhost:5173** → Click Settings tab
+
 ---
 
 ## Terminal UI
@@ -374,6 +395,9 @@ ws://localhost:8000/agent/stream/{session_id}?token=YOUR_TOKEN
 | `WS /agent/stream/{id}` | Real-time chat |
 | `GET /memory/semantic` | Browse memories |
 | `GET /admin/costs` | View spending |
+| `GET /api/v1/preferences` | Get user preferences |
+| `POST /api/v1/preferences` | Set user preferences |
+| `POST /api/v1/preferences/preset/{name}` | Apply a preset (paranoid, careful, balanced, fast) |
 
 ---
 

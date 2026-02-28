@@ -22,6 +22,8 @@ const Tutorial: React.FC<TutorialProps> = ({ onComplete }) => {
   const step = TUTORIAL_STEPS[current];
   const isLast = current === TUTORIAL_STEPS.length - 1;
 
+  if (!step) return null;
+
   const next = () => {
     if (isLast) { localStorage.setItem('supernova_tutorial_done', 'true'); onComplete(); }
     else setCurrent(c => c + 1);

@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0
+rootdir: /home/donovan/Downloads/SuperNova/supernova
+configfile: pyproject.toml
+plugins: anyio-4.11.0, asyncio-0.24.0, langsmith-0.4.34, cov-7.0.0, typeguard-4.4.2
+asyncio: mode=Mode.AUTO, default_loop_scope=function
+collected 403 items
+
+tests/test_agent_routes.py ..                                            [  0%]
+tests/test_api_main.py ...                                               [  1%]
+tests/test_audit_coverage.py ......                                      [  2%]
+tests/test_auth.py .........                                             [  4%]
+tests/test_backup.py ....................                                [  9%]
+tests/test_builtin_tools.py ................                             [ 13%]
+tests/test_context_assembly.py ......                                    [ 15%]
+tests/test_cost_controller.py ...........................                [ 22%]
+tests/test_dashboard.py .................................                [ 30%]
+tests/test_e2e.py ssssssssssss                                           [ 33%]
+tests/test_episodic.py ..........                                        [ 35%]
+tests/test_gateway.py ............                                       [ 38%]
+tests/test_interrupts.py ......                                          [ 40%]
+tests/test_mcp_api.py .

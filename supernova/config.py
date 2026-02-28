@@ -210,6 +210,22 @@ class PathSettings(BaseSettings):
         return self
 
 
+class UserPreferencesSettings(BaseSettings):
+    """Default user preference settings (system-wide defaults)."""
+
+    model_config = SettingsConfigDict(env_prefix="PREF_")
+
+    risk_level: Literal["paranoid", "careful", "balanced", "fast"] = "balanced"
+    speed_preference: Literal["instant", "balanced", "thorough"] = "balanced"
+    daily_budget_usd: float = 5.0
+    auto_approve_timeout: int = 120
+    max_tool_calls_per_turn: int = 10
+    reflection_enabled: bool = True
+    use_cache: bool = True
+
+    hitl_mode: Literal["always", "risky_only", "never"] = "risky_only"
+
+
 class FeatureFlags(BaseSettings):
     """Feature toggle configuration."""
 
@@ -276,6 +292,7 @@ class Settings(BaseSettings):
     sandbox: SandboxSettings = Field(default_factory=SandboxSettings)
     paths: PathSettings = Field(default_factory=PathSettings)
     features: FeatureFlags = Field(default_factory=FeatureFlags)
+    preferences: UserPreferencesSettings = Field(default_factory=UserPreferencesSettings)
     dev: DevelopmentSettings = Field(default_factory=DevelopmentSettings)
 
     @property

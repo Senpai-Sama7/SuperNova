@@ -60,6 +60,7 @@ dependencies = [
     "pydantic>=2.7.0",
     "pydantic-settings>=2.2.0",
     "python-multipart>=0.0.9",
+    "slowapi>=0.1.9",
     
     # Background Tasks (Task 2.1.6)
     "celery[gevent]>=5.4.0",
