@@ -7,6 +7,7 @@ import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
+from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,6 +46,16 @@ def _client_host(client: Any) -> str:
 
 
 
+def _request_id_from_headers(headers: Any) -> str:
+    """Return a stable request/correlation identifier for audit events."""
+    if headers is not None:
+        request_id = headers.get("x-request-id") or headers.get("x-correlation-id")
+        if request_id:
+            return str(request_id)
+    return f"req-{uuid4().hex}"
+
+
+
 def _build_audit_payload(
     *,
     action: str,
@@ -52,16 +63,23 @@ def _build_audit_payload(
     outcome: str,
     user_id: str | None,
     client_host: str | None = None,
+    request_id: str | None = None,
+    actor_type: str | None = None,
+    auth_method: str | None = None,
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a normalized audit-event payload for privileged gateway activity."""
+    normalized_user = user_id or "anonymous"
     return {
         "event_type": "gateway_audit",
         "timestamp": datetime.now(UTC).isoformat(),
+        "request_id": request_id or f"req-{uuid4().hex}",
         "action": action,
         "route": route,
         "outcome": outcome,
-        "user_id": user_id or "anonymous",
+        "user_id": normalized_user,
+        "actor_type": actor_type or ("user" if user_id else "anonymous"),
+        "auth_method": auth_method or ("jwt" if user_id else "none"),
         "client_host": client_host or "unknown",
         "details": details or {},
     }
@@ -75,6 +93,9 @@ def _audit_privileged_action(
     outcome: str,
     user_id: str | None,
     client_host: str | None = None,
+    request_id: str | None = None,
+    actor_type: str | None = None,
+    auth_method: str | None = None,
     details: dict[str, Any] | None = None,
 ) -> None:
     """Emit a structured audit-style log for privileged gateway actions."""
@@ -84,6 +105,9 @@ def _audit_privileged_action(
         outcome=outcome,
         user_id=user_id,
         client_host=client_host,
+        request_id=request_id,
+        actor_type=actor_type,
+        auth_method=auth_method,
         details=details,
     )
     logger.info("audit_event %s", payload)
@@ -153,6 +177,7 @@ async def health() -> dict[str, Any]:
 @app.get("/health/deep")
 async def deep_health(request: Request, user_id: str = Depends(get_current_user)) -> dict[str, Any]:
     client_host = _client_host(request.client)
+    request_id = _request_id_from_headers(request.headers)
     status: dict[str, Any] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "services": {
@@ -183,6 +208,9 @@ async def deep_health(request: Request, user_id: str = Depends(get_current_user)
         outcome="success",
         user_id=user_id,
         client_host=client_host,
+        request_id=request_id,
+        actor_type="user",
+        auth_method="jwt",
         details={"services": status["services"]},
     )
     return status
@@ -191,12 +219,16 @@ async def deep_health(request: Request, user_id: str = Depends(get_current_user)
 @app.get("/metrics")
 async def prometheus_metrics(request: Request, user_id: str = Depends(get_current_user)) -> Any:
     client_host = _client_host(request.client)
+    request_id = _request_id_from_headers(request.headers)
     _audit_privileged_action(
         action="gateway.metrics",
         route="/metrics",
         outcome="success",
         user_id=user_id,
         client_host=client_host,
+        request_id=request_id,
+        actor_type="user",
+        auth_method="jwt",
     )
     registry = CollectorRegistry()
     payload = generate_latest(registry)
@@ -207,6 +239,7 @@ async def prometheus_metrics(request: Request, user_id: str = Depends(get_curren
 async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
     """WebSocket for real-time health alerts. Requires JWT in query param."""
     client_host = _client_host(ws.client)
+    request_id = _request_id_from_headers(ws.headers)
     if not verify_token(token):
         try:
             _enforce_rate_limit(f"invalid_token:{client_host}")
@@ -217,6 +250,9 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
                 outcome="rate_limited",
                 user_id=None,
                 client_host=client_host,
+                request_id=request_id,
+                actor_type="anonymous",
+                auth_method="query_token",
             )
             await ws.close(code=4008, reason="Rate limit exceeded")
             return
@@ -227,6 +263,9 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
             outcome="blocked",
             user_id=None,
             client_host=client_host,
+            request_id=request_id,
+            actor_type="anonymous",
+            auth_method="query_token",
         )
         await ws.close(code=4001, reason="Invalid token")
         return
@@ -243,6 +282,7 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
 @app.post("/auth/token", response_model=TokenResponse)
 async def issue_token(request: Request) -> TokenResponse:
     client_host = _client_host(request.client)
+    request_id = _request_id_from_headers(request.headers)
     if settings.is_production:
         _audit_privileged_action(
             action="gateway.issue_token.blocked_production",
@@ -250,6 +290,9 @@ async def issue_token(request: Request) -> TokenResponse:
             outcome="blocked",
             user_id=None,
             client_host=client_host,
+            request_id=request_id,
+            actor_type="anonymous",
+            auth_method="none",
         )
         raise HTTPException(status_code=403, detail="Demo token issuance is disabled in production")
 
@@ -262,6 +305,9 @@ async def issue_token(request: Request) -> TokenResponse:
             outcome="rate_limited",
             user_id=None,
             client_host=client_host,
+            request_id=request_id,
+            actor_type="anonymous",
+            auth_method="none",
         )
         raise
 
@@ -271,6 +317,9 @@ async def issue_token(request: Request) -> TokenResponse:
         outcome="issued",
         user_id=None,
         client_host=client_host,
+        request_id=request_id,
+        actor_type="anonymous",
+        auth_method="none",
     )
 
     token = create_access_token({"sub": "demo-user"})
@@ -281,6 +330,7 @@ async def issue_token(request: Request) -> TokenResponse:
 async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query(...)):
     """WebSocket endpoint for streaming agent events. Requires JWT in query param."""
     client_host = _client_host(websocket.client)
+    request_id = _request_id_from_headers(websocket.headers)
     if not verify_token(token):
         try:
             _enforce_rate_limit(f"invalid_token:{client_host}")
@@ -291,6 +341,9 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
                 outcome="rate_limited",
                 user_id=None,
                 client_host=client_host,
+                request_id=request_id,
+                actor_type="anonymous",
+                auth_method="query_token",
                 details={"session_id": session_id},
             )
             await websocket.close(code=4008, reason="Rate limit exceeded")
@@ -302,6 +355,9 @@ async def agent_stream(websocket: WebSocket, session_id: str, token: str = Query
             outcome="blocked",
             user_id=None,
             client_host=client_host,
+            request_id=request_id,
+            actor_type="anonymous",
+            auth_method="query_token",
             details={"session_id": session_id},
         )
         await websocket.close(code=4001, reason="Invalid token")
@@ -334,6 +390,9 @@ async def get_semantic_memory(
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
     )
     return []
 
@@ -346,6 +405,9 @@ async def get_procedural_skills(request: Request, user_id: str = Depends(get_cur
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
     )
     return []
 
@@ -358,6 +420,9 @@ async def get_fleet_summary(request: Request, user_id: str = Depends(get_current
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
     )
     return {"ok": True, "user_id": user_id}
 
@@ -370,6 +435,9 @@ async def get_cost_summary(request: Request, user_id: str = Depends(get_current_
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
     )
     return {"ok": True, "user_id": user_id}
 
@@ -388,6 +456,9 @@ async def get_audit_logs(
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
         details={"action": action, "limit": limit, "offset": offset},
     )
     return {"items": [], "action": action, "limit": limit, "offset": offset, "user_id": user_id}
@@ -406,6 +477,9 @@ async def export_memory(
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
         details={"format": format, "memory_type": memory_type},
     )
     return {"format": format, "memory_type": memory_type, "user_id": user_id}
@@ -422,5 +496,8 @@ async def import_memory(
         outcome="success",
         user_id=user_id,
         client_host=_client_host(request.client),
+        request_id=_request_id_from_headers(request.headers),
+        actor_type="user",
+        auth_method="jwt",
     )
     return {"ok": True, "user_id": user_id}

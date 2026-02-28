@@ -10,9 +10,15 @@ from fastapi import HTTPException
 from supernova.api import gateway
 
 
+class _FakeHeaders(dict):
+    def get(self, key, default=None):
+        return super().get(key.lower(), default)
+
+
 class _FakeWebSocket:
-    def __init__(self, host: str = "127.0.0.1") -> None:
+    def __init__(self, host: str = "127.0.0.1", headers: dict[str, str] | None = None) -> None:
         self.client = SimpleNamespace(host=host)
+        self.headers = _FakeHeaders({k.lower(): v for k, v in (headers or {}).items()})
         self.close_calls: list[dict[str, object]] = []
 
     async def close(self, code: int | None = None, reason: str | None = None) -> None:
@@ -55,6 +61,13 @@ def test_rate_limit_resets_after_window() -> None:
 
 
 
+def test_request_id_prefers_forwarded_header() -> None:
+    headers = _FakeHeaders({"x-request-id": "req-123"})
+
+    assert gateway._request_id_from_headers(headers) == "req-123"
+
+
+
 def test_build_audit_payload_has_standard_shape() -> None:
     payload = gateway._build_audit_payload(
         action="gateway.memory.export",
@@ -62,14 +75,20 @@ def test_build_audit_payload_has_standard_shape() -> None:
         outcome="success",
         user_id="user-123",
         client_host="127.0.0.1",
+        request_id="req-123",
+        actor_type="user",
+        auth_method="jwt",
         details={"format": "json"},
     )
 
     assert payload["event_type"] == "gateway_audit"
+    assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.memory.export"
     assert payload["route"] == "/memory/export"
     assert payload["outcome"] == "success"
     assert payload["user_id"] == "user-123"
+    assert payload["actor_type"] == "user"
+    assert payload["auth_method"] == "jwt"
     assert payload["client_host"] == "127.0.0.1"
     assert payload["details"] == {"format": "json"}
     assert "timestamp" in payload
@@ -89,21 +108,27 @@ def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) ->
         outcome="success",
         user_id="user-123",
         client_host="127.0.0.1",
+        request_id="req-123",
+        actor_type="user",
+        auth_method="jwt",
         details={"format": "json"},
     )
 
     assert calls
     payload = calls[0][0][1]
     assert payload["event_type"] == "gateway_audit"
+    assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.memory.export"
     assert payload["route"] == "/memory/export"
     assert payload["outcome"] == "success"
+    assert payload["actor_type"] == "user"
+    assert payload["auth_method"] == "jwt"
 
 
 @pytest.mark.asyncio
 async def test_health_ws_invalid_token_is_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gateway, "verify_token", lambda token: False)
-    ws = _FakeWebSocket()
+    ws = _FakeWebSocket(headers={"x-request-id": "req-123"})
 
     await gateway.health_ws(ws, token="bad-token")
 
@@ -113,7 +138,7 @@ async def test_health_ws_invalid_token_is_closed(monkeypatch: pytest.MonkeyPatch
 @pytest.mark.asyncio
 async def test_health_ws_invalid_token_is_rate_limited(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gateway, "verify_token", lambda token: False)
-    ws = _FakeWebSocket()
+    ws = _FakeWebSocket(headers={"x-request-id": "req-123"})
     bucket = f"invalid_token:{ws.client.host}"
     for _ in range(gateway._RATE_LIMIT_MAX_CALLS):
         gateway._enforce_rate_limit(bucket)
@@ -132,12 +157,18 @@ async def test_issue_token_blocked_in_production_is_audited(monkeypatch: pytest.
 
     monkeypatch.setattr(gateway.logger, "info", fake_info)
     monkeypatch.setattr(gateway, "settings", SimpleNamespace(is_production=True))
-    request = SimpleNamespace(client=SimpleNamespace(host="127.0.0.1"))
+    request = SimpleNamespace(
+        client=SimpleNamespace(host="127.0.0.1"),
+        headers=_FakeHeaders({"x-request-id": "req-123"}),
+    )
 
     with pytest.raises(HTTPException, match="disabled in production"):
         await gateway.issue_token(request)
 
     payload = calls[0][0][1]
+    assert payload["request_id"] == "req-123"
     assert payload["action"] == "gateway.issue_token.blocked_production"
     assert payload["route"] == "/auth/token"
     assert payload["outcome"] == "blocked"
+    assert payload["actor_type"] == "anonymous"
+    assert payload["auth_method"] == "none"
