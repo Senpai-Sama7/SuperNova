@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import logging
-import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import Depends, FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
 from starlette.responses import Response
 
-from supernova.api.auth import create_access_token, get_current_user, verify_token
+from supernova.api.auth import TokenResponse, create_access_token, get_current_user, verify_token
 from supernova.api.routes.agent import router as agent_router
 from supernova.api.routes.dashboard import router as dashboard_router
 from supernova.api.websockets import WebSocketBroadcaster, handle_agent_stream
@@ -136,6 +135,9 @@ async def health_ws(ws: WebSocket, token: str = Query(...)) -> None:
 
 @app.post("/auth/token", response_model=TokenResponse)
 async def issue_token() -> TokenResponse:
+    if settings.is_production:
+        raise HTTPException(status_code=403, detail="Demo token issuance is disabled in production")
+
     token = create_access_token({"sub": "demo-user"})
     return TokenResponse(access_token=token, token_type="bearer")
 
