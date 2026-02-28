@@ -34,7 +34,6 @@ class TestAuth:
         with patch.dict("os.environ", {"JWT_SECRET_KEY": self.SECRET}):
             token = create_access_token("user-1", expires_delta_hours=1.0)
         payload = jwt.decode(token, self.SECRET, algorithms=["HS256"])
-        # Expiry should be ~1 hour from now
         assert payload["exp"] - payload["iat"] == pytest.approx(3600, abs=5)
 
     def test_verify_token_valid(self):
@@ -63,7 +62,7 @@ class TestAuth:
 
     def test_verify_token_no_subject(self):
         from supernova.api.auth import verify_token
-        payload = {"exp": time.time() + 3600}  # No "sub" field
+        payload = {"exp": time.time() + 3600}
         token = jwt.encode(payload, self.SECRET, algorithm="HS256")
         with patch.dict("os.environ", {"JWT_SECRET_KEY": self.SECRET}):
             with pytest.raises(HTTPException) as exc_info:
@@ -117,6 +116,9 @@ class TestAuth:
         assert payload["event_type"] == "auth_success"
         assert payload["event_category"] == "authentication"
         assert payload["audit_layer"] == "dependency"
+        assert payload["environment"] == "development"
+        assert payload["service_name"] == "supernova-api-auth"
+        assert payload["service_version"] == "2.0.0"
         assert payload["route_intent"] == "auth"
         assert payload["route"] == "/metrics"
         assert payload["request_id"] == "req-123"
@@ -166,6 +168,9 @@ class TestAuth:
         assert payload["event_type"] == "auth_failure"
         assert payload["event_category"] == "authentication"
         assert payload["audit_layer"] == "dependency"
+        assert payload["environment"] == "development"
+        assert payload["service_name"] == "supernova-api-auth"
+        assert payload["service_version"] == "2.0.0"
         assert payload["route_intent"] == "auth"
         assert payload["route"] == "/admin/fleet"
         assert payload["request_id"] == "req-123"
@@ -201,6 +206,9 @@ class TestAuth:
         assert payload["event_type"] == "auth_failure"
         assert payload["event_category"] == "authentication"
         assert payload["audit_layer"] == "dependency"
+        assert payload["environment"] == "development"
+        assert payload["service_name"] == "supernova-api-auth"
+        assert payload["service_version"] == "2.0.0"
         assert payload["route_intent"] == "auth"
         assert payload["route"] == "/admin/costs"
         assert payload["request_id"] == "corr-123"

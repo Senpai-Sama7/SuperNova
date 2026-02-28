@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -30,6 +31,10 @@ from supernova.runtime_config_guardrails import validate_runtime_configuration
 logger = logging.getLogger(__name__)
 settings = get_settings()
 validate_runtime_configuration()
+
+_SERVICE_NAME = "supernova-gateway"
+_SERVICE_VERSION = os.getenv("SUPERNOVA_VERSION", "2.0.0")
+_ENVIRONMENT = settings.env
 
 _state: dict[str, Any] = {}
 _RATE_LIMIT_WINDOW_SECONDS = 60.0
@@ -79,6 +84,9 @@ def _build_audit_payload(
         "event_type": "gateway_audit",
         "event_category": "privileged_action",
         "audit_layer": "route",
+        "environment": _ENVIRONMENT,
+        "service_name": _SERVICE_NAME,
+        "service_version": _SERVICE_VERSION,
         "timestamp": datetime.now(UTC).isoformat(),
         "request_id": request_id or f"req-{uuid4().hex}",
         "action": action,

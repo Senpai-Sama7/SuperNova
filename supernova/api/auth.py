@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 _ALGORITHM = "HS256"
 _bearer = HTTPBearer(auto_error=False)
+_SERVICE_NAME = "supernova-api-auth"
+_SERVICE_VERSION = os.environ.get("SUPERNOVA_VERSION", "2.0.0")
+_ENVIRONMENT = os.environ.get("SUPERNOVA_ENV", "development")
 
 
 def _get_secret() -> str:
@@ -54,6 +57,9 @@ def _emit_auth_failure(
         "event_category": "authentication",
         "audit_layer": "dependency",
         "route_intent": "auth",
+        "environment": _ENVIRONMENT,
+        "service_name": _SERVICE_NAME,
+        "service_version": _SERVICE_VERSION,
         "timestamp": datetime.now(UTC).isoformat(),
         "request_id": _request_id_from_headers(request.headers if request is not None else None),
         "route": route,
@@ -85,6 +91,9 @@ def _emit_auth_success(
         "event_category": "authentication",
         "audit_layer": "dependency",
         "route_intent": "auth",
+        "environment": _ENVIRONMENT,
+        "service_name": _SERVICE_NAME,
+        "service_version": _SERVICE_VERSION,
         "timestamp": datetime.now(UTC).isoformat(),
         "request_id": _request_id_from_headers(request.headers),
         "route": route,

@@ -89,6 +89,9 @@ def test_build_audit_payload_has_standard_shape() -> None:
     assert payload["event_type"] == "gateway_audit"
     assert payload["event_category"] == "privileged_action"
     assert payload["audit_layer"] == "route"
+    assert payload["environment"] == gateway._ENVIRONMENT
+    assert payload["service_name"] == gateway._SERVICE_NAME
+    assert payload["service_version"] == gateway._SERVICE_VERSION
     assert payload["route_intent"] == "write"
     assert payload["disposition"] == "observed"
     assert payload["severity"] == "info"
@@ -136,6 +139,9 @@ def test_audit_helper_emits_standard_payload(monkeypatch: pytest.MonkeyPatch) ->
     assert payload["event_type"] == "gateway_audit"
     assert payload["event_category"] == "privileged_action"
     assert payload["audit_layer"] == "route"
+    assert payload["environment"] == gateway._ENVIRONMENT
+    assert payload["service_name"] == gateway._SERVICE_NAME
+    assert payload["service_version"] == gateway._SERVICE_VERSION
     assert payload["route_intent"] == "write"
     assert payload["disposition"] == "observed"
     assert payload["severity"] == "info"
@@ -192,6 +198,9 @@ async def test_issue_token_blocked_in_production_is_audited(monkeypatch: pytest.
     payload = calls[0][0][1]
     assert payload["event_category"] == "privileged_action"
     assert payload["audit_layer"] == "route"
+    assert payload["environment"] == gateway._ENVIRONMENT
+    assert payload["service_name"] == gateway._SERVICE_NAME
+    assert payload["service_version"] == gateway._SERVICE_VERSION
     assert payload["route_intent"] == "auth"
     assert payload["disposition"] == "blocked"
     assert payload["severity"] == "warning"
