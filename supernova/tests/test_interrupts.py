@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+from fastapi import HTTPException
 
 from supernova.api.interrupts import (
     AUTO_RESOLVE_ON_TIMEOUT,
@@ -14,6 +16,7 @@ from supernova.api.interrupts import (
     RiskLevel,
     _escape_applescript,
     _summarize_args,
+    create_interrupt_router,
 )
 
 
@@ -24,6 +27,13 @@ def _make_coordinator(timeout_override=None):
         websocket_broadcaster=broadcaster,
         default_timeout_override=timeout_override,
     )
+
+
+def _get_route(router, path: str, method: str):
+    for r in router.routes:
+        if getattr(r, "path", None) == path and method.upper() in getattr(r, "methods", set()):
+            return r
+    raise AssertionError(f"Route not found: {method} {path}")
 
 
 class TestPolicies:
@@ -206,3 +216,75 @@ class TestOSNotification:
             "t6", "code_exec", {"code": "print(1)"}, RiskLevel.MEDIUM
         )
         assert result.approved is False
+
+
+class TestFastAPIRouter:
+    def test_router_exposes_expected_routes(self) -> None:
+        coord = _make_coordinator(timeout_override=5.0)
+        router = create_interrupt_router(coord)
+
+        _get_route(router, "/pending", "GET")
+        _get_route(router, "/{thread_id}/approve", "POST")
+        _get_route(router, "/{thread_id}/deny", "POST")
+
+    @pytest.mark.asyncio
+    async def test_approve_and_deny_endpoints_integrate_with_coordinator(self) -> None:
+        coord = _make_coordinator(timeout_override=5.0)
+        router = create_interrupt_router(coord)
+
+        approve_route = _get_route(router, "/{thread_id}/approve", "POST")
+        deny_route = _get_route(router, "/{thread_id}/deny", "POST")
+        pending_route = _get_route(router, "/pending", "GET")
+
+        with patch.object(coord, "_notify_os", new=AsyncMock()):
+            # 1) APPROVE path
+            task = asyncio.create_task(
+                coord.request_approval("api1", "file_write", {"path": "a.txt"}, RiskLevel.MEDIUM)
+            )
+            await asyncio.sleep(0.02)
+            pending = await pending_route.endpoint()
+            assert any(p["thread_id"] == "api1" for p in pending)
+
+            body = MagicMock(); body.user_id = None
+            resp = await approve_route.endpoint("api1", body)
+            assert resp["status"] == "approved"
+            assert resp["thread_id"] == "api1"
+
+            result = await task
+            assert result.approved is True
+            assert result.source == "user"
+
+            # 2) DENY path
+            task2 = asyncio.create_task(
+                coord.request_approval("api2", "send_email", {"to": "x@y.com"}, RiskLevel.HIGH)
+            )
+            await asyncio.sleep(0.02)
+            resp2 = await deny_route.endpoint("api2", body)
+            assert resp2["status"] == "denied"
+            assert resp2["thread_id"] == "api2"
+
+            result2 = await task2
+            assert result2.approved is False
+            assert result2.source == "user"
+
+    @pytest.mark.asyncio
+    async def test_approve_unknown_thread_returns_404(self) -> None:
+        coord = _make_coordinator(timeout_override=5.0)
+        router = create_interrupt_router(coord)
+        approve_route = _get_route(router, "/{thread_id}/approve", "POST")
+
+        body = MagicMock(); body.user_id = None
+        with pytest.raises(HTTPException) as ei:
+            await approve_route.endpoint("missing", body)
+        assert ei.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_deny_unknown_thread_returns_404(self) -> None:
+        coord = _make_coordinator(timeout_override=5.0)
+        router = create_interrupt_router(coord)
+        deny_route = _get_route(router, "/{thread_id}/deny", "POST")
+
+        body = MagicMock(); body.user_id = None
+        with pytest.raises(HTTPException) as ei:
+            await deny_route.endpoint("missing", body)
+        assert ei.value.status_code == 404
