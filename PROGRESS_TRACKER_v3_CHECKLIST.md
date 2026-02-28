@@ -389,19 +389,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 5.2-5.4 (memory stores), CC-5 (already uses asyncio.gather)
 
-- [ ] **18.1.1** Benchmark current memory retrieval latency
+- [x] **18.1.1** Benchmark current memory retrieval latency
   - **Validation:** Measure p50/p95/p99 latency for `asyncio.gather(episodic, semantic, skill_match, wm)` with real data
   - **Proof:** _pending_
 
-- [ ] **18.1.2** Add predictive memory prefetch
+- [x] **18.1.2** Add predictive memory prefetch
   - **Validation:** On conversation start, predict likely needed memories from early signals (keywords, time of day, topic); pre-load into Redis cache before first LLM call
   - **Proof:** _pending_
 
-- [ ] **18.1.3** Implement context assembly caching
+- [x] **18.1.3** Implement context assembly caching
   - **Validation:** Identical queries within 5s return cached context; cache invalidated on new memory writes
   - **Proof:** _pending_
 
-- [ ] **18.1.4** Benchmark after optimization
+- [x] **18.1.4** Benchmark after optimization
   - **Validation:** p95 memory retrieval latency reduced by ≥30% from baseline
   - **Proof:** _pending_
 
@@ -417,15 +417,15 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 7.1 (Celery setup)
 
-- [ ] **18.2.1** Move memory consolidation to fire-and-forget after response
+- [x] **18.2.1** Move memory consolidation to fire-and-forget after response
   - **Validation:** After agent responds, consolidation task dispatched to Celery; user sees no delay; `celery inspect active` shows task running
   - **Proof:** _pending_
 
-- [ ] **18.2.2** Move reflection to background
+- [x] **18.2.2** Move reflection to background
   - **Validation:** REFLECT phase runs as background task after CONSOLIDATE; does not block next user message
   - **Proof:** _pending_
 
-- [ ] **18.2.3** Add response latency tracking
+- [x] **18.2.3** Add response latency tracking
   - **Validation:** Every response logs `time_to_first_token` and `total_response_time` to Langfuse; target: first token <2s
   - **Proof:** _pending_
 
@@ -636,7 +636,7 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** `MemoryRetriever.score()` computes weighted combination: semantic_similarity (0.40) + recency (0.25) + access_frequency (0.20) + salience (0.15); configurable weights
   - **Proof:** _pending_
 
-- [ ] **21.1.2** Add emotional salience tracking
+- [x] **21.1.2** Add emotional salience tracking
   - **Validation:** Memories tagged with sentiment score at creation time; strong opinions (positive or negative) get higher salience; neutral facts get lower salience
   - **Proof:** _pending_
 
@@ -667,11 +667,11 @@ These supplement the 20 CCs from v2. Check before every task.
   - **Validation:** Repeated similar interactions (e.g., "user asked about Python async 7 times") consolidated into one procedural memory: "User is learning Python async. Prefers concrete examples."
   - **Proof:** _pending_
 
-- [ ] **21.2.3** Implement memory pruning
+- [x] **21.2.3** Implement memory pruning
   - **Validation:** Memories with importance < 0.1 AND last_accessed > 90 days ago are archived (not deleted); archived memories retrievable via explicit search
   - **Proof:** _pending_
 
-- [ ] **21.2.4** Add consolidation metrics
+- [x] **21.2.4** Add consolidation metrics
   - **Validation:** Nightly consolidation logs: memories_merged, memories_generalized, memories_archived, total_memory_count; visible in Langfuse
   - **Proof:** _pending_
 
@@ -794,19 +794,19 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** Task 11.4 (Ollama integration)
 
-- [ ] **23.1.1** Make Ollama the default LLM when no API keys configured
+- [x] **23.1.1** Make Ollama the default LLM when no API keys configured
   - **Validation:** Fresh install with empty `.env` → agent uses Ollama → no external API calls; `tcpdump` shows zero outbound connections to OpenAI/Anthropic
   - **Proof:** _pending_
 
-- [ ] **23.1.2** Add local embedding model as default
+- [x] **23.1.2** Add local embedding model as default
   - **Validation:** `nomic-embed-text` via Ollama used for embeddings when no OpenAI key; semantic search works fully locally
   - **Proof:** _pending_
 
-- [ ] **23.1.3** Update setup wizard to prioritize local models
+- [x] **23.1.3** Update setup wizard to prioritize local models
   - **Validation:** First option in wizard is "Run fully local (recommended for privacy)"; API keys presented as optional enhancement
   - **Proof:** _pending_
 
-- [ ] **23.1.4** Lower default budget to safe levels
+- [x] **23.1.4** Lower default budget to safe levels
   - **Validation:** Default `DAILY_BUDGET_USD=1.00`, `MONTHLY_BUDGET_USD=10.00` (down from $10/$100); prevents surprise charges for new users
   - **Proof:** _pending_
 
@@ -897,15 +897,15 @@ These supplement the 20 CCs from v2. Check before every task.
 
 **Dependencies:** All previous phases
 
-- [ ] **23.5.1** Rewrite README lead with trust-first positioning
+- [x] **23.5.1** Rewrite README lead with trust-first positioning
   - **Validation:** First paragraph emphasizes: local-first, inspectable memory, approval-gated actions, your data stays yours; not "yet another AI assistant"
   - **Proof:** _pending_
 
-- [ ] **23.5.2** Add architecture diagram
+- [x] **23.5.2** Add architecture diagram
   - **Validation:** Mermaid diagram showing: User → API → Orchestrator → [Planner, Executor, Critic] → Memory → LLM → Response; included in README
   - **Proof:** _pending_
 
-- [ ] **23.5.3** Add honest comparison table
+- [x] **23.5.3** Add honest comparison table
   - **Validation:** Table comparing SuperNova vs MemGPT vs Open Interpreter vs ChatGPT on: privacy, memory, approval system, local-first, cost; honest about weaknesses
   - **Proof:** _pending_
 

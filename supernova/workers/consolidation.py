@@ -11,6 +11,15 @@ from supernova.workers.celery_app import app
 logger = logging.getLogger(__name__)
 
 
+@app.task(name="supernova.workers.consolidation.background_consolidate")
+def background_consolidate(query: str = "recent events") -> dict:
+    """Celery task: run memory consolidation in background after agent response."""
+    logger.info("Starting background consolidation", query=query)
+    result = _run_async(_do_consolidation())
+    logger.info("Background consolidation complete: %s", result)
+    return result
+
+
 def _run_async(coro: Any) -> Any:
     """Run async coroutine from sync Celery task."""
     try:

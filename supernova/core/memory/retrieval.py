@@ -24,6 +24,10 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
+# Timing metrics storage
+_retrieval_times: List[float] = []
+_MAX_METRICS = 1000  # Keep last 1000 measurements
+
 
 # ---------------------------------------------------------------------------
 # Domain types
@@ -41,6 +45,7 @@ class MemoryItem:
         relevance_score: Raw cosine / BM25 similarity from the store (0–1).
         recency_score: Time-decay weight (1.0 = just created, 0.0 = ancient).
         composite_score: Final weighted rank used for selection.
+        salience_score: Emotional salience (-1.0 to 1.0).
         metadata: Store-specific payload (timestamps, source, tags, …).
         retrieved_at: Unix timestamp of retrieval.
     """
@@ -51,6 +56,7 @@ class MemoryItem:
     relevance_score: float
     recency_score: float
     composite_score: float
+    salience_score: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
     retrieved_at: float = field(default_factory=time.time)
 
@@ -130,6 +136,8 @@ class WeightedMemoryRetriever:
         Returns:
             Ranked :class:`MemoryItem` list, length ≤ *top_k*.
         """
+        start_time = time.monotonic()
+        
         target = {
             k: v for k, v in self._stores.items()
             if store_names is None or k in store_names
@@ -144,6 +152,18 @@ class WeightedMemoryRetriever:
         merged = self._apply_weights(merged)
         merged = self._deduplicate(merged)
         merged.sort(key=lambda x: x.composite_score, reverse=True)
+        
+        # Record timing metrics
+        elapsed = time.monotonic() - start_time
+        _retrieval_times.append(elapsed)
+        if len(_retrieval_times) > _MAX_METRICS:
+            _retrieval_times.pop(0)
+        
+        # Log p50/p95 every 10 retrievals
+        if len(_retrieval_times) % 10 == 0:
+            self._log_latency_metrics()
+        
+        logger.debug("memory_retrieval", elapsed_ms=elapsed*1000, items=len(merged[:top_k]))
         return merged[:top_k]
 
     async def _fetch(
@@ -187,6 +207,18 @@ class WeightedMemoryRetriever:
                 seen[fp] = item.composite_score
                 unique.append(item)
         return unique
+    
+    def _log_latency_metrics(self) -> None:
+        """Log p50/p95 latency metrics."""
+        if not _retrieval_times:
+            return
+        
+        sorted_times = sorted(_retrieval_times)
+        n = len(sorted_times)
+        p50 = sorted_times[int(n * 0.5)] * 1000  # ms
+        p95 = sorted_times[int(n * 0.95)] * 1000  # ms
+        
+        logger.info("retrieval_latency", p50_ms=p50, p95_ms=p95, samples=n)
 
 
 # ---------------------------------------------------------------------------
@@ -253,16 +285,38 @@ class MemoryConsolidator:
 
         clusters = self._cluster(recent)
         records: List[ConsolidationRecord] = []
+        memories_merged = 0
+        memories_generalized = 0
+        
         for cluster in clusters.values():
             if len(cluster) >= self._min_cluster:
                 rec = await self._merge(cluster)
                 if rec:
                     records.append(rec)
+                    memories_merged += len(cluster)
+                    memories_generalized += 1
+
+        # Get archived count from pruning if available
+        memories_archived = 0
+        try:
+            from .retrieval import prune_stale_memories
+            memories_archived = await prune_stale_memories(self._store)
+        except Exception:
+            pass
+            
+        # Get total memory count
+        total_memory_count = len(await self._store.search("*", top_k=10000))
 
         self._history.extend(records)
+        
+        # Log consolidation metrics
         logger.info(
-            "consolidation_complete",
+            "consolidation_metrics",
             store=self._store_name,
+            memories_merged=memories_merged,
+            memories_generalized=memories_generalized, 
+            memories_archived=memories_archived,
+            total_memory_count=total_memory_count,
             merged_clusters=len(records),
             candidates=len(recent),
         )
@@ -423,6 +477,47 @@ class MemoryPrefetcher:
             oldest = min(self._cache, key=lambda k: self._cache[k][0])
             del self._cache[oldest]
         self._cache[key] = (time.time(), items)
+
+
+# ---------------------------------------------------------------------------
+# Memory Pruning
+# ---------------------------------------------------------------------------
+
+
+async def prune_stale_memories(store: MemoryStore, stale_days: int = 90) -> int:
+    """Archive memories with low importance and old access times.
+    
+    Args:
+        store: Memory store to prune
+        stale_days: Days since last access to consider stale
+        
+    Returns:
+        Number of memories archived
+    """
+    cutoff_time = time.time() - (stale_days * 24 * 3600)
+    archived_count = 0
+    
+    try:
+        # Get candidates for archiving
+        candidates = await store.search("*", top_k=1000)
+        
+        for item in candidates:
+            importance = item.metadata.get("importance", 0.5)
+            last_accessed = item.metadata.get("last_accessed", item.metadata.get("created_at", time.time()))
+            
+            if importance < 0.1 and last_accessed < cutoff_time:
+                # Archive instead of delete
+                item.metadata["status"] = "archived"
+                item.metadata["archived_at"] = time.time()
+                await store.upsert(item)
+                archived_count += 1
+                
+        logger.info("memory_pruning_complete", archived=archived_count, cutoff_days=stale_days)
+        return archived_count
+        
+    except Exception as exc:
+        logger.error("memory_pruning_failed", error=str(exc))
+        return 0
 
 
 # ---------------------------------------------------------------------------

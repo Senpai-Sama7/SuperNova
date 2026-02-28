@@ -14,6 +14,7 @@ from uuid import UUID
 
 import litellm
 
+from supernova.config import get_settings
 from supernova.infrastructure.storage.postgres import AsyncPostgresPool
 from supernova.infrastructure.storage.redis import AsyncRedisClient
 
@@ -33,11 +34,19 @@ class SemanticMemoryStore:
         self,
         pool: AsyncPostgresPool,
         redis: AsyncRedisClient | None = None,
-        embedding_model: str = "text-embedding-3-small",
+        embedding_model: str | None = None,
     ) -> None:
         self._pool = pool
         self._redis = redis
-        self._embedding_model = embedding_model
+        settings = get_settings()
+        # Use local embedding model if no OpenAI key configured
+        if embedding_model is None:
+            if not settings.llm.openai_api_key:
+                self._embedding_model = "ollama/nomic-embed-text"
+            else:
+                self._embedding_model = "text-embedding-3-small"
+        else:
+            self._embedding_model = embedding_model
 
     async def embed(self, text: str) -> list[float]:
         """Generate embedding with Redis caching.

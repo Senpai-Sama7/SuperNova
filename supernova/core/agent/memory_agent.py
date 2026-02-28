@@ -7,7 +7,10 @@ import logging
 from typing import Any
 
 import litellm
+
+from supernova.config import get_settings
 from supernova.core.agent.shared_state import SharedState
+from supernova.core.memory.salience import compute_salience
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +18,10 @@ logger = logging.getLogger(__name__)
 class MemoryAgent:
     """Background agent that extracts key facts and manages memory consolidation."""
     
-    def __init__(self, memory_store: Any = None, model: str = "gpt-4o-mini", consolidation_threshold: int = 50):
+    def __init__(self, memory_store: Any = None, model: str | None = None, consolidation_threshold: int = 50):
         self.memory_store = memory_store
-        self.model = model
+        settings = get_settings()
+        self.model = model or settings.llm.effective_default_model
         self.consolidation_threshold = consolidation_threshold
     
     async def process(self, state: SharedState) -> None:
@@ -73,9 +77,31 @@ Exclude: temporary states, error messages, routine confirmations."""
             return []
     
     async def _store_facts(self, facts: list[str]) -> None:
-        """Store facts to memory store."""
+        """Store facts to memory store with salience scoring."""
         if hasattr(self.memory_store, 'store_facts'):
-            await self.memory_store.store_facts(facts)
+            # Compute salience for each fact
+            facts_with_salience = []
+            for fact in facts:
+                salience = compute_salience(fact)
+                facts_with_salience.append({"content": fact, "salience_score": salience})
+            await self.memory_store.store_facts(facts_with_salience)
+        elif hasattr(self.memory_store, 'upsert'):
+            # Fallback for stores without store_facts method
+            from supernova.core.memory.retrieval import MemoryItem
+            import time
+            for fact in facts:
+                salience = compute_salience(fact)
+                item = MemoryItem(
+                    id=f"fact_{hash(fact)}_{int(time.time())}",
+                    content=fact,
+                    memory_type="semantic",
+                    relevance_score=0.5,
+                    recency_score=1.0,
+                    composite_score=0.5,
+                    salience_score=salience,
+                    metadata={"created_at": time.time(), "importance": abs(salience)}
+                )
+                await self.memory_store.upsert(item)
     
     async def _get_memory_count(self) -> int:
         """Get current memory count."""

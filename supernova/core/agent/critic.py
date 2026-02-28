@@ -6,6 +6,8 @@ import logging
 from typing import Any
 
 import litellm
+
+from supernova.config import get_settings
 from supernova.core.agent.shared_state import SharedState
 
 logger = logging.getLogger(__name__)
@@ -14,8 +16,9 @@ logger = logging.getLogger(__name__)
 class CriticAgent:
     """Reviews execution results and checks for issues before user response."""
     
-    def __init__(self, model: str = "gpt-4o-mini"):
-        self.model = model
+    def __init__(self, model: str | None = None):
+        settings = get_settings()
+        self.model = model or settings.llm.effective_default_model
     
     async def review(self, state: SharedState) -> SharedState:
         """Review execution results and critique quality.
