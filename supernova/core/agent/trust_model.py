@@ -1,20 +1,20 @@
 """supernova/core/agent/trust_model.py
 
-Dynamic trust scoring for tool execution decisions.  Computes a composite
-trust score from tool risk metadata, caller trust level, approval history,
-and real-time velocity signals.  Used by the interrupt gate and tool router
-to decide whether a tool call proceeds automatically or requires approval.
+Dynamic trust scoring for tool execution decisions. Computes a composite
+trust score from tool risk metadata, caller trust level, session approval
+history, and call-velocity anomaly signals. Used by the interrupt gate and
+tool router to determine whether execution proceeds automatically or requires
+human approval.
 
-Score formula::
+Scoring formula::
 
     adjusted = base_risk
                × (1 − trust_level_discount)
                × (1 − history_discount)
                × anomaly_multiplier
 
-Execution is auto-approved when ``adjusted_score < approval_threshold``.
+Auto-approved when adjusted < approval_threshold (default 0.35).
 """
-
 from __future__ import annotations
 
 import math
@@ -26,17 +26,22 @@ from typing import Dict, List, Optional
 from supernova.core.security.trusted_context import TrustLevel, TrustedContext
 
 
-# ── Risk tier classification ─────────────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# Risk classification
+# ---------------------------------------------------------------------------
 
 
 class RiskTier(Enum):
-    """Tool risk classification tiers used to anchor the base trust score."""
+    """Tool risk classification.
 
-    SAFE = "safe"  # Read-only, no external effects (e.g. get_time, read_file)
-    LOW = "low"  # Writes to local state only (e.g. create_note)
-    MEDIUM = "medium"  # External API calls, reversible writes (e.g. web_search)
-    HIGH = "high"  # FS writes, sub-process execution (e.g. bash, write_file)
-    CRITICAL = "critical"  # Network egress, secrets access, irreversible ops
+    Tiers map to base risk scores in ``_TIER_BASE_SCORES``.
+    """
+
+    SAFE = "safe"         # Read-only, no external effects
+    LOW = "low"           # Local state writes only
+    MEDIUM = "medium"     # External API calls, reversible writes
+    HIGH = "high"         # Filesystem writes, subprocess / code execution
+    CRITICAL = "critical" # Network egress, secrets access, irreversible ops
 
 
 _TIER_BASE_SCORES: Dict[RiskTier, float] = {
@@ -53,16 +58,26 @@ _TRUST_DISCOUNTS: Dict[TrustLevel, float] = {
     TrustLevel.USER: 0.15,
     TrustLevel.POWER_USER: 0.30,
     TrustLevel.ADMIN: 0.50,
-    TrustLevel.SYSTEM: 1.00,  # System contexts always auto-approve
+    TrustLevel.SYSTEM: 1.00,  # System callers never need approval
 }
 
 
-# ── Data types ───────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# Data containers
+# ---------------------------------------------------------------------------
 
 
 @dataclass
 class ApprovalRecord:
-    """A single tool-approval event persisted in the approval history store."""
+    """Single human-approval event recorded for trust-history scoring.
+
+    Attributes:
+        tool_id: The tool that was approved or rejected.
+        approved: True if the human approved execution.
+        timestamp: Unix timestamp of the decision.
+        risk_tier: Risk tier of the tool at decision time.
+        session_id: Session in which the decision was made.
+    """
 
     tool_id: str
     approved: bool
@@ -73,14 +88,14 @@ class ApprovalRecord:
 
 @dataclass
 class TrustScore:
-    """Composite trust score for a single tool execution decision.
+    """Composite trust score and routing decision for a tool execution.
 
     Attributes:
-        raw_score: Base risk before discounts (0.0 = no risk, 1.0 = maximum risk).
-        adjusted_score: Final score after trust, history, and anomaly factors.
-        requires_approval: True when adjusted_score >= threshold.
-        confidence: Model confidence in this score (0.0 – 1.0).
-        factors: Per-component breakdown for audit logging / explainability.
+        raw_score: Base risk score before discounts (0.0–1.0).
+        adjusted_score: Score after trust and history discounts.
+        requires_approval: True if adjusted_score ≥ approval_threshold.
+        confidence: Model’s self-assessed confidence in this decision (0–1).
+        factors: Breakdown of score components for audit logging.
     """
 
     raw_score: float
@@ -90,26 +105,32 @@ class TrustScore:
     factors: Dict[str, float] = field(default_factory=dict)
 
 
-# ── Trust model ──────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# Model
+# ---------------------------------------------------------------------------
 
 
 class DynamicTrustModel:
-    """Compute dynamic trust scores for tool execution decisions.
+    """Computes dynamic trust scores for tool execution routing decisions.
 
-    Combines four signals:
+    Usage::
 
-    1. **Static base risk** — anchored to :class:`RiskTier`.
-    2. **Caller trust discount** — from :class:`~supernova.core.security.trusted_context.TrustLevel`.
-    3. **History discount** — recency-weighted prior approvals for the same tool.
-    4. **Anomaly multiplier** — amplifies score when call velocity is abnormal.
+        model = DynamicTrustModel()
+        score = model.score(
+            tool_id="bash_exec",
+            risk_tier=RiskTier.HIGH,
+            context=trusted_ctx,
+            approval_history=recent_records,
+        )
+        if score.requires_approval:
+            await interrupt_gate.request_approval(...)
 
     Args:
         approval_threshold: Score at or above which human approval is required.
-            Default 0.35 (a POWER_USER calling a HIGH-risk tool scores ~0.28,
-            a plain USER calling the same tool scores ~0.595 → approval required).
-        history_window_seconds: Lookback window for approval history.
-        max_history_discount: Cap on the history-driven score reduction.
-        velocity_soft_threshold: Calls-per-minute above which anomaly scaling starts.
+            Default 0.35 (equivalent to a POWER_USER executing a HIGH-risk tool
+            with no prior approval history).
+        history_window_seconds: Approval records older than this are ignored.
+        max_history_discount: Maximum fractional score reduction from history.
     """
 
     def __init__(
@@ -117,12 +138,10 @@ class DynamicTrustModel:
         approval_threshold: float = 0.35,
         history_window_seconds: float = 86_400.0,
         max_history_discount: float = 0.25,
-        velocity_soft_threshold: float = 10.0,
     ) -> None:
         self._threshold = approval_threshold
         self._history_window = history_window_seconds
         self._max_history_discount = max_history_discount
-        self._velocity_threshold = velocity_soft_threshold
 
     def score(
         self,
@@ -132,51 +151,43 @@ class DynamicTrustModel:
         approval_history: Optional[List[ApprovalRecord]] = None,
         velocity_calls_per_minute: float = 0.0,
     ) -> TrustScore:
-        """Compute a TrustScore for the proposed tool execution.
+        """Compute a trust score for a proposed tool execution.
 
         Args:
-            tool_id: Identifier of the tool being called.
-            risk_tier: Declared :class:`RiskTier` for this tool.
-            context: :class:`~supernova.core.security.trusted_context.TrustedContext`
-                for the current request.
-            approval_history: Recent :class:`ApprovalRecord` list for this
-                tool / user pair.  Pass an empty list when unavailable.
-            velocity_calls_per_minute: Current call rate, used for anomaly
-                detection.  Pass ``0.0`` when not tracked.
+            tool_id: Identifier of the tool to execute.
+            risk_tier: Declared risk classification of the tool.
+            context: :class:`TrustedContext` for the current request.
+            approval_history: Recent approval records for this tool/user pair.
+            velocity_calls_per_minute: Current call rate for anomaly detection.
 
         Returns:
-            :class:`TrustScore` with the adjusted score and approval decision.
+            :class:`TrustScore` with routing decision and audit factors.
         """
         history = approval_history or []
         raw = _TIER_BASE_SCORES[risk_tier]
         factors: Dict[str, float] = {"base_risk": raw}
 
-        # — Fast path: pre-approved in context OR SYSTEM level —
-        if tool_id in context.approved_tool_ids or context.trust_level == TrustLevel.SYSTEM:
+        # Pre-approved tools skip scoring entirely
+        if tool_id in context.approved_tool_ids:
             return TrustScore(
                 raw_score=raw,
                 adjusted_score=0.0,
                 requires_approval=False,
                 confidence=1.0,
-                factors={"pre_approved_or_system": 1.0},
+                factors={"pre_approved": 1.0},
             )
 
-        # — Trust level discount —
         trust_discount = _TRUST_DISCOUNTS.get(context.trust_level, 0.0)
         factors["trust_discount"] = trust_discount
 
-        # — History discount —
-        history_discount = self._history_discount(
-            tool_id, history, context.session_id
-        )
+        history_discount = self._history_discount(tool_id, history, context.session_id)
         factors["history_discount"] = history_discount
 
-        # — Anomaly multiplier —
-        anomaly = self._anomaly_multiplier(velocity_calls_per_minute)
-        factors["anomaly_multiplier"] = anomaly
+        anomaly_mult = self._anomaly_multiplier(velocity_calls_per_minute)
+        factors["anomaly_multiplier"] = anomaly_mult
 
-        adjusted = raw * (1.0 - trust_discount) * (1.0 - history_discount) * anomaly
-        adjusted = max(0.0, min(adjusted, 1.0))
+        adjusted = raw * (1.0 - trust_discount) * (1.0 - history_discount) * anomaly_mult
+        adjusted = min(max(adjusted, 0.0), 1.0)
         factors["adjusted_score"] = adjusted
 
         confidence = self._confidence(history, raw)
@@ -189,41 +200,35 @@ class DynamicTrustModel:
             factors=factors,
         )
 
-    # ── Private helpers ───────────────────────────────────────────────────────
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
 
-    def _history_discount(
-        self,
-        tool_id: str,
-        history: List[ApprovalRecord],
-        session_id: str,
-    ) -> float:
-        """Recency-weighted discount from positive prior approvals."""
+    def _history_discount(self, tool_id: str, history: List[ApprovalRecord], session_id: str) -> float:
+        """Recency-weighted discount from prior approvals for *tool_id*."""
         now = time.time()
         cutoff = now - self._history_window
         relevant = [
-            r
-            for r in history
+            r for r in history
             if r.tool_id == tool_id and r.approved and r.timestamp >= cutoff
         ]
         if not relevant:
             return 0.0
 
         weighted = 0.0
-        quarter_window = self._history_window / 4.0
         for rec in relevant:
             age = now - rec.timestamp
-            recency = math.exp(-age / quarter_window)
-            session_bonus = 1.5 if rec.session_id == session_id else 1.0
-            weighted += recency * session_bonus
+            recency = math.exp(-age / (self._history_window / 4.0))
+            same_session_bonus = 1.5 if rec.session_id == session_id else 1.0
+            weighted += recency * same_session_bonus
 
         return min(math.tanh(weighted) * self._max_history_discount, self._max_history_discount)
 
     def _anomaly_multiplier(self, velocity: float) -> float:
-        """Return a multiplier > 1.0 when call velocity exceeds soft threshold."""
-        if velocity <= self._velocity_threshold:
+        """Soft anomaly amplifier when call velocity exceeds 10 calls/min."""
+        if velocity <= 10.0:
             return 1.0
-        excess = velocity - self._velocity_threshold
-        return 1.0 + math.log1p(excess) * 0.1
+        return 1.0 + math.log1p(velocity - 10.0) * 0.1
 
     def _confidence(self, history: List[ApprovalRecord], raw_score: float) -> float:
         """Estimate scoring confidence from history volume and score extremeness."""
