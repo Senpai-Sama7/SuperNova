@@ -1,0 +1,50 @@
+# Pre-commit hook configuration for SuperNova.
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+#
+# Hooks run in this order on every `git commit`:
+#   1. detect-private-key      — block secrets before they reach the index
+#   2. check-added-large-files — block binary blobs (proof bundles, etc.)
+#   3. trailing-whitespace     — cosmetic cleanup
+#   4. end-of-file-fixer       — ensure newline at EOF
+#   5. ruff format             — auto-format Python
+#   6. ruff lint               — lint with autofix
+#   7. mypy                    — static type check
+
+repos:
+  # ── General purpose hooks ─────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: no-commit-to-branch
+        args: ["--branch", "main"]
+
+  # ── Ruff: Python formatter + linter ────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff-format
+        types_or: [python, pyi]
+      - id: ruff
+        types_or: [python, pyi]
+        args: [--fix]
+
+  # ── MyPy: static type checking ──────────────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.1
+    hooks:
+      - id: mypy
+        args: [--ignore-missing-imports]
+        additional_dependencies:
+          - pydantic>=2.7.0
+          - fastapi>=0.111.0
+          - langgraph>=0.2.0
