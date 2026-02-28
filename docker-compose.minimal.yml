@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  supernova:
+    build: {context: ., dockerfile: deploy/Dockerfile}
+    ports: ["8000:8000"]
+    environment:
+      DEFAULT_MODEL: ollama/llama3.1
+      OLLAMA_BASE_URL: http://ollama:11434
+    depends_on: [ollama]
+  ollama:
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    volumes: [ollama_data:/root/.ollama]
+volumes:
+  ollama_data:
