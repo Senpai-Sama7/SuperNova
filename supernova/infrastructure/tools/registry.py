@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from enum import Flag, auto
 from typing import Any
 
+from supernova.core.security.sandbox import ExecutionSandbox
 from supernova.infrastructure.storage.postgres import AsyncPostgresPool
 
 logger = logging.getLogger(__name__)
@@ -71,11 +72,13 @@ class ToolRegistry:
         granted_capabilities: Capability,
         pool: AsyncPostgresPool | None = None,
         enabled_tools: list[str] | None = None,
+        sandbox: ExecutionSandbox | None = None,
     ) -> None:
         self._granted = granted_capabilities
         self._pool = pool
         self._tools: dict[str, Tool] = {}
         self._enabled_tools: set[str] = set(enabled_tools) if enabled_tools else set()
+        self._sandbox = sandbox or ExecutionSandbox()
 
     @staticmethod
     def _coerce_capabilities(value: Capability | int | None) -> Capability:
@@ -161,17 +164,23 @@ class ToolRegistry:
         if missing:
             raise PermissionError(f"Tool '{name}' requires capabilities not granted: {missing}")
 
-        start = time.monotonic()
-        error_msg = None
-        try:
-            result = await asyncio.wait_for(tool.fn(**arguments), timeout=timeout)
-            return result
-        except Exception as e:
-            error_msg = str(e)
-            raise
-        finally:
-            elapsed = time.monotonic() - start
-            await self._log_execution(name, elapsed, error_msg)
+        # Execute tool in sandbox
+        sandbox_result = await self._sandbox.run(tool.fn, **arguments)
+        
+        # Log execution
+        await self._log_execution(
+            name, 
+            sandbox_result["duration_ms"] / 1000, 
+            sandbox_result.get("error")
+        )
+        
+        # Handle sandbox results
+        if sandbox_result["status"] == "success":
+            return sandbox_result["result"]
+        elif sandbox_result["status"] == "timeout":
+            raise asyncio.TimeoutError(sandbox_result["error"])
+        else:
+            raise RuntimeError(sandbox_result["error"])
 
     async def _log_execution(
         self,
