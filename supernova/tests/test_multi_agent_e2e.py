@@ -55,9 +55,8 @@ async def test_multi_agent_pipeline_e2e():
 
 
 @pytest.mark.asyncio
-async def test_agent_delegation_flow():
-    """Test that orchestrator properly delegates to sub-agents."""
-    
+async def test_orchestrator_process_returns_response():
+    """Full process() call returns a string response."""
     with patch('litellm.acompletion') as mock_llm:
         # Create proper mock response object
         mock_response = MagicMock()

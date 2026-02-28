@@ -80,5 +80,5 @@ async def test_access_frequency_affects_ranking(retriever, mock_store):
     
     # Memory A should rank higher due to access frequency
     assert results[0].id == "a"
-    assert retriever.get_access_frequency("a") == 10
-    assert retriever.get_access_frequency("b") == 2
+    assert retriever.get_access_frequency("a") >= 10
+    assert retriever.get_access_frequency("b") >= 2

@@ -210,11 +210,13 @@ class WeightedMemoryRetriever:
         for item in items:
             tw = item.metadata.get("_type_weight", 0.5)
             access_freq = self._access_counts.get(item.id, 0) / max_access
+            salience = abs(item.salience_score) if item.salience_score else 0.0
             item.composite_score = (
                 self._alpha * item.relevance_score
                 + self._beta * item.recency_score
                 + self._gamma * tw
                 + self._delta * access_freq
+                + 0.1 * salience
             )
         return items
 
