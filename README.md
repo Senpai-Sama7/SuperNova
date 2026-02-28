@@ -1,20 +1,23 @@
 <div align="center">
 
-<!-- Animated header banner -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:7c3aed,100:06b6d4&height=220&section=header&text=SuperNova&fontSize=80&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=The%20AI%20assistant%20you%20can%20inspect%20and%20trust&descSize=18&descAlignY=55&descAlign=50" width="100%"/>
+<!-- Animated header banner — dark navy to gold -->
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0e1a,50:d4af37,100:0a0e1a&height=200&section=header&animation=fadeIn" width="100%"/>
 
-<br/>
+<!-- Logo -->
+<img src="docs/assets/logo.png" width="280" alt="SuperNova Logo"/>
 
-<!-- Badges row 1 -->
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/license-MIT-7c3aed?style=for-the-badge)](LICENSE)
-[![Docker](https://img.shields.io/badge/docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](#-quick-start-5-minutes)
-[![Privacy](https://img.shields.io/badge/privacy-100%25_local-00c853?style=for-the-badge&logo=gnuprivacyguard&logoColor=white)](#)
+<br/><br/>
 
-<!-- Badges row 2 -->
-[![Agents](https://img.shields.io/badge/agents-multi--agent_system-06b6d4?style=for-the-badge&logo=probot&logoColor=white)](#-architecture)
-[![Memory](https://img.shields.io/badge/memory-4_types_persistent-06b6d4?style=for-the-badge&logo=databricks&logoColor=white)](#-how-it-remembers)
-[![Interfaces](https://img.shields.io/badge/interfaces-web_+_TUI_+_API-06b6d4?style=for-the-badge&logo=windowsterminal&logoColor=white)](#-interfaces)
+<!-- Badges row 1 — gold accent (#d4af37) -->
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-d4af37?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-d4af37?style=for-the-badge)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-d4af37?style=for-the-badge&logo=docker&logoColor=white)](#-quick-start-5-minutes)
+[![Privacy](https://img.shields.io/badge/privacy-100%25_local-d4af37?style=for-the-badge&logo=gnuprivacyguard&logoColor=white)](#)
+
+<!-- Badges row 2 — dark navy (#0a0e1a) -->
+[![Agents](https://img.shields.io/badge/agents-multi--agent_system-0a0e1a?style=for-the-badge&logo=probot&logoColor=d4af37)](#-architecture)
+[![Memory](https://img.shields.io/badge/memory-4_types_persistent-0a0e1a?style=for-the-badge&logo=databricks&logoColor=d4af37)](#-how-it-remembers)
+[![Interfaces](https://img.shields.io/badge/interfaces-web_+_TUI_+_API-0a0e1a?style=for-the-badge&logo=windowsterminal&logoColor=d4af37)](#-interfaces)
 
 <br/>
 
@@ -94,12 +97,17 @@ graph TD
     
     MemoryAgent[🗄️ MemoryAgent] -.-> Memory
     
-    style User fill:#e1f5fe
-    style Gateway fill:#f3e5f5
-    style Orchestrator fill:#fff3e0
-    style Memory fill:#e8f5e8
-    style LLM fill:#fce4ec
-    style MemoryAgent fill:#f1f8e9
+    style User fill:#0a0e1a,color:#d4af37,stroke:#d4af37
+    style Gateway fill:#0a0e1a,color:#d4af37,stroke:#d4af37
+    style Orchestrator fill:#1a1a2e,color:#d4af37,stroke:#d4af37
+    style Planner fill:#1a1a2e,color:#d4af37,stroke:#d4af37
+    style Executor1 fill:#1a1a2e,color:#d4af37,stroke:#d4af37
+    style Executor2 fill:#1a1a2e,color:#d4af37,stroke:#d4af37
+    style Critic fill:#1a1a2e,color:#d4af37,stroke:#d4af37
+    style Memory fill:#2a1f0a,color:#d4af37,stroke:#d4af37
+    style LLM fill:#2a1f0a,color:#d4af37,stroke:#d4af37
+    style Response fill:#0a0e1a,color:#d4af37,stroke:#d4af37
+    style MemoryAgent fill:#1a1a2e,color:#d4af37,stroke:#d4af37
 ```
 
 </div>
@@ -184,7 +192,7 @@ When SuperNova wants to do something potentially risky, it stops and asks:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🌟 SuperNova                              [Agent: Active]  │
+│  ✦ SuperNova                              [Agent: Active]  │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────┐│
 │  │Overview │ │ Agents  │ │ Memory  │ │Decisions│ │  MCP  ││
@@ -291,8 +299,6 @@ Never get a surprise AI bill again.
 
 ## ⚙️ Settings
 
-SuperNova includes a visual settings panel in the dashboard:
-
 <div align="center">
 
 | Preset | Approval | Speed | Best For |
@@ -329,10 +335,10 @@ Fine-grained controls: risk thresholds, tool access toggles, self-reflection, qu
 
 | Service | Purpose | Why |
 |:-------:|:--------|:----|
-| ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) | Memories & skills | Durable, queryable storage |
-| ![Redis](https://img.shields.io/badge/-Redis-DC382D?style=flat-square&logo=redis&logoColor=white) | Fast cache | Sub-millisecond lookups |
-| ![Neo4j](https://img.shields.io/badge/-Neo4j-4581C3?style=flat-square&logo=neo4j&logoColor=white) | Conversation timeline | Graph-based episode linking |
-| ![Langfuse](https://img.shields.io/badge/-Langfuse-000000?style=flat-square) | AI observability | Performance tracking (optional) |
+| ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-d4af37?style=flat-square&logo=postgresql&logoColor=0a0e1a) | Memories & skills | Durable, queryable storage |
+| ![Redis](https://img.shields.io/badge/-Redis-d4af37?style=flat-square&logo=redis&logoColor=0a0e1a) | Fast cache | Sub-millisecond lookups |
+| ![Neo4j](https://img.shields.io/badge/-Neo4j-d4af37?style=flat-square&logo=neo4j&logoColor=0a0e1a) | Conversation timeline | Graph-based episode linking |
+| ![Langfuse](https://img.shields.io/badge/-Langfuse-d4af37?style=flat-square) | AI observability | Performance tracking (optional) |
 
 </div>
 
@@ -407,6 +413,10 @@ MIT — free to use, modify, and distribute.
 
 <br/>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d1117,50:7c3aed,100:06b6d4&height=120&section=footer&animation=fadeIn" width="100%"/>
+<img src="docs/assets/logo.png" width="80" alt="SuperNova"/>
+
+<br/><br/>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0e1a,50:d4af37,100:0a0e1a&height=120&section=footer&animation=fadeIn" width="100%"/>
 
 </div>
